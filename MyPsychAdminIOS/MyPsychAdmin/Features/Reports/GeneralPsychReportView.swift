@@ -483,16 +483,33 @@ struct GeneralPsychReportView: View {
                 ))
             }
 
-            // Medical history
-            if let medSection = extractSectionStatic(from: note.body, sectionHeadings: [
-                "past medical history", "medical history", "pmh", "physical health"
-            ]) {
-                result.medicalHistoryImported.append(GPRImportedEntry(
-                    date: note.date,
-                    text: medSection,
-                    snippet: String(medSection.prefix(150)),
-                    categories: ["Medical"]
-                ))
+            // Medical history - matching desktop extraction (history_extractor_sections.py)
+            // Uses PHYSICAL HEALTH PRECISION GUARD to exclude psychiatric content
+            let medicalHeadings = [
+                "past medical history", "medical history", "pmh",
+                "physical health", "physical hx", "physical health history",
+                "comorbidities", "comorbid"
+            ]
+            let psychiatricTerms = [
+                "delusion", "delusional", "hallucination", "hallucinating",
+                "insight", "thought", "affect", "mood", "mental state", "mse",
+                "behaviour", "behavior", "psychotic", "paranoid"
+            ]
+
+            if let medSection = extractSectionStatic(from: note.body, sectionHeadings: medicalHeadings) {
+                // Apply PHYSICAL HEALTH PRECISION GUARD
+                let medLower = medSection.lowercased()
+                let hasPsychiatricContent = psychiatricTerms.contains { medLower.contains($0) }
+
+                if !hasPsychiatricContent {
+                    let medCategories = GPRCategoryKeywords.categorize(medSection, using: GPRCategoryKeywords.medicalHistory)
+                    result.medicalHistoryImported.append(GPRImportedEntry(
+                        date: note.date,
+                        text: medSection,
+                        snippet: String(medSection.prefix(150)),
+                        categories: medCategories.isEmpty ? ["Medical"] : medCategories
+                    ))
+                }
             }
 
             // Substance use with highlighting
@@ -517,6 +534,36 @@ struct GeneralPsychReportView: View {
                     snippet: String(forensicSection.prefix(200)),
                     categories: ["Forensic"]
                 ))
+            }
+        }
+
+        // Medical history from clerkings (matching desktop approach)
+        // Desktop extracts medical history from ALL clerkings, similar to forensic
+        let medHistoryHeadings = [
+            "past medical history", "medical history", "pmh",
+            "physical health", "physical hx", "physical health history",
+            "comorbidities", "comorbid"
+        ]
+        let psyExclusionTerms = [
+            "delusion", "delusional", "hallucination", "hallucinating",
+            "insight", "thought", "affect", "mood", "mental state", "mse",
+            "behaviour", "behavior", "psychotic", "paranoid"
+        ]
+        for clerking in result.clerkingNotes {
+            if let pmhSection = extractSectionStatic(from: clerking.text, sectionHeadings: medHistoryHeadings) {
+                // Apply PHYSICAL HEALTH PRECISION GUARD
+                let pmhLower = pmhSection.lowercased()
+                let hasPsychContent = psyExclusionTerms.contains { pmhLower.contains($0) }
+
+                if !hasPsychContent {
+                    let medCategories = GPRCategoryKeywords.categorize(pmhSection, using: GPRCategoryKeywords.medicalHistory)
+                    result.medicalHistoryImported.append(GPRImportedEntry(
+                        date: clerking.date,
+                        text: pmhSection,
+                        snippet: String(pmhSection.prefix(200)),
+                        categories: medCategories.isEmpty ? ["Medical History"] : medCategories
+                    ))
+                }
             }
         }
 
@@ -980,7 +1027,44 @@ struct GeneralPsychReportView: View {
             }
         }
 
-        print("[GPR iOS] Populated: \(formData.admissionsTableData.count) admissions, \(formData.clerkingNotes.count) clerking notes, \(allClerkingsForEpisode.count) total clerkings for forensic")
+        // === SECTION 5: MEDICAL HISTORY - Extract from ALL clerkings (matches desktop) ===
+        // Desktop extracts medical history from ALL clerkings, with precision guard for psychiatric terms
+        // Section headings match desktop: history_extractor_sections.py
+        let medicalHistoryHeadings = [
+            "past medical history", "medical history", "pmh",
+            "physical health", "physical hx", "physical health history",
+            "comorbidities", "comorbid"
+        ]
+
+        // Psychiatric exclusion terms (PHYSICAL HEALTH PRECISION GUARD from desktop)
+        let psychiatricExclusionTerms = [
+            "delusion", "delusional", "hallucination", "hallucinating",
+            "insight", "thought", "affect", "mood", "mental state", "mse",
+            "behaviour", "behavior", "psychotic", "paranoid"
+        ]
+
+        for clerking in allClerkingsForEpisode {
+            let admissionLabel = "Admission \(formatDate(clerking.admissionDate))"
+
+            if let pmhSection = extractSection(from: clerking.text, sectionHeadings: medicalHistoryHeadings) {
+                // Apply PHYSICAL HEALTH PRECISION GUARD - exclude sections with psychiatric terms
+                let pmhLower = pmhSection.lowercased()
+                let hasPsychiatricContent = psychiatricExclusionTerms.contains { pmhLower.contains($0) }
+
+                if !hasPsychiatricContent {
+                    let sectionSnippet = pmhSection.count > 150 ? String(pmhSection.prefix(150)) + "..." : pmhSection
+                    let medicalCategories = GPRCategoryKeywords.categorize(pmhSection, using: GPRCategoryKeywords.medicalHistory)
+                    formData.medicalHistoryImported.append(GPRImportedEntry(
+                        date: clerking.date,
+                        text: pmhSection,
+                        snippet: sectionSnippet,
+                        categories: medicalCategories.isEmpty ? [admissionLabel] : medicalCategories
+                    ))
+                }
+            }
+        }
+
+        print("[GPR iOS] Populated: \(formData.admissionsTableData.count) admissions, \(formData.clerkingNotes.count) clerking notes, \(allClerkingsForEpisode.count) total clerkings for forensic/medical")
 
         // Process each note for other sections
         for note in notes {
@@ -1042,29 +1126,8 @@ struct GeneralPsychReportView: View {
                 ))
             }
 
-            // === MEDICAL HISTORY - extract only PMH section from admission clerkings ===
-            for episode in inpatientEpisodes {
-                let windowEnd = calendar.date(byAdding: .day, value: 14, to: episode.start) ?? episode.start
-                if noteDay >= episode.start && noteDay <= windowEnd {
-                    if AdmissionKeywords.noteIndicatesAdmission(text) {
-                        // Extract only the past medical history section from the note
-                        if let pmhSection = extractSection(from: text, sectionHeadings: [
-                            "past medical history", "pmh", "medical history",
-                            "physical health history", "physical health", "comorbidities"
-                        ]) {
-                            let sectionSnippet = pmhSection.count > 150 ? String(pmhSection.prefix(150)) + "..." : pmhSection
-                            let medicalCategories = GPRCategoryKeywords.categorize(pmhSection, using: GPRCategoryKeywords.medicalHistory)
-                            formData.medicalHistoryImported.append(GPRImportedEntry(
-                                date: date,
-                                text: pmhSection,
-                                snippet: sectionSnippet,
-                                categories: medicalCategories.isEmpty ? ["Medical History"] : medicalCategories
-                            ))
-                        }
-                        break
-                    }
-                }
-            }
+            // === MEDICAL HISTORY (Section 5) - now handled below with ALL clerkings ===
+            // (moved to match desktop approach - extracts from ALL clerkings, not just admission window)
 
             // Substance Use - extract relevant context with highlighting (matching risk section approach)
             if let substanceResult = GPRCategoryKeywords.categorizeSubstanceWithContext(text) {
