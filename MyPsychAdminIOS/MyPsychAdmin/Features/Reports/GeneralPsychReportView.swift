@@ -37,6 +37,7 @@ struct GeneralPsychReportView: View {
     @State private var isImporting = false
     @State private var importStatusMessage: String?
     @State private var hasPopulatedFromSharedData = false
+    @State private var isPopulatingNotes = false
 
     // 14 Sections matching desktop General Psychiatric Report order
     enum GPRSection: String, CaseIterable, Identifiable {
@@ -161,13 +162,13 @@ struct GeneralPsychReportView: View {
             prefillFromSharedData()
             initializeCardTexts()
             if !hasPopulatedFromSharedData && !sharedData.notes.isEmpty {
-                populateFromClinicalNotes(sharedData.notes)
+                populateFromClinicalNotesAsync(sharedData.notes)
                 hasPopulatedFromSharedData = true
             }
         }
         .onReceive(sharedData.notesDidChange) { notes in
             if !notes.isEmpty {
-                populateFromClinicalNotes(notes)
+                populateFromClinicalNotesAsync(notes)
             }
         }
         .sheet(item: $activePopup) { section in
@@ -250,6 +251,17 @@ struct GeneralPsychReportView: View {
             formData.signatureRegNumber = appStore.clinicianInfo.registrationNumber
             formData.currentLocation = appStore.clinicianInfo.hospitalOrg
         }
+    }
+
+    // Computed patient info combining form data with gender for gender-sensitive text generation
+    private var combinedPatientInfo: PatientInfo {
+        var info = PatientInfo()
+        let names = formData.patientName.components(separatedBy: " ")
+        info.firstName = names.first ?? ""
+        info.lastName = names.dropFirst().joined(separator: " ")
+        info.gender = formData.patientGender
+        info.dateOfBirth = formData.patientDOB
+        return info
     }
 
     private func exportDOCX() {
@@ -342,10 +354,494 @@ struct GeneralPsychReportView: View {
 
     // MARK: - Populate from Clinical Notes
 
+    /// Async wrapper to run population on background thread for better UI responsiveness
+    private func populateFromClinicalNotesAsync(_ notes: [ClinicalNote]) {
+        guard !notes.isEmpty else { return }
+        guard !isPopulatingNotes else {
+            print("[GPR iOS] Already populating, skipping")
+            return
+        }
+
+        isPopulatingNotes = true
+
+        Task.detached(priority: .userInitiated) {
+            // Perform heavy computation on background thread
+            let result = await self.computePopulationData(notes)
+
+            // Update UI on main thread
+            await MainActor.run {
+                self.applyPopulationResult(result)
+                self.isPopulatingNotes = false
+            }
+        }
+    }
+
+    /// Background computation for note population
+    private func computePopulationData(_ notes: [ClinicalNote]) async -> GPRPopulationResult {
+        print("[GPR iOS] Computing population data from \(notes.count) clinical notes (background)")
+
+        var result = GPRPopulationResult()
+        let calendar = Calendar.current
+
+        // Build timeline to find admissions
+        let episodes = TimelineBuilder.buildTimeline(from: notes, allNotes: notes)
+        let inpatientEpisodes = episodes.filter { $0.type == .inpatient }
+
+        // Get most recent admission
+        let mostRecentAdmission = inpatientEpisodes.last
+
+        // === SECTION 6: Find admission clerkings ===
+        var seenClerkingKeys: Set<String> = []
+        var allClerkingsForEpisode: [(date: Date, text: String, admissionDate: Date)] = []
+
+        for episode in inpatientEpisodes {
+            let admissionStart = episode.start
+            let windowEnd = calendar.date(byAdding: .day, value: 14, to: admissionStart) ?? admissionStart
+
+            let windowNotes = notes.filter { note in
+                let noteDay = calendar.startOfDay(for: note.date)
+                return noteDay >= admissionStart && noteDay <= windowEnd
+            }.sorted { $0.date < $1.date }
+
+            var firstClerkingDate: Date? = nil
+            for note in windowNotes {
+                if AdmissionKeywords.noteIndicatesAdmission(note.body) {
+                    let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(100)))"
+                    if !seenClerkingKeys.contains(key) {
+                        seenClerkingKeys.insert(key)
+                        allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
+                        if firstClerkingDate == nil {
+                            firstClerkingDate = note.date
+                        }
+                    }
+                }
+            }
+
+            let clerkingNoteDate = firstClerkingDate
+            let adjustedAdmissionDate = clerkingNoteDate ?? episode.start
+
+            let today = calendar.startOfDay(for: Date())
+            let episodeEndDay = calendar.startOfDay(for: episode.end)
+            let isOngoing = episodeEndDay >= today
+
+            let durationStr: String
+            let days = calendar.dateComponents([.day], from: adjustedAdmissionDate, to: episode.end).day ?? 0
+            if isOngoing {
+                durationStr = "Ongoing"
+            } else if days < 30 {
+                durationStr = "\(days) days"
+            } else {
+                let months = days / 30
+                let remainDays = days % 30
+                if remainDays > 0 {
+                    durationStr = "\(months) months, \(remainDays) days"
+                } else {
+                    durationStr = "\(months) months"
+                }
+            }
+
+            result.admissionsTableData.append(GPRAdmissionEntry(
+                admissionDate: adjustedAdmissionDate,
+                dischargeDate: isOngoing ? nil : episode.end,
+                duration: durationStr
+            ))
+        }
+
+        // Store clerkings as GPRImportedEntry
+        for clerking in allClerkingsForEpisode {
+            result.clerkingNotes.append(GPRImportedEntry(
+                date: clerking.date,
+                text: clerking.text,
+                snippet: String(clerking.text.prefix(200)),
+                categories: ["Clerking"]
+            ))
+        }
+
+        // === Process notes for various sections ===
+        for note in notes {
+            // Risk incidents - use contextual detection matching desktop
+            if let riskResult = GPRCategoryKeywords.categorizeRiskIncidentWithContext(note.body) {
+                let contextSnippet = riskResult.context.count > 150 ? String(riskResult.context.prefix(150)) + "..." : riskResult.context
+                result.riskImportedEntries.append(GPRImportedEntry(
+                    date: note.date,
+                    text: riskResult.context,
+                    snippet: contextSnippet,
+                    categories: riskResult.categories
+                ))
+            }
+
+            // Background
+            if let bgSection = extractSectionStatic(from: note.body, sectionHeadings: [
+                "background history", "personal history", "social history", "family history",
+                "developmental history", "early history", "past and personal history"
+            ]) {
+                result.backgroundImportedEntries.append(GPRImportedEntry(
+                    date: note.date,
+                    text: bgSection,
+                    snippet: String(bgSection.prefix(150)),
+                    categories: ["Background"]
+                ))
+            }
+
+            // Medical history
+            if let medSection = extractSectionStatic(from: note.body, sectionHeadings: [
+                "past medical history", "medical history", "pmh", "physical health"
+            ]) {
+                result.medicalHistoryImported.append(GPRImportedEntry(
+                    date: note.date,
+                    text: medSection,
+                    snippet: String(medSection.prefix(150)),
+                    categories: ["Medical"]
+                ))
+            }
+
+            // Substance use with highlighting
+            if let substanceResult = GPRCategoryKeywords.categorizeSubstanceWithContext(note.body) {
+                let contextSnippet = substanceResult.context.count > 150 ? String(substanceResult.context.prefix(150)) + "..." : substanceResult.context
+                result.substanceUseImported.append(GPRImportedEntry(
+                    date: note.date,
+                    text: substanceResult.context,
+                    snippet: contextSnippet,
+                    categories: substanceResult.categories
+                ))
+            }
+        }
+
+        // Forensic history from clerkings
+        let forensicHeadings = ["forensic history", "forensic", "offence", "offending", "criminal", "police", "charges", "index offence"]
+        for clerking in result.clerkingNotes {
+            if let forensicSection = extractSectionStatic(from: clerking.text, sectionHeadings: forensicHeadings) {
+                result.forensicHistoryImported.append(GPRImportedEntry(
+                    date: clerking.date,
+                    text: forensicSection,
+                    snippet: String(forensicSection.prefix(200)),
+                    categories: ["Forensic"]
+                ))
+            }
+        }
+
+        // Circumstances - last 7 days relative to most recent admission
+        if let admissionDate = mostRecentAdmission?.start {
+            let windowStart = calendar.date(byAdding: .day, value: -7, to: admissionDate) ?? admissionDate
+            let windowEnd = calendar.date(byAdding: .day, value: 7, to: admissionDate) ?? admissionDate
+
+            let circumstancesNotes = notes.filter { note in
+                return note.date >= windowStart && note.date <= windowEnd
+            }.sorted { $0.date < $1.date }
+
+            for note in circumstancesNotes {
+                result.circumstancesImported.append(GPRImportedEntry(
+                    date: note.date,
+                    text: note.body,
+                    snippet: String(note.body.prefix(150)),
+                    categories: ["Circumstances"]
+                ))
+            }
+        }
+
+        // Psychiatric history from admission clerkings
+        let psychHistoryHeadings = ["past psychiatric history", "psychiatric history", "mental health history", "pph"]
+        for clerking in result.clerkingNotes {
+            if let psychSection = extractSectionStatic(from: clerking.text, sectionHeadings: psychHistoryHeadings) {
+                result.psychiatricHistoryImported.append(GPRImportedEntry(
+                    date: clerking.date,
+                    text: psychSection,
+                    snippet: String(psychSection.prefix(150)),
+                    categories: ["Psychiatric History"]
+                ))
+            }
+        }
+
+        // Medications - extract from ALL notes for imported, last year for prefill
+        let extractor = MedicationExtractor.shared
+        let allExtracted = extractor.extractMedications(from: notes)
+
+        for drug in allExtracted.drugs {
+            let category = drug.psychiatricSubtype?.rawValue ?? drug.category.rawValue
+            for mention in drug.mentions {
+                var displayText = drug.name
+                if let dose = mention.dose { displayText += " \(dose)" }
+                if let freq = mention.frequency { displayText += " \(freq.uppercased())" }
+
+                let snippet = mention.context.count > 100 ? String(mention.context.prefix(100)) + "..." : mention.context
+
+                result.medicationImported.append(GPRImportedEntry(
+                    date: mention.date,
+                    text: displayText,
+                    snippet: snippet,
+                    categories: [category]
+                ))
+            }
+        }
+        result.medicationImported.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+
+        // Prefill medications from last year only
+        let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+        let recentNotes = notes.filter { $0.date >= oneYearAgo }
+        let recentExtracted = extractor.extractMedications(from: recentNotes)
+
+        let subtypePriority: [PsychSubtype] = [.antipsychotic, .antidepressant, .antimanic, .hypnotic, .anticholinergic, .other]
+        for subtype in subtypePriority {
+            let drugsOfType = recentExtracted.psychiatricDrugs.filter { $0.psychiatricSubtype == subtype }
+            if let mostRecent = drugsOfType.max(by: { ($0.latestDate ?? .distantPast) < ($1.latestDate ?? .distantPast) }) {
+                var entry = GPRMedicationEntry()
+                entry.name = mostRecent.name
+                entry.dose = mostRecent.latestDose ?? ""
+                if let freq = mostRecent.mentions.last?.frequency?.lowercased() {
+                    switch freq {
+                    case "od", "daily", "once": entry.frequency = "OD"
+                    case "bd", "twice": entry.frequency = "BD"
+                    case "tds": entry.frequency = "TDS"
+                    case "qds", "qid": entry.frequency = "QDS"
+                    case "nocte", "on", "night": entry.frequency = "Nocte"
+                    case "prn": entry.frequency = "PRN"
+                    case "weekly": entry.frequency = "Weekly"
+                    case "fortnightly": entry.frequency = "Fortnightly"
+                    case "monthly": entry.frequency = "Monthly"
+                    default: entry.frequency = "OD"
+                    }
+                }
+                result.medications.append(entry)
+            }
+        }
+        if result.medications.isEmpty {
+            result.medications.append(GPRMedicationEntry())
+        }
+
+        // === DIAGNOSIS (Section 11) - Extract ICD-10 diagnoses from notes ===
+        // Track all found diagnoses with their dates for imported section
+        var diagnosisFindings: [(date: Date, diagnosis: ICD10Diagnosis, context: String)] = []
+
+        for note in notes {
+            let extractions = ICD10Diagnosis.extractFromText(note.body)
+            for extraction in extractions {
+                diagnosisFindings.append((date: note.date, diagnosis: extraction.diagnosis, context: extraction.context))
+
+                // Add to imported entries
+                // text = full note body (shown when expanded)
+                // snippet = diagnosis code + brief context (shown when collapsed)
+                let snippetText = "[\(extraction.diagnosis.code)] " + (extraction.context.count > 120 ? String(extraction.context.prefix(120)) + "..." : extraction.context)
+                result.diagnosisImported.append(GPRImportedEntry(
+                    date: note.date,
+                    text: note.body,
+                    snippet: snippetText,
+                    categories: [extraction.diagnosis.code]
+                ))
+            }
+        }
+
+        // Sort imported by date (newest first)
+        result.diagnosisImported.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+
+        // === Pre-fill with unique diagnoses from different categories ===
+        // Group diagnoses by category and track best (most recent, highest severity) per category
+        // Categories based on ICD-10 code prefix to avoid duplicates like multiple schizophrenia variants
+
+        // Helper to get diagnostic category from ICD-10 code
+        func getDiagnosticCategory(_ diagnosis: ICD10Diagnosis) -> String {
+            let code = diagnosis.code.uppercased()
+            // F20-F29: Schizophrenia/Psychosis spectrum (treat all F2x psychotic disorders as one category)
+            if code.hasPrefix("F20") || code.hasPrefix("F21") || code.hasPrefix("F22") ||
+               code.hasPrefix("F23") || code.hasPrefix("F24") || code.hasPrefix("F25") ||
+               code.hasPrefix("F28") || code.hasPrefix("F29") {
+                return "Psychosis"
+            }
+            // F30-F39: Mood disorders (bipolar and depression are one category)
+            if code.hasPrefix("F30") || code.hasPrefix("F31") || code.hasPrefix("F32") ||
+               code.hasPrefix("F33") || code.hasPrefix("F34") || code.hasPrefix("F38") || code.hasPrefix("F39") {
+                return "Mood"
+            }
+            // F40-F48: Anxiety/Neurotic disorders
+            if code.hasPrefix("F4") { return "Anxiety" }
+            // F50: Eating disorders
+            if code.hasPrefix("F50") { return "Eating" }
+            // F60-F69: Personality disorders
+            if code.hasPrefix("F6") { return "Personality" }
+            // F70-F79: Intellectual disability
+            if code.hasPrefix("F7") { return "IntellectualDisability" }
+            // F00-F09: Organic disorders
+            if code.hasPrefix("F0") { return "Organic" }
+            // F10-F19: Substance use disorders
+            if code.hasPrefix("F1") && !code.hasPrefix("F20") { return "Substance" }
+            return "Other"
+        }
+
+        // Helper to get severity (4=highest for psychosis/severe mood, 1=lowest)
+        func getDiagnosisSeverity(_ diagnosis: ICD10Diagnosis) -> Int {
+            let code = diagnosis.code.uppercased()
+            // Severity 4: Schizophrenia, Schizoaffective, Bipolar, Mania, Severe depression with psychosis
+            if code.hasPrefix("F20") || code.hasPrefix("F21") || code.hasPrefix("F22") ||
+               code.hasPrefix("F23") || code.hasPrefix("F24") || code.hasPrefix("F25") ||
+               code.hasPrefix("F28") || code.hasPrefix("F29") ||
+               code.hasPrefix("F30") || code.hasPrefix("F31") ||
+               code == "F32.3" || code == "F33.3" { // Severe depression with psychosis
+                return 4
+            }
+            // Severity 3: Other mood, anxiety, personality, eating disorders
+            if code.hasPrefix("F32") || code.hasPrefix("F33") || code.hasPrefix("F34") ||
+               code.hasPrefix("F4") || code.hasPrefix("F50") || code.hasPrefix("F6") ||
+               code.hasPrefix("F0") {
+                return 3
+            }
+            // Severity 2: Substance use, mild mood
+            if code.hasPrefix("F1") || code.hasPrefix("F38") || code.hasPrefix("F39") {
+                return 2
+            }
+            return 1
+        }
+
+        // Group by category, keeping best (highest severity, most recent) per category
+        var bestByCategory: [String: (diagnosis: ICD10Diagnosis, date: Date, severity: Int)] = [:]
+
+        for finding in diagnosisFindings {
+            let category = getDiagnosticCategory(finding.diagnosis)
+            let severity = getDiagnosisSeverity(finding.diagnosis)
+
+            if let existing = bestByCategory[category] {
+                // Prefer higher severity, then more recent date
+                if severity > existing.severity ||
+                   (severity == existing.severity && finding.date > existing.date) {
+                    bestByCategory[category] = (finding.diagnosis, finding.date, severity)
+                }
+            } else {
+                bestByCategory[category] = (finding.diagnosis, finding.date, severity)
+            }
+        }
+
+        // Sort categories by severity (descending) then by date (most recent)
+        let sortedCategories = bestByCategory.sorted { a, b in
+            if a.value.severity != b.value.severity {
+                return a.value.severity > b.value.severity
+            }
+            return a.value.date > b.value.date
+        }
+
+        // Take top 3 from different categories
+        if sortedCategories.count > 0 {
+            result.diagnosis1ICD10 = sortedCategories[0].value.diagnosis
+        }
+        if sortedCategories.count > 1 {
+            result.diagnosis2ICD10 = sortedCategories[1].value.diagnosis
+        }
+        if sortedCategories.count > 2 {
+            result.diagnosis3ICD10 = sortedCategories[2].value.diagnosis
+        }
+
+        print("[GPR iOS] Found \(diagnosisFindings.count) diagnosis mentions, \(bestByCategory.count) unique categories")
+        print("[GPR iOS] Background computation complete")
+        return result
+    }
+
+    /// Apply computed result to form data on main thread
+    private func applyPopulationResult(_ result: GPRPopulationResult) {
+        formData.psychiatricHistoryImported = result.psychiatricHistoryImported
+        formData.riskImportedEntries = result.riskImportedEntries
+        formData.backgroundImportedEntries = result.backgroundImportedEntries
+        formData.medicalHistoryImported = result.medicalHistoryImported
+        formData.substanceUseImported = result.substanceUseImported
+        formData.forensicHistoryImported = result.forensicHistoryImported
+        formData.medicationImported = result.medicationImported
+        formData.circumstancesImported = result.circumstancesImported
+        formData.admissionsTableData = result.admissionsTableData
+        formData.clerkingNotes = result.clerkingNotes
+        formData.medications = result.medications
+
+        // Diagnosis
+        formData.diagnosisImported = result.diagnosisImported
+        formData.diagnosis1ICD10 = result.diagnosis1ICD10
+        formData.diagnosis2ICD10 = result.diagnosis2ICD10
+        formData.diagnosis3ICD10 = result.diagnosis3ICD10
+
+        // Auto-populate risk levels
+        autoPopulateRiskLevels()
+
+        print("[GPR iOS] Applied population result to form data")
+    }
+
+    /// Static version of extractSection for background thread use
+    private static func extractSectionStatic(from text: String, sectionHeadings: [String]) -> String? {
+        let lines = text.components(separatedBy: .newlines)
+        // Common headings that indicate section boundaries (matches desktop CATEGORIES_ORDERED and HARD_OVERRIDE_HEADINGS)
+        let allHeadings = [
+            "background history", "personal history", "social history", "family history",
+            "developmental history", "early history", "past and personal history",
+            "past psychiatric history", "psychiatric history", "mental health history", "pph",
+            "history of presenting complaint", "presenting complaint", "hpc",
+            "past medical history", "medical history", "pmh", "physical health",
+            // Drug and alcohol headings - critical for proper section boundaries
+            "drug and alcohol", "drug and alcohol history", "drug history", "alcohol history",
+            "substance use", "substance misuse", "substance", "illicit",
+            // Forensic and other
+            "forensic history", "forensic", "offence", "offending", "criminal", "police", "charges", "index offence",
+            "mental state", "mse", "mental state examination", "risk", "impression", "plan", "diagnosis",
+            "medication", "medication history", "current medication", "physical examination", "summary", "capacity", "ecg"
+        ]
+
+        var sectionStartLine: Int? = nil
+        var matchedHeading: String? = nil
+
+        for (index, line) in lines.enumerated() {
+            let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
+            let cleanedLine = trimmed
+                .replacingOccurrences(of: ":", with: "")
+                .replacingOccurrences(of: "-", with: " ")
+                .trimmingCharacters(in: .whitespaces)
+
+            for heading in sectionHeadings {
+                if cleanedLine == heading ||
+                   cleanedLine.hasPrefix(heading + " ") ||
+                   cleanedLine.hasSuffix(" " + heading) ||
+                   (cleanedLine.count < 50 && cleanedLine.contains(heading)) {
+                    sectionStartLine = index
+                    matchedHeading = heading
+                    break
+                }
+            }
+            if sectionStartLine != nil { break }
+        }
+
+        guard let startLine = sectionStartLine else { return nil }
+
+        var sectionEndLine = lines.count
+
+        for index in (startLine + 1)..<lines.count {
+            let trimmed = lines[index].trimmingCharacters(in: .whitespaces).lowercased()
+            let cleanedLine = trimmed
+                .replacingOccurrences(of: ":", with: "")
+                .replacingOccurrences(of: "-", with: " ")
+                .trimmingCharacters(in: .whitespaces)
+
+            if cleanedLine.isEmpty { continue }
+
+            for heading in allHeadings {
+                if heading == matchedHeading { continue }
+
+                if cleanedLine == heading ||
+                   cleanedLine.hasPrefix(heading + " ") ||
+                   cleanedLine.hasSuffix(" " + heading) ||
+                   (cleanedLine.count < 50 && cleanedLine.contains(heading)) {
+                    sectionEndLine = index
+                    break
+                }
+            }
+            if sectionEndLine < lines.count { break }
+        }
+
+        let contentLines = Array(lines[(startLine + 1)..<sectionEndLine])
+        let content = contentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return content.isEmpty ? nil : content
+    }
+
+    /// Instance method wrapper for extractSectionStatic
+    private func extractSectionStatic(from text: String, sectionHeadings: [String]) -> String? {
+        Self.extractSectionStatic(from: text, sectionHeadings: sectionHeadings)
+    }
+
     private func populateFromClinicalNotes(_ notes: [ClinicalNote]) {
         guard !notes.isEmpty else { return }
 
-        print("[GPR iOS] Populating from \(notes.count) clinical notes")
+        print("[GPR iOS] Populating from \(notes.count) clinical notes (sync)")
 
         // Clear existing imported entries
         formData.psychiatricHistoryImported.removeAll()
@@ -737,27 +1233,19 @@ struct GeneralPsychReportView: View {
             return
         }
 
-        // Filter to notes from last year
         let calendar = Calendar.current
         let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()
-        let recentNotes = notes.filter { $0.date >= oneYearAgo }
 
-        print("[GPR-MED] Extracting medications from \(recentNotes.count) notes (last year)...")
-
-        // Use MedicationExtractor to extract medications
+        // Use MedicationExtractor
         let extractor = MedicationExtractor.shared
-        let extracted = extractor.extractMedications(from: recentNotes)
 
-        if extracted.drugs.isEmpty {
-            print("[GPR-MED] No medications found in notes")
-            return
-        }
+        // === EXTRACT FROM ALL NOTES for imported section ===
+        print("[GPR-MED] Extracting medications from ALL \(notes.count) notes for imported section...")
+        let allExtracted = extractor.extractMedications(from: notes)
 
-        print("[GPR-MED] Found \(extracted.drugs.count) unique medications")
-
-        // === POPULATE IMPORTED NOTES SECTION (all medication mentions) ===
+        // Populate imported notes section with ALL medication mentions
         formData.medicationImported.removeAll()
-        for drug in extracted.drugs {
+        for drug in allExtracted.drugs {
             let category = drug.psychiatricSubtype?.rawValue ?? drug.category.rawValue
             for mention in drug.mentions {
                 // Build display text: "Drug Name Dose Frequency"
@@ -777,19 +1265,32 @@ struct GeneralPsychReportView: View {
         }
         // Sort by date (newest first)
         formData.medicationImported.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        print("[GPR-MED] Populated \(formData.medicationImported.count) imported medication entries (all notes)")
 
-        print("[GPR-MED] Populated \(formData.medicationImported.count) imported medication entries")
+        // === EXTRACT FROM LAST YEAR ONLY for pre-filling current medications ===
+        let recentNotes = notes.filter { $0.date >= oneYearAgo }
+        print("[GPR-MED] Extracting medications from \(recentNotes.count) notes (last year) for pre-fill...")
 
-        // === PRE-FILL CURRENT MEDICATIONS (1 per class) ===
-        // Group by psychiatric subtype and pick most recent per class
-        // Priority: Antipsychotic > Antidepressant > Mood Stabiliser > Anxiolytic > etc.
+        let recentExtracted = extractor.extractMedications(from: recentNotes)
+
+        if recentExtracted.drugs.isEmpty {
+            print("[GPR-MED] No medications found in last year's notes for pre-fill")
+            if formData.medications.isEmpty {
+                formData.medications.append(GPRMedicationEntry())
+            }
+            return
+        }
+
+        print("[GPR-MED] Found \(recentExtracted.drugs.count) unique medications in last year")
+
+        // === PRE-FILL CURRENT MEDICATIONS (1 per class from last year) ===
         var selectedMeds: [ClassifiedDrug] = []
 
-        // Psychiatric medications by subtype
+        // Psychiatric medications by subtype priority
         let subtypePriority: [PsychSubtype] = [.antipsychotic, .antidepressant, .antimanic, .hypnotic, .anticholinergic, .other]
 
         for subtype in subtypePriority {
-            let drugsOfType = extracted.psychiatricDrugs.filter { $0.psychiatricSubtype == subtype }
+            let drugsOfType = recentExtracted.psychiatricDrugs.filter { $0.psychiatricSubtype == subtype }
             // Pick the one with the most recent mention
             if let mostRecent = drugsOfType.max(by: { ($0.latestDate ?? .distantPast) < ($1.latestDate ?? .distantPast) }) {
                 selectedMeds.append(mostRecent)
@@ -799,7 +1300,7 @@ struct GeneralPsychReportView: View {
         // Limit to top 8 medications
         let finalMeds = Array(selectedMeds.prefix(8))
 
-        print("[GPR-MED] Selected \(finalMeds.count) medications (1 per class, psych prioritized)")
+        print("[GPR-MED] Selected \(finalMeds.count) medications (1 per class, last year)")
 
         // Pre-fill the medication entries
         formData.medications.removeAll()
@@ -834,7 +1335,7 @@ struct GeneralPsychReportView: View {
             formData.medications.append(GPRMedicationEntry())
         }
 
-        print("[GPR-MED] ✓ Pre-filled \(finalMeds.count) medication(s)")
+        print("[GPR-MED] Pre-filled \(finalMeds.count) medication(s) from last year")
     }
 
     /// Extracts a specific section from clinical note text based on heading patterns
@@ -843,17 +1344,20 @@ struct GeneralPsychReportView: View {
     private func extractSection(from text: String, sectionHeadings: [String]) -> String? {
         let lines = text.components(separatedBy: .newlines)
 
-        // Common headings that indicate section boundaries (matches desktop CATEGORIES_ORDERED)
+        // Common headings that indicate section boundaries (matches desktop CATEGORIES_ORDERED and HARD_OVERRIDE_HEADINGS)
         let allHeadings = [
             "background history", "personal history", "social history", "family history",
             "developmental history", "early history", "past and personal history",
             "past psychiatric history", "psychiatric history", "mental health history", "pph",
             "history of presenting complaint", "presenting complaint", "hpc",
-            "past medical history", "medical history", "pmh",
-            "drug and alcohol", "substance", "forensic history", "forensic",
-            "offence", "offending", "criminal", "police", "charges", "index offence",
-            "mental state", "mse", "risk", "impression", "plan", "diagnosis",
-            "medication", "physical examination", "summary", "capacity", "ecg"
+            "past medical history", "medical history", "pmh", "physical health",
+            // Drug and alcohol headings - critical for proper section boundaries
+            "drug and alcohol", "drug and alcohol history", "drug history", "alcohol history",
+            "substance use", "substance misuse", "substance", "illicit",
+            // Forensic and other
+            "forensic history", "forensic", "offence", "offending", "criminal", "police", "charges", "index offence",
+            "mental state", "mse", "mental state examination", "risk", "impression", "plan", "diagnosis",
+            "medication", "medication history", "current medication", "physical examination", "summary", "capacity", "ecg"
         ]
 
         // Helper: detect if a line starts with a heading (matches desktop _detect_header)
@@ -970,6 +1474,17 @@ struct GPRPopupView: View {
     let onDismiss: () -> Void
 
     @State private var editableNotes: String = ""
+
+    // Computed patient info combining form data with gender for gender-sensitive text generation
+    private var combinedPatientInfo: PatientInfo {
+        var info = PatientInfo()
+        let names = formData.patientName.components(separatedBy: " ")
+        info.firstName = names.first ?? ""
+        info.lastName = names.dropFirst().joined(separator: " ")
+        info.gender = formData.patientGender
+        info.dateOfBirth = formData.patientDOB
+        return info
+    }
 
     var body: some View {
         NavigationStack {
@@ -1461,10 +1976,13 @@ struct GPRPopupView: View {
 
     // MARK: - Section 5: Medical History Popup
     // Matches desktop physical_health_popup.py with 8 categories
+    // Uses teal color (#008c7e) matching desktop theme
     private var medicalHistoryPopup: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let tealColor = Color(red: 0, green: 140/255, blue: 126/255) // #008c7e
+
+        return VStack(alignment: .leading, spacing: 16) {
             // --- Cardiac Conditions ---
-            GPRCollapsibleSection(title: "Cardiac Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Cardiac Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Hypertension", isOn: $formData.medicalCardiacHypertension)
                     Toggle("MI (Myocardial Infarction)", isOn: $formData.medicalCardiacMI)
@@ -1476,7 +1994,7 @@ struct GPRPopupView: View {
             }
 
             // --- Endocrine Conditions ---
-            GPRCollapsibleSection(title: "Endocrine Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Endocrine Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Diabetes", isOn: $formData.medicalEndocrineDiabetes)
                     Toggle("Thyroid Disorder", isOn: $formData.medicalEndocrineThyroidDisorder)
@@ -1486,7 +2004,7 @@ struct GPRPopupView: View {
             }
 
             // --- Respiratory Conditions ---
-            GPRCollapsibleSection(title: "Respiratory Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Respiratory Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Asthma", isOn: $formData.medicalRespiratoryAsthma)
                     Toggle("COPD", isOn: $formData.medicalRespiratoryCOPD)
@@ -1496,7 +2014,7 @@ struct GPRPopupView: View {
             }
 
             // --- Gastric Conditions ---
-            GPRCollapsibleSection(title: "Gastric Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Gastric Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Gastric Ulcer", isOn: $formData.medicalGastricUlcer)
                     Toggle("Gastro-oesophageal Reflux Disease (GORD)", isOn: $formData.medicalGastricGORD)
@@ -1506,7 +2024,7 @@ struct GPRPopupView: View {
             }
 
             // --- Neurological Conditions ---
-            GPRCollapsibleSection(title: "Neurological Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Neurological Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Multiple Sclerosis", isOn: $formData.medicalNeurologicalMS)
                     Toggle("Parkinson's Disease", isOn: $formData.medicalNeurologicalParkinsons)
@@ -1516,7 +2034,7 @@ struct GPRPopupView: View {
             }
 
             // --- Hepatic Conditions ---
-            GPRCollapsibleSection(title: "Hepatic Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Hepatic Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Hepatitis C", isOn: $formData.medicalHepaticHepC)
                     Toggle("Fatty Liver", isOn: $formData.medicalHepaticFattyLiver)
@@ -1526,7 +2044,7 @@ struct GPRPopupView: View {
             }
 
             // --- Renal Conditions ---
-            GPRCollapsibleSection(title: "Renal Conditions", color: .green) {
+            GPRCollapsibleSection(title: "Renal Conditions", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Chronic Kidney Disease (CKD)", isOn: $formData.medicalRenalCKD)
                     Toggle("End-stage Renal Disease (ESRD)", isOn: $formData.medicalRenalESRD)
@@ -1535,7 +2053,7 @@ struct GPRPopupView: View {
             }
 
             // --- Cancer History ---
-            GPRCollapsibleSection(title: "Cancer History", color: .green) {
+            GPRCollapsibleSection(title: "Cancer History", color: tealColor) {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Lung Cancer", isOn: $formData.medicalCancerLung)
                     Toggle("Prostate Cancer", isOn: $formData.medicalCancerProstate)
@@ -1548,11 +2066,9 @@ struct GPRPopupView: View {
                 .font(.subheadline)
             }
 
-            // Imported Notes
+            // Imported Notes (matching desktop amber/yellow theme with 📅 dates)
             if !formData.medicalHistoryImported.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.medicalHistoryImported.count))", color: .yellow) {
-                    GPRImportedEntriesList(entries: $formData.medicalHistoryImported)
-                }
+                GPRMedicalHistoryImportedSection(entries: $formData.medicalHistoryImported)
             }
         }
     }
@@ -1912,209 +2428,17 @@ struct GPRPopupView: View {
     // Matching ASR form legal criteria structure
     private var legalCriteriaPopup: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // 1. Mental Disorder
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Mental Disorder").font(.subheadline.weight(.semibold))
-                Picker("", selection: Binding(
-                    get: { formData.legalMentalDisorderPresent == true ? 1 : (formData.legalMentalDisorderPresent == false ? 0 : -1) },
-                    set: { formData.legalMentalDisorderPresent = $0 == 1 ? true : ($0 == 0 ? false : nil) }
-                )) {
-                    Text("Select...").tag(-1)
-                    Text("Absent").tag(0)
-                    Text("Present").tag(1)
-                }
-                .pickerStyle(.segmented)
+            Text("Legal Criteria for Detention")
+                .font(.headline)
 
-                // ICD-10 dropdown when Present
-                if formData.legalMentalDisorderPresent == true {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("ICD-10 Diagnosis:").font(.caption).foregroundColor(.secondary)
-                        Menu {
-                            Button("Clear") { formData.legalMentalDisorderICD10 = .none }
-                            ForEach(ICD10Diagnosis.groupedDiagnoses, id: \.0) { group, diagnoses in
-                                Menu(group) {
-                                    ForEach(diagnoses) { diagnosis in
-                                        Button(diagnosis.rawValue) { formData.legalMentalDisorderICD10 = diagnosis }
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                Text(formData.legalMentalDisorderICD10 == .none ? "Select diagnosis..." : formData.legalMentalDisorderICD10.rawValue)
-                                    .foregroundColor(formData.legalMentalDisorderICD10 == .none ? .secondary : .primary)
-                                Spacer()
-                                Image(systemName: "chevron.down")
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                        }
-                    }
-                    .padding(.leading, 8)
-                }
-            }
-
-            // Show criteria section if mental disorder is present
-            if formData.legalMentalDisorderPresent == true {
-                // 2. Criteria Warranting Detention
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Criteria Warranting Detention").font(.subheadline.weight(.semibold))
-                    Picker("", selection: Binding(
-                        get: { formData.legalCriteriaWarrantingDetention == true ? 1 : (formData.legalCriteriaWarrantingDetention == false ? 0 : -1) },
-                        set: { formData.legalCriteriaWarrantingDetention = $0 == 1 ? true : ($0 == 0 ? false : nil) }
-                    )) {
-                        Text("Select...").tag(-1)
-                        Text("Not Met").tag(0)
-                        Text("Met").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                // Show Nature/Degree if criteria met
-                if formData.legalCriteriaWarrantingDetention == true {
-                    GPRCollapsibleSection(title: "Nature & Degree", color: .blue) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // Nature
-                            VStack(alignment: .leading, spacing: 6) {
-                                Toggle("Nature", isOn: $formData.legalCriteriaByNature)
-                                    .font(.subheadline.weight(.medium))
-                                if formData.legalCriteriaByNature {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Toggle("Relapsing and remitting", isOn: $formData.legalNatureRelapsing)
-                                        Toggle("Treatment resistant", isOn: $formData.legalNatureTreatmentResistant)
-                                        Toggle("Chronic and enduring", isOn: $formData.legalNatureChronic)
-                                    }
-                                    .font(.subheadline)
-                                    .padding(.leading, 20)
-                                }
-                            }
-
-                            Divider()
-
-                            // Degree
-                            VStack(alignment: .leading, spacing: 6) {
-                                Toggle("Degree", isOn: $formData.legalCriteriaByDegree)
-                                    .font(.subheadline.weight(.medium))
-                                if formData.legalCriteriaByDegree {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Text("Symptom severity:")
-                                                .font(.caption)
-                                            Spacer()
-                                            Text(["Some", "Several", "Many", "Overwhelming"][min(formData.legalSymptomSeverity - 1, 3)])
-                                                .font(.caption.weight(.semibold))
-                                        }
-                                        Slider(value: Binding(
-                                            get: { Double(formData.legalSymptomSeverity) },
-                                            set: { formData.legalSymptomSeverity = Int($0) }
-                                        ), in: 1...4, step: 1)
-
-                                        Text("Symptoms including:").font(.caption)
-                                        TextEditor(text: $formData.legalSymptomsDescription)
-                                            .frame(minHeight: 60)
-                                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
-                                    }
-                                    .padding(.leading, 20)
-                                }
-                            }
-                        }
-                    }
-
-                    // 3. Necessity Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Necessity").font(.subheadline.weight(.semibold))
-                        Picker("", selection: Binding(
-                            get: { formData.legalNecessity == true ? 1 : (formData.legalNecessity == false ? 0 : -1) },
-                            set: { formData.legalNecessity = $0 == 1 ? true : ($0 == 0 ? false : nil) }
-                        )) {
-                            Text("Select...").tag(-1)
-                            Text("No").tag(0)
-                            Text("Yes").tag(1)
-                        }
-                        .pickerStyle(.segmented)
-                    }
-
-                    // Health & Safety section if necessary
-                    if formData.legalNecessity == true {
-                        GPRCollapsibleSection(title: "Health & Safety", color: .blue) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Health
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Toggle("Health", isOn: $formData.legalNecessityHealth)
-                                        .font(.subheadline.weight(.medium))
-                                    if formData.legalNecessityHealth {
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            // Mental Health
-                                            Toggle("Mental Health", isOn: $formData.legalNecessityHealthMental)
-                                                .font(.subheadline)
-                                            if formData.legalNecessityHealthMental {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Toggle("Poor compliance", isOn: $formData.legalNecessityHealthMentalPoorCompliance)
-                                                    Toggle("Limited insight", isOn: $formData.legalNecessityHealthMentalLimitedInsight)
-                                                }
-                                                .font(.caption)
-                                                .padding(.leading, 20)
-                                            }
-
-                                            // Physical Health
-                                            Toggle("Physical Health", isOn: $formData.legalNecessityHealthPhysical)
-                                                .font(.subheadline)
-                                            if formData.legalNecessityHealthPhysical {
-                                                TextField("Details...", text: $formData.legalNecessityHealthPhysicalDetails)
-                                                    .textFieldStyle(.roundedBorder)
-                                                    .font(.caption)
-                                                    .padding(.leading, 20)
-                                            }
-                                        }
-                                        .padding(.leading, 20)
-                                    }
-                                }
-
-                                Divider()
-
-                                // Safety
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Toggle("Safety", isOn: $formData.legalNecessitySafety)
-                                        .font(.subheadline.weight(.medium))
-                                    if formData.legalNecessitySafety {
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            // Self
-                                            Toggle("Self", isOn: $formData.legalNecessitySafetySelf)
-                                                .font(.subheadline)
-                                            if formData.legalNecessitySafetySelf {
-                                                TextField("Details about risk to self...", text: $formData.legalNecessitySafetySelfDetails)
-                                                    .textFieldStyle(.roundedBorder)
-                                                    .font(.caption)
-                                                    .padding(.leading, 20)
-                                            }
-
-                                            // Others
-                                            Toggle("Others", isOn: $formData.legalNecessitySafetyOthers)
-                                                .font(.subheadline)
-                                            if formData.legalNecessitySafetyOthers {
-                                                TextField("Details about risk to others...", text: $formData.legalNecessitySafetyOthersDetails)
-                                                    .textFieldStyle(.roundedBorder)
-                                                    .font(.caption)
-                                                    .padding(.leading, 20)
-                                            }
-                                        }
-                                        .padding(.leading, 20)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Treatment Available & Least Restrictive
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Treatment Available", isOn: $formData.legalTreatmentAvailable)
-                            .font(.subheadline.weight(.medium))
-                        Toggle("Least Restrictive Option", isOn: $formData.legalLeastRestrictiveOption)
-                            .font(.subheadline.weight(.medium))
-                    }
-                }
-            }
+            // Use the shared ClinicalReasonsView component (same as A3)
+            // Pass patientInfo for gender-sensitive text generation
+            ClinicalReasonsView(
+                data: $formData.legalClinicalReasons,
+                patientInfo: combinedPatientInfo,
+                showInformalSection: true,
+                formType: .assessment
+            )
 
             if !formData.legalCriteriaImported.isEmpty {
                 GPRCollapsibleSection(title: "Imported Notes (\(formData.legalCriteriaImported.count))", color: .yellow) {
@@ -2745,24 +3069,64 @@ struct GPRPopupView: View {
     }
 
     private func generateForensicHistoryText() -> String {
-        let selected = formData.forensicHistoryImported.filter { $0.selected }
-        if selected.isEmpty { return "" }
-
         var parts: [String] = []
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
+        let pronoun = formData.patientGender == .male ? "He" : (formData.patientGender == .female ? "She" : "They")
+        let pronounPoss = formData.patientGender == .male ? "his" : (formData.patientGender == .female ? "her" : "their")
+        let verbHas = formData.patientGender == .male || formData.patientGender == .female ? "has" : "have"
+        let verbWas = formData.patientGender == .male || formData.patientGender == .female ? "was" : "were"
 
-        for entry in selected {
-            var line = ""
-            if let date = entry.date {
-                line += "[\(formatter.string(from: date))] "
+        // Convictions section
+        switch formData.forensicConvictionsStatus {
+        case "declined":
+            parts.append("\(pronoun) did not wish to discuss \(pronounPoss) forensic history.")
+        case "none":
+            parts.append("\(pronoun) \(verbHas) no criminal convictions.")
+        case "some":
+            let convictionCount = formData.forensicConvictionCount >= 10 ? "10+" : "\(formData.forensicConvictionCount)"
+            let offenceCount = formData.forensicOffenceCount >= 10 ? "10+" : "\(formData.forensicOffenceCount)"
+            parts.append("\(pronoun) \(verbHas) \(convictionCount) conviction(s) for \(offenceCount) offence(s).")
+        default:
+            break
+        }
+
+        // Prison history section
+        switch formData.forensicPrisonStatus {
+        case "declined":
+            if !parts.isEmpty && formData.forensicConvictionsStatus != "declined" {
+                parts.append("\(pronoun) did not wish to discuss \(pronounPoss) prison history.")
             }
-            // Add category badges
-            if !entry.categories.isEmpty {
-                line += "(\(entry.categories.joined(separator: ", "))) "
+        case "never":
+            parts.append("\(pronoun) \(verbHas) never been in prison or on remand.")
+        case "yes":
+            let duration = formData.forensicPrisonDuration.isEmpty || formData.forensicPrisonDuration == "None" ? "" : " totalling \(formData.forensicPrisonDuration.lowercased())"
+            parts.append("\(pronoun) \(verbHas) been in prison/remand\(duration).")
+        default:
+            break
+        }
+
+        // Index offence (if provided)
+        if !formData.forensicIndexOffence.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append("Index Offence: \(formData.forensicIndexOffence.trimmingCharacters(in: .whitespacesAndNewlines))")
+        }
+
+        // Include selected imported entries
+        let selected = formData.forensicHistoryImported.filter { $0.selected }
+        if !selected.isEmpty {
+            if !parts.isEmpty { parts.append("") }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd/MM/yyyy"
+
+            for entry in selected {
+                var line = ""
+                if let date = entry.date {
+                    line += "[\(formatter.string(from: date))] "
+                }
+                if !entry.categories.isEmpty {
+                    line += "(\(entry.categories.joined(separator: ", "))) "
+                }
+                line += entry.text
+                parts.append(line)
             }
-            line += entry.text
-            parts.append(line)
         }
 
         return parts.joined(separator: "\n\n")
@@ -2796,17 +3160,29 @@ struct GPRPopupView: View {
 
     private func generateDiagnosisText() -> String {
         var diagnoses: [String] = []
-        if !formData.diagnosis1.isEmpty {
+
+        // Primary diagnosis - check ICD-10 selection first, then custom text
+        if formData.diagnosis1ICD10 != .none {
+            diagnoses.append(formData.diagnosis1ICD10.rawValue)
+        } else if !formData.diagnosis1.isEmpty {
             var d = formData.diagnosis1
             if !formData.diagnosis1Code.isEmpty { d += " (\(formData.diagnosis1Code))" }
             diagnoses.append(d)
         }
-        if !formData.diagnosis2.isEmpty {
+
+        // Secondary diagnosis - check ICD-10 selection first, then custom text
+        if formData.diagnosis2ICD10 != .none {
+            diagnoses.append(formData.diagnosis2ICD10.rawValue)
+        } else if !formData.diagnosis2.isEmpty {
             var d = formData.diagnosis2
             if !formData.diagnosis2Code.isEmpty { d += " (\(formData.diagnosis2Code))" }
             diagnoses.append(d)
         }
-        if !formData.diagnosis3.isEmpty {
+
+        // Tertiary diagnosis - check ICD-10 selection first, then custom text
+        if formData.diagnosis3ICD10 != .none {
+            diagnoses.append(formData.diagnosis3ICD10.rawValue)
+        } else if !formData.diagnosis3.isEmpty {
             var d = formData.diagnosis3
             if !formData.diagnosis3Code.isEmpty { d += " (\(formData.diagnosis3Code))" }
             diagnoses.append(d)
@@ -2820,56 +3196,12 @@ struct GPRPopupView: View {
     }
 
     private func generateLegalCriteriaText() -> String {
-        let pronoun = formData.patientGender == .male ? "He" : (formData.patientGender == .female ? "She" : "They")
-        let possessive = formData.patientGender == .male ? "His" : (formData.patientGender == .female ? "Her" : "Their")
-        var parts: [String] = []
-
-        if !formData.mentalDisorderPresent {
-            return "\(pronoun) does not currently present with a mental disorder."
+        // Use the gender-sensitive generated text from ClinicalReasonsData (same as A3)
+        let text = formData.legalClinicalReasons.generateTextWithPatient(combinedPatientInfo)
+        if text.isEmpty {
+            return "Select criteria above to generate clinical text..."
         }
-
-        parts.append("\(pronoun) presents with a mental disorder.")
-
-        if formData.criteriaWarrantingDetention {
-            parts.append("The criteria warranting detention are met.")
-
-            if formData.natureOfDisorder {
-                var natureDesc: [String] = []
-                if formData.natureRelapsing { natureDesc.append("relapsing and remitting") }
-                if formData.natureTreatmentResistant { natureDesc.append("treatment resistant") }
-                if formData.natureChronic { natureDesc.append("chronic and enduring") }
-                if !natureDesc.isEmpty {
-                    parts.append("\(possessive) condition is \(natureDesc.joined(separator: ", ")).")
-                }
-            }
-
-            if formData.degreeOfDisorder {
-                let severity = ["mild", "moderate", "several", "severe"][min(formData.symptomSeverity - 1, 3)]
-                var degreeText = "\(possessive) symptoms are \(severity) in degree"
-                if !formData.symptomsDescription.isEmpty {
-                    degreeText += ", including \(formData.symptomsDescription)"
-                }
-                parts.append(degreeText + ".")
-            }
-
-            // Necessity
-            var necessities: [String] = []
-            if formData.necessityPsychological { necessities.append("psychological intervention") }
-            if formData.necessityPharmacological { necessities.append("pharmacological intervention") }
-            if formData.necessityNursing { necessities.append("specialist nursing") }
-            if formData.necessityOther && !formData.necessityOtherDescription.isEmpty {
-                necessities.append(formData.necessityOtherDescription)
-            }
-            if !necessities.isEmpty {
-                parts.append("Treatment is necessary for \(necessities.joined(separator: ", ")).")
-            }
-
-            parts.append("Treatment should be provided in a \(formData.treatmentSetting.lowercased()).")
-        } else {
-            parts.append("The criteria warranting detention are not currently met.")
-        }
-
-        return parts.joined(separator: " ")
+        return text
     }
 
     private func generateStrengthsText() -> String {
@@ -3213,6 +3545,158 @@ struct GPRImportedEntryRow: View {
         .padding(8)
         .background(entry.selected ? Color.blue.opacity(0.1) : Color(.systemBackground))
         .cornerRadius(8)
+    }
+}
+
+// MARK: - GPR Medical History Imported Section (matches desktop amber/yellow styling)
+/// Displays imported medical history notes with desktop-matching amber theme
+/// Uses 📅 date format, collapsible entries, and checkbox selection
+struct GPRMedicalHistoryImportedSection: View {
+    @Binding var entries: [GPRImportedEntry]
+    @State private var isExpanded = true
+
+    // Amber/yellow theme colors matching desktop (#806000, rgba(180, 150, 50))
+    private let headerBg = Color(red: 255/255, green: 248/255, blue: 220/255)  // rgba(255, 248, 220, 0.95)
+    private let borderColor = Color(red: 180/255, green: 150/255, blue: 50/255).opacity(0.5)
+    private let textColor = Color(red: 128/255, green: 96/255, blue: 0)  // #806000
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header (matching desktop CollapsibleSection)
+            Button {
+                withAnimation { isExpanded.toggle() }
+            } label: {
+                HStack {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.caption.weight(.semibold))
+                    Text("Imported Data (\(entries.count))")
+                        .font(.headline.weight(.semibold))
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .foregroundColor(textColor)
+                .background(headerBg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(borderColor, lineWidth: 1)
+                )
+                .cornerRadius(isExpanded ? 0 : 6)
+                .clipShape(RoundedCorner(radius: 6, corners: isExpanded ? [.topLeft, .topRight] : .allCorners))
+            }
+            .buttonStyle(.plain)
+
+            // Content
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(entries.indices, id: \.self) { index in
+                        GPRMedicalHistoryEntryRow(entry: $entries[index])
+                    }
+                }
+                .padding(12)
+                .background(headerBg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(borderColor, lineWidth: 1)
+                )
+                .clipShape(RoundedCorner(radius: 6, corners: [.bottomLeft, .bottomRight]))
+            }
+        }
+    }
+}
+
+// MARK: - Medical History Entry Row (matching desktop imported entry style)
+struct GPRMedicalHistoryEntryRow: View {
+    @Binding var entry: GPRImportedEntry
+    @State private var isExpanded: Bool = false
+
+    // Amber theme colors
+    private let textColor = Color(red: 128/255, green: 96/255, blue: 0)  // #806000
+    private let toggleBg = Color(red: 180/255, green: 150/255, blue: 50/255).opacity(0.2)
+    private let bodyBg = Color(red: 255/255, green: 248/255, blue: 220/255).opacity(0.5)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Entry frame (matching desktop entryFrame style)
+            VStack(alignment: .leading, spacing: 6) {
+                // Header row with toggle, date, checkbox
+                HStack(spacing: 8) {
+                    // Toggle button (matching desktop ▸/▾)
+                    Button {
+                        withAnimation { isExpanded.toggle() }
+                    } label: {
+                        Text(isExpanded ? "▾" : "▸")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textColor)
+                            .frame(width: 22, height: 22)
+                            .background(toggleBg)
+                            .cornerRadius(4)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Date label with 📅 emoji (matching desktop style)
+                    if let date = entry.date {
+                        HStack(spacing: 4) {
+                            Text("📅")
+                            Text(formatDate(date))
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .foregroundColor(textColor)
+                        .onTapGesture { withAnimation { isExpanded.toggle() } }
+                    } else {
+                        Text("📅 No date")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(textColor.opacity(0.7))
+                    }
+
+                    Spacer()
+
+                    // Checkbox (matching desktop right-aligned checkbox)
+                    Toggle("", isOn: $entry.selected)
+                        .labelsHidden()
+                        .toggleStyle(CheckboxToggleStyle())
+                }
+
+                // Body text (hidden by default, matching desktop QTextEdit style)
+                if isExpanded {
+                    Text(entry.text)
+                        .font(.subheadline)
+                        .foregroundColor(Color(red: 51/255, green: 51/255, blue: 51/255))  // #333
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(bodyBg)
+                        .cornerRadius(6)
+                }
+            }
+            .padding(10)
+            .background(Color.white.opacity(0.95))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(red: 180/255, green: 150/255, blue: 50/255).opacity(0.4), lineWidth: 1)
+            )
+            .cornerRadius(8)
+        }
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMM yyyy"
+        return formatter.string(from: date)
+    }
+}
+
+// Helper for rounded corners on specific sides
+struct RoundedCorner: Shape {
+    var radius: CGFloat
+    var corners: UIRectCorner
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }
 
