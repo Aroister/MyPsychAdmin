@@ -3161,7 +3161,8 @@ class TribunalReportPage(QWidget):
                                 print(f"[TRIBUNAL] Got data from section 7 popup: {len(categories_to_use)} categories")
 
                 # For section 8 (current_admission), get raw notes DIRECTLY from stored data
-                if key == "current_admission":
+                # Skip if report data was imported (notes pipeline not needed)
+                if key == "current_admission" and not (hasattr(self, '_imported_report_data') and 'current_admission' in self._imported_report_data):
                     popup = self.popups[key]
 
                     # Use the FULL raw notes stored at page level (14185 notes, not categorized 6)
@@ -5750,13 +5751,16 @@ class TribunalReportPage(QWidget):
         # current_admission - use CollapsibleSection directly added to main_layout
         if section_key == 'current_admission':
             print(f"[TRIBUNAL] Section 8 (current_admission) - adding collapsible imported data")
-            from PySide6.QtWidgets import QLabel
+            from PySide6.QtWidgets import QLabel, QCheckBox
             from background_history_popup import CollapsibleSection
 
             # Hide the narrative section — it's only relevant for notes imports
             if hasattr(popup, 'narrative_section'):
                 popup.narrative_section.setVisible(False)
                 print(f"[TRIBUNAL] Hidden narrative section for report import")
+            # Also hide admissions section for report imports
+            if hasattr(popup, 'admissions_section'):
+                popup.admissions_section.setVisible(False)
 
             if hasattr(popup, 'main_layout') and popup.main_layout:
                 # Create CollapsibleSection
@@ -5773,13 +5777,33 @@ class TribunalReportPage(QWidget):
                 """)
                 import_section.title_label.setStyleSheet("""
                     QLabel {
-                        font-size: 17px;
+                        font-size: 21px;
                         font-weight: 600;
                         color: #806000;
                         background: transparent;
                         border: none;
                     }
                 """)
+
+                # Include checkbox in the header (right side)
+                include_imported_cb = QCheckBox()
+                include_imported_cb.setToolTip("Include imported data in report")
+                include_imported_cb.setStyleSheet("""
+                    QCheckBox {
+                        background: transparent;
+                        border: none;
+                    }
+                    QCheckBox::indicator {
+                        width: 20px;
+                        height: 20px;
+                    }
+                """)
+                include_imported_cb.stateChanged.connect(popup._send_to_card)
+                import_section.header.layout().addWidget(include_imported_cb)
+                popup.include_imported_cb = include_imported_cb
+
+                # Store imported report text on popup
+                popup._imported_report_text = content
 
                 # Create content widget
                 content_widget = QWidget()
@@ -5805,7 +5829,7 @@ class TribunalReportPage(QWidget):
                 # Insert at position 0 (top of main_layout)
                 popup.main_layout.insertWidget(0, import_section)
                 popup._imported_data_added = True
-                print(f"[TRIBUNAL] Added collapsible imported data to current_admission")
+                print(f"[TRIBUNAL] Added collapsible imported data to current_admission with include checkbox")
             return
 
         if section_key in specialized_sections:
@@ -7376,7 +7400,8 @@ class TribunalReportPage(QWidget):
         # Get raw notes for forensic risk analysis
         raw_notes = getattr(self, '_extracted_raw_notes', [])
 
-        if "forensic" in self.popups:
+        # Skip forensic notes population if report data was imported for forensic
+        if "forensic" in self.popups and not (hasattr(self, '_imported_report_data') and 'forensic' in self._imported_report_data):
             popup = self.popups["forensic"]
             if hasattr(popup, 'set_forensic_data'):
                 # Use combined notes analysis + extracted data

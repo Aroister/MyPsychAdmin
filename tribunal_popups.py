@@ -5325,16 +5325,28 @@ class TribunalCircumstancesPopup(QWidget):
         root.addWidget(main_scroll)
 
     def _send_to_card(self):
-        """Send narrative to card if checkbox is checked."""
-        if self.include_narrative_cb.isChecked() and self._narrative_text:
-            self.sent.emit(self._narrative_text)
+        """Send narrative or imported report text to card based on checkboxes."""
+        parts = []
+
+        # Check imported report data checkbox (report imports)
+        if hasattr(self, 'include_imported_cb') and self.include_imported_cb.isChecked():
+            imported = getattr(self, '_imported_report_text', '')
+            if imported:
+                parts.append(imported)
+
+        # Check narrative checkbox (notes imports)
+        if hasattr(self, 'include_narrative_cb') and self.include_narrative_cb.isChecked() and self._narrative_text:
+            parts.append(self._narrative_text)
+
+        if parts:
+            self.sent.emit("\n\n".join(parts))
         else:
             # Fallback to checked source notes
-            parts = []
+            note_parts = []
             for cb in self._extracted_checkboxes:
                 if cb.isChecked():
-                    parts.append(cb.property("full_text"))
-            combined = "\n\n".join(parts) if parts else ""
+                    note_parts.append(cb.property("full_text"))
+            combined = "\n\n".join(note_parts) if note_parts else ""
             self.sent.emit(combined)
 
     def _on_narrative_link_clicked(self, url):
