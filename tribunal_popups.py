@@ -6,8 +6,10 @@ from PySide6.QtCore import Qt, Signal, QDate, QUrl
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QDateEdit, QPushButton, QScrollArea, QFrame, QTextEdit, QTextBrowser, QSlider,
-    QTableWidget, QHeaderView, QCheckBox, QSizePolicy, QGridLayout, QComboBox
+    QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox, QSizePolicy, QGridLayout, QComboBox,
+    QApplication
 )
+from PySide6.QtGui import QColor
 from shared_widgets import add_lock_to_popup
 
 
@@ -4465,7 +4467,7 @@ class TribunalPsychHistoryPopup(QWidget):
         """)
         self.extracted_section.set_title_style("""
             QLabel {
-                font-size: 18px;
+                font-size: 21px;
                 font-weight: 600;
                 color: #806000;
                 background: transparent;
@@ -4520,6 +4522,7 @@ class TribunalPsychHistoryPopup(QWidget):
 
         self.extracted_section.set_content(extracted_content)
         self.extracted_section.setVisible(False)
+        self._imported_report_text = ""
         self.main_layout.addWidget(self.extracted_section)
 
         self.main_layout.addStretch()
@@ -5043,8 +5046,13 @@ class TribunalPsychHistoryPopup(QWidget):
 # ================================================================
 
 class TribunalCircumstancesPopup(QWidget):
-    """Popup for Circumstances leading to current admission with yellow collapsible entries.
-    Sends directly to card on click.
+    """Popup for Section 8: Circumstances leading to current admission.
+
+    Matching iOS PTRCurrentAdmissionNarrativeSection:
+    - Admissions Table section showing all detected admissions
+    - Progress Narrative section filtered to current admission (admission date + 2 weeks)
+    - Clickable references that scroll to and highlight source notes
+    - Copy to Card button
     """
 
     sent = Signal(str)
@@ -5054,6 +5062,11 @@ class TribunalCircumstancesPopup(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._entries = []
         self._extracted_checkboxes = []
+        self._narrative_text = ""
+        self._narrative_html = ""
+        self._entry_frames = {}
+        self._entry_body_texts = {}
+        self._admissions_data = []  # Store admission dates/durations
         self._setup_ui()
 
     def _setup_ui(self):
@@ -5076,9 +5089,168 @@ class TribunalCircumstancesPopup(QWidget):
         self.main_layout.setSpacing(8)
 
         # ====================================================
-        # IMPORTED DATA (gold/yellow collapsible entries)
+        # SECTION 1: ADMISSIONS TABLE (orange header)
         # ====================================================
-        self.extracted_section = CollapsibleSection("Imported Data", start_collapsed=True)
+        self.admissions_section = CollapsibleSection("Admissions", start_collapsed=False)
+        self.admissions_section.set_content_height(150)
+        self.admissions_section._min_height = 80
+        self.admissions_section._max_height = 300
+        self.admissions_section.set_header_style("""
+            QFrame {
+                background: rgba(255, 237, 213, 0.95);
+                border: 1px solid rgba(249, 115, 22, 0.4);
+                border-radius: 6px 6px 0 0;
+            }
+        """)
+        self.admissions_section.set_title_style("""
+            QLabel {
+                font-size: 18px;
+                font-weight: 600;
+                color: #c2410c;
+                background: transparent;
+                border: none;
+            }
+        """)
+
+        admissions_content = QWidget()
+        admissions_content.setStyleSheet("""
+            QWidget {
+                background: rgba(255, 237, 213, 0.95);
+                border: 1px solid rgba(249, 115, 22, 0.4);
+                border-top: none;
+                border-radius: 0 0 12px 12px;
+            }
+        """)
+
+        admissions_layout = QVBoxLayout(admissions_content)
+        admissions_layout.setContentsMargins(12, 10, 12, 10)
+        admissions_layout.setSpacing(6)
+
+        # Table for admissions
+        self.admissions_table = QTableWidget()
+        self.admissions_table.setColumnCount(3)
+        self.admissions_table.setHorizontalHeaderLabels(["Admission", "Discharge", "Duration"])
+        self.admissions_table.horizontalHeader().setStretchLastSection(True)
+        self.admissions_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.admissions_table.verticalHeader().setVisible(False)
+        self.admissions_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.admissions_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.admissions_table.setStyleSheet("""
+            QTableWidget {
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(249, 115, 22, 0.3);
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            QHeaderView::section {
+                background: rgba(249, 115, 22, 0.2);
+                font-weight: 600;
+                padding: 6px;
+                border: none;
+            }
+        """)
+        admissions_layout.addWidget(self.admissions_table)
+
+        self.admissions_section.set_content(admissions_content)
+        self.admissions_section.setVisible(False)
+        self.main_layout.addWidget(self.admissions_section)
+
+        # ====================================================
+        # SECTION 2: NARRATIVE SUMMARY (orange, for current admission)
+        # ====================================================
+        self.narrative_section = CollapsibleSection("Current Admission Narrative", start_collapsed=False)
+        self.narrative_section.set_content_height(300)
+        self.narrative_section._min_height = 150
+        self.narrative_section._max_height = 600
+        self.narrative_section.set_header_style("""
+            QFrame {
+                background: rgba(255, 237, 213, 0.95);
+                border: 1px solid rgba(249, 115, 22, 0.4);
+                border-radius: 6px 6px 0 0;
+            }
+        """)
+        self.narrative_section.set_title_style("""
+            QLabel {
+                font-size: 18px;
+                font-weight: 600;
+                color: #c2410c;
+                background: transparent;
+                border: none;
+            }
+        """)
+
+        narrative_content = QWidget()
+        narrative_content.setStyleSheet("""
+            QWidget {
+                background: rgba(255, 237, 213, 0.95);
+                border: 1px solid rgba(249, 115, 22, 0.4);
+                border-top: none;
+                border-radius: 0 0 12px 12px;
+            }
+        """)
+
+        narrative_layout = QVBoxLayout(narrative_content)
+        narrative_layout.setContentsMargins(12, 10, 12, 10)
+        narrative_layout.setSpacing(8)
+
+        # Checkbox to include narrative
+        self.include_narrative_cb = QCheckBox("Include narrative in report")
+        self.include_narrative_cb.setStyleSheet("""
+            QCheckBox {
+                font-size: 15px;
+                font-weight: 600;
+                color: #c2410c;
+                background: transparent;
+            }
+            QCheckBox::indicator { width: 16px; height: 16px; }
+        """)
+        self.include_narrative_cb.setChecked(True)
+        self.include_narrative_cb.stateChanged.connect(self._send_to_card)
+        narrative_layout.addWidget(self.include_narrative_cb)
+
+        # Date range label
+        self.date_range_label = QLabel("")
+        self.date_range_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #9a3412;
+                background: transparent;
+                border: none;
+            }
+        """)
+        narrative_layout.addWidget(self.date_range_label)
+
+        # Narrative text display with clickable links
+        narrative_scroll = QScrollArea()
+        narrative_scroll.setWidgetResizable(True)
+        narrative_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        narrative_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+
+        self.narrative_text_widget = QTextBrowser()
+        self.narrative_text_widget.setReadOnly(True)
+        self.narrative_text_widget.setOpenLinks(False)
+        self.narrative_text_widget.anchorClicked.connect(self._on_narrative_link_clicked)
+        self.narrative_text_widget.setStyleSheet("""
+            QTextBrowser {
+                font-size: 15px;
+                color: #1f2937;
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(249, 115, 22, 0.3);
+                border-radius: 6px;
+                padding: 8px;
+            }
+        """)
+        narrative_scroll.setWidget(self.narrative_text_widget)
+        narrative_layout.addWidget(narrative_scroll)
+
+        self.narrative_section.set_content(narrative_content)
+        self.narrative_section.setVisible(False)
+        self.main_layout.addWidget(self.narrative_section)
+
+        # ====================================================
+        # SECTION 3: IMPORTED DATA (gold/yellow collapsible entries)
+        # ====================================================
+        self.extracted_section = CollapsibleSection("Source Notes", start_collapsed=True)
         self.extracted_section.set_content_height(300)
         self.extracted_section._min_height = 100
         self.extracted_section._max_height = 500
@@ -5153,18 +5325,536 @@ class TribunalCircumstancesPopup(QWidget):
         root.addWidget(main_scroll)
 
     def _send_to_card(self):
-        """Send checked items directly to card (replaces card content)."""
-        parts = []
-        for cb in self._extracted_checkboxes:
-            if cb.isChecked():
-                parts.append(cb.property("full_text"))
-        combined = "\n\n".join(parts) if parts else ""
-        self.sent.emit(combined)
+        """Send narrative to card if checkbox is checked."""
+        if self.include_narrative_cb.isChecked() and self._narrative_text:
+            self.sent.emit(self._narrative_text)
+        else:
+            # Fallback to checked source notes
+            parts = []
+            for cb in self._extracted_checkboxes:
+                if cb.isChecked():
+                    parts.append(cb.property("full_text"))
+            combined = "\n\n".join(parts) if parts else ""
+            self.sent.emit(combined)
+
+    def _on_narrative_link_clicked(self, url):
+        """Handle clicks on references in narrative - show ALL source notes in panel."""
+        from progress_panel import get_reference
+        try:
+            # Extract ref_id from URL (format: #ref_1 or file:#ref_1)
+            url_str = url.toString()
+            ref_id = None
+            if '#' in url_str:
+                ref_id = url_str.split('#')[-1]
+
+            if not ref_id:
+                print(f"[TribunalCircumstancesPopup] No ref_id in URL: {url_str}")
+                return
+
+            # Get reference data from tracker
+            ref_data = get_reference(ref_id)
+            if not ref_data:
+                print(f"[TribunalCircumstancesPopup] No reference found for: {ref_id}")
+                return
+
+            # Find matching items in our stored items
+            if not hasattr(self, '_all_items') or not self._all_items:
+                print(f"[TribunalCircumstancesPopup] No items stored")
+                return
+
+            # Build list of entries to display
+            entries_to_show = []
+
+            if ref_data.get('multi'):
+                # Multi-entry reference - show ALL entries
+                ref_entries = ref_data.get('entries', [])
+                print(f"[TribunalCircumstancesPopup] Multi-entry reference with {len(ref_entries)} entries")
+
+                for ref_entry in ref_entries:
+                    entry_date = ref_entry.get('date')
+                    entry_keyword = ref_entry.get('keyword', ref_data.get('matched', ''))
+                    entry_snippet = ref_entry.get('content_snippet', '')
+
+                    # Find matching item
+                    matched_item = self._find_matching_item(entry_date, entry_keyword, entry_snippet)
+                    if matched_item:
+                        entries_to_show.append({
+                            'item': matched_item,
+                            'keyword': entry_keyword,
+                            'snippet': entry_snippet
+                        })
+            else:
+                # Single entry reference
+                source_date = ref_data.get('date')
+                keyword = ref_data.get('matched', '')
+                content_snippet = ref_data.get('content_snippet', '')
+
+                matched_item = self._find_matching_item(source_date, keyword, content_snippet)
+                if matched_item:
+                    entries_to_show.append({
+                        'item': matched_item,
+                        'keyword': keyword,
+                        'snippet': content_snippet
+                    })
+
+            if not entries_to_show:
+                print(f"[TribunalCircumstancesPopup] No matching items found")
+                return
+
+            print(f"[TribunalCircumstancesPopup] Showing {len(entries_to_show)} source note(s)")
+
+            # Clear existing source notes and checkbox tracking
+            self._source_checkboxes = []
+            while self.extracted_checkboxes_layout.count():
+                child = self.extracted_checkboxes_layout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+
+            # Show the source notes section
+            self.extracted_section.setVisible(True)
+
+            # Add header with count, add to card button, and close button
+            header_frame = QFrame()
+            header_frame.setStyleSheet("background: transparent; border: none;")
+            header_layout = QHBoxLayout(header_frame)
+            header_layout.setContentsMargins(0, 0, 0, 8)
+            header_layout.setSpacing(8)
+
+            count_label = QLabel(f"📋 {len(entries_to_show)} Source Note{'s' if len(entries_to_show) > 1 else ''}")
+            count_label.setStyleSheet("""
+                QLabel {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #806000;
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            header_layout.addWidget(count_label)
+            header_layout.addStretch()
+
+            # Add Selected to Card button
+            add_selected_btn = QPushButton("📝 Add Selected to Card")
+            add_selected_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            add_selected_btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(100, 150, 50, 0.3);
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    color: #4a6a2a;
+                    padding: 4px 10px;
+                }
+                QPushButton:hover { background: rgba(100, 150, 50, 0.5); }
+            """)
+            add_selected_btn.clicked.connect(self._add_selected_sources_to_card)
+            header_layout.addWidget(add_selected_btn)
+
+            close_btn = QPushButton("✕ Close")
+            close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            close_btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(180, 150, 50, 0.2);
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    color: #806000;
+                    padding: 4px 10px;
+                }
+                QPushButton:hover { background: rgba(180, 150, 50, 0.35); }
+            """)
+            close_btn.clicked.connect(lambda: self.extracted_section.setVisible(False))
+            header_layout.addWidget(close_btn)
+
+            self.extracted_checkboxes_layout.addWidget(header_frame)
+
+            # Create a frame for EACH source note entry
+            for entry_data in entries_to_show:
+                self._create_source_note_frame(entry_data['item'], entry_data['keyword'], entry_data['snippet'])
+
+        except Exception as ex:
+            print(f"[TribunalCircumstancesPopup] Link click error: {ex}")
+            import traceback
+            traceback.print_exc()
+
+    def _find_matching_item(self, source_date, keyword, content_snippet):
+        """Find a matching item in _all_items by date/content/keyword."""
+        import re
+
+        # Keyword variants - maps keywords to related terms that might appear in actual text
+        keyword_variants = {
+            'refus': ['refus', 'noncomplian', 'non-complian', 'decline', 'reject', 'unwilling', 'disengage'],
+            'aggression': ['aggress', 'violen', 'assault', 'attack', 'hit', 'punch', 'threat', 'seclusion', 'secluded', 'restrain'],
+            'self-harm': ['self-harm', 'self harm', 'cutting', 'ligature', 'overdose', 'suicid'],
+            'police': ['police', 'officer', 'arrest', 'custody'],
+            'drug': ['drug', 'substance', 'cannabis', 'cocaine', 'alcohol', 'intox'],
+            'delusion': ['delusion', 'paranoi', 'hallucin', 'voices', 'psychotic'],
+            'agitation': ['agitat', 'irritab', 'frustrat', 'angry', 'upset'],
+            'withdraw': ['withdraw', 'isolat', 'mute', 'reclusive'],
+            'stable': ['stable', 'settled', 'calm', 'euthymic', 'pleasant'],
+        }
+
+        def get_variants(kw):
+            kw_lower = kw.lower()
+            for key, variants in keyword_variants.items():
+                if key in kw_lower or kw_lower in key:
+                    return variants
+            return [kw_lower]
+
+        def variant_in_text(variant, text):
+            """Check if variant appears as a STANDALONE word (not as part of another word like unsettled)."""
+            # Use strict word boundary - \bsettled\b won't match "unsettled"
+            pattern = re.compile(r'\b' + re.escape(variant) + r'\b', re.IGNORECASE)
+            return pattern.search(text) is not None
+
+        # Helper to check if note contains the keyword or related terms
+        def note_has_keyword(item_text, kw):
+            """Check if note actually contains the keyword - REQUIRED for all matches."""
+            if not kw:
+                return True
+            variants = get_variants(kw)
+            for variant in variants:
+                if variant_in_text(variant, item_text):
+                    return True
+            return False
+
+        # PRIORITY 1: Match by content snippet AND verify keyword is present
+        if content_snippet and len(content_snippet) > 20:
+            for chunk_size in [150, 100, 80, 60, 40]:
+                if len(content_snippet) >= chunk_size:
+                    snippet_chunk = content_snippet[:chunk_size]
+                    for item in self._all_items:
+                        item_text = item.get('text', item.get('content', ''))
+                        if snippet_chunk in item_text:
+                            # VERIFY keyword is in the note - don't return wrong notes
+                            if note_has_keyword(item_text, keyword):
+                                print(f"[_find_matching_item] Matched by snippet + keyword verified")
+                                return item
+
+        # PRIORITY 2: Match by keyword variants ONLY - note MUST contain the keyword
+        if keyword:
+            variants = get_variants(keyword)
+            for item in self._all_items:
+                item_text = item.get('text', item.get('content', ''))
+                for variant in variants:
+                    if variant_in_text(variant, item_text):
+                        print(f"[_find_matching_item] Matched by variant '{variant}'")
+                        return item
+
+        # PRIORITY 3: Date match only if NO keyword specified
+        if source_date and not keyword:
+            for item in self._all_items:
+                item_date = item.get('date')
+                if item_date:
+                    if hasattr(source_date, 'date') and hasattr(item_date, 'date'):
+                        if source_date.date() == item_date.date():
+                            return item
+                    elif source_date == item_date:
+                        return item
+
+        print(f"[_find_matching_item] No match found for keyword='{keyword}', snippet='{content_snippet[:50] if content_snippet else ''}'...")
+        return None
+
+    def _create_source_note_frame(self, matched_item, keyword, content_snippet):
+        """Create a single source note frame with highlighting, collapse/expand, and checkbox."""
+        import html as html_module
+        import re
+
+        text = matched_item.get('text', matched_item.get('content', ''))
+        item_date = matched_item.get('date')
+        date_str = item_date.strftime('%d %b %Y') if item_date and hasattr(item_date, 'strftime') else 'Unknown date'
+
+        # Create entry frame
+        entry_frame = QFrame()
+        entry_frame.setObjectName("entryFrame")
+        entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        entry_frame.setStyleSheet("""
+            QFrame#entryFrame {
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid rgba(180, 150, 50, 0.4);
+                border-radius: 8px;
+                padding: 4px;
+                margin-bottom: 8px;
+            }
+        """)
+        entry_layout = QVBoxLayout(entry_frame)
+        entry_layout.setContentsMargins(10, 8, 10, 8)
+        entry_layout.setSpacing(6)
+
+        # Header with collapse button, date, and checkbox
+        header_row = QHBoxLayout()
+        header_row.setSpacing(8)
+
+        # Collapse/Expand button on the left
+        collapse_btn = QPushButton("−")
+        collapse_btn.setFixedSize(24, 24)
+        collapse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        collapse_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(180, 150, 50, 0.2);
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: bold;
+                color: #806000;
+            }
+            QPushButton:hover { background: rgba(180, 150, 50, 0.35); }
+        """)
+        header_row.addWidget(collapse_btn)
+
+        date_label = QLabel(f"📅 {date_str}")
+        date_label.setStyleSheet("""
+            QLabel {
+                font-size: 15px;
+                font-weight: 600;
+                color: #806000;
+                background: transparent;
+                border: none;
+            }
+        """)
+        header_row.addWidget(date_label)
+        header_row.addStretch()
+
+        # Checkbox on the right to add to card
+        add_checkbox = QCheckBox("Add to Card")
+        add_checkbox.setStyleSheet("""
+            QCheckBox {
+                font-size: 13px;
+                color: #806000;
+                background: transparent;
+                border: none;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+            }
+            QCheckBox::indicator:unchecked {
+                border: 2px solid #806000;
+                border-radius: 3px;
+                background: white;
+            }
+            QCheckBox::indicator:checked {
+                border: 2px solid #806000;
+                border-radius: 3px;
+                background: #806000;
+            }
+        """)
+        # Store the text for later retrieval
+        add_checkbox.setProperty("source_text", f"[{date_str}]\n{text}")
+        header_row.addWidget(add_checkbox)
+
+        # Track checkbox for "Add Selected to Card" functionality
+        if not hasattr(self, '_source_checkboxes'):
+            self._source_checkboxes = []
+        self._source_checkboxes.append(add_checkbox)
+
+        entry_layout.addLayout(header_row)
+
+        # Body text with highlighting
+        body_text = QTextEdit()
+        body_text.setReadOnly(True)
+        body_text.setFrameShape(QFrame.Shape.NoFrame)
+        body_text.setStyleSheet("""
+            QTextEdit {
+                font-size: 14px;
+                color: #333;
+                background: rgba(255, 248, 220, 0.5);
+                border: none;
+                border-radius: 4px;
+                padding: 6px;
+            }
+        """)
+
+        # Start collapsed by default
+        body_text.setVisible(False)
+        collapse_btn.setText("+")
+
+        # Connect collapse button to toggle body visibility
+        def toggle_collapse():
+            if body_text.isVisible():
+                body_text.setVisible(False)
+                collapse_btn.setText("+")
+            else:
+                body_text.setVisible(True)
+                collapse_btn.setText("−")
+        collapse_btn.clicked.connect(toggle_collapse)
+
+        # Apply highlighting
+        escaped_text = html_module.escape(text)
+        text_lower = text.lower()
+        highlighted = escaped_text
+        highlight_term = None
+
+        # Clinical term variants - USE STEMS to match word families (e.g., "noncomplian" matches "noncompliance" AND "noncompliant")
+        keyword_variants = {
+            'aggression': ['aggress', 'violen', 'assault', 'attack', 'punch', 'kick', 'restrain', 'seclusion', 'threaten', 'struck', 'slap'],
+            'no aggression': ['no aggress', 'no violen', 'nil aggress', 'not aggress', 'calm', 'settled', 'no incident', 'nil incident'],
+            'self-harm': ['self-harm', 'self harm', 'cutting', 'ligature', 'overdose', 'suicid', 'harm herself', 'harm himself', 'scratch', 'lacerat'],
+            'no self-harm': ['no self-harm', 'no self harm', 'denied self', 'no thoughts of', 'nil self', 'no suicid'],
+            'police': ['police', 'officer', 'arrest', 'custody', 'detain', 'emergency service', 'MAPPA'],
+            'drug': ['drug', 'substance', 'cannabis', 'cocaine', 'amphetamine', 'alcohol', 'intoxic', 'illicit', 'spice', 'heroin'],
+            'delusion': ['delusion', 'paranoi', 'psychotic', 'psychosis', 'thought disorder', 'grandios', 'persecut'],
+            'no delusion': ['no delusion', 'not delusion', 'no halluc', 'reality based', 'no psychotic'],
+            'agitation': ['agitat', 'irritab', 'frustrat', 'angry', 'upset', 'distress', 'arous', 'raised voice', 'hostil'],
+            'withdraw': ['withdraw', 'isolat', 'mute', 'reclusive', 'remained in room', 'stayed in bed', 'disengage'],
+            'refus': ['refus', 'decline', 'reject', 'noncomplian', 'non-complian', 'disengage', 'unwilling', 'compliance'],
+            'stable': ['stable', 'settled', 'calm', 'bright', 'pleasant', 'appropriate', 'euthymic', 'well presented', 'good rapport', 'engaged well'],
+            'discharged': ['discharg', 'left', 'transfer', 'community'],
+            'admitted': ['admit', 'admission', 'arrived', 'presented', 'detained'],
+            'section 3': ['section 3', 'S3', 's.3', 'sec 3'],
+            'section 2': ['section 2', 'S2', 's.2', 'sec 2'],
+            'section 37': ['section 37', 'S37', 's.37', '37/41'],
+            'section 47': ['section 47', 'S47', 's.47', '47/49'],
+            'cto': ['CTO', 'community treatment order'],
+            'informal': ['informal', 'voluntary', 'voluntarily'],
+            'escorted': ['escorted', 'escorted leave', 'accompanied'],
+            'unescorted': ['unescorted', 'unescorted leave', 'unaccompanied'],
+            'ground leave': ['ground leave', 'grounds', 'garden leave'],
+        }
+
+        def find_word_for_variant(variant, search_text):
+            """Find variant as a STANDALONE word only - 'settled' won't match 'unsettled'."""
+            # Use strict word boundary - no prefix matching
+            pattern = re.compile(r'\b' + re.escape(variant) + r'[a-z]*\b', re.IGNORECASE)
+            match = pattern.search(search_text)
+            if match:
+                return match.group(0)
+            return None
+
+        # STRATEGY 1: Find term in content_snippet first (most accurate - this is what was matched)
+        if content_snippet and keyword:
+            keyword_lower = keyword.lower()
+            variants = keyword_variants.get(keyword_lower, [])
+            if len(keyword_lower) >= 3:
+                variants = list(variants) + [keyword_lower, keyword_lower[:5], keyword_lower[:4]]
+            for variant in variants:
+                found = find_word_for_variant(variant, content_snippet)
+                if found and found.lower() in text_lower:
+                    highlight_term = found
+                    break
+
+        # STRATEGY 2: Try variants against full text (before falling back to generic scan)
+        if not highlight_term and keyword:
+            keyword_lower = keyword.lower()
+            variants = keyword_variants.get(keyword_lower, [])
+            if len(keyword_lower) >= 3:
+                variants = list(variants) + [keyword_lower, keyword_lower[:5], keyword_lower[:4]]
+            for variant in variants:
+                found = find_word_for_variant(variant, text)
+                if found and len(found) > 2:
+                    highlight_term = found
+                    break
+
+        # STRATEGY 3: Direct keyword match
+        if not highlight_term and keyword and len(keyword) > 2:
+            found = find_word_for_variant(keyword, text)
+            if found and found.lower() not in ['the', 'and', 'was', 'had', 'has', 'been', 'with', 'for']:
+                highlight_term = found
+
+        # STRATEGY 4: Clinical keyword scan - ONLY if keyword-based strategies failed
+        # Skip hallucinations etc. if we're looking for engagement/refusal terms
+        if not highlight_term and keyword:
+            # Only use fallback terms that are related to the keyword category
+            keyword_lower = keyword.lower()
+            if 'refus' in keyword_lower or 'engag' in keyword_lower:
+                fallback_terms = ['noncomplian', 'non-complian', 'refus', 'decline', 'unwilling', 'disengage']
+            elif 'aggress' in keyword_lower:
+                fallback_terms = ['aggress', 'violen', 'threat', 'attack', 'assault']
+            elif 'self' in keyword_lower or 'harm' in keyword_lower:
+                fallback_terms = ['self-harm', 'suicid', 'ligature', 'overdose', 'cutting']
+            elif 'delusion' in keyword_lower or 'psycho' in keyword_lower:
+                fallback_terms = ['delusion', 'hallucin', 'paranoi', 'psychotic', 'voices']
+            else:
+                fallback_terms = []
+
+            for term in fallback_terms:
+                found = find_word_for_variant(term, text)
+                if found and len(found) > 3:
+                    highlight_term = found
+                    break
+                    break
+
+        # Apply highlighting
+        if highlight_term:
+            def highlight_match(match):
+                return f'<span style="background-color: #ffff00; font-weight: bold;">{match.group(0)}</span>'
+            pattern = re.compile(re.escape(highlight_term), re.IGNORECASE)
+            highlighted = pattern.sub(highlight_match, escaped_text)
+
+        # Set HTML content
+        html_content = f"""
+        <html><body style="font-family: -apple-system, sans-serif; font-size: 14px;">
+        <pre style='white-space: pre-wrap; word-wrap: break-word; margin: 0;'>{highlighted}</pre>
+        </body></html>
+        """
+        body_text.setHtml(html_content)
+
+        # Scroll to highlight
+        if highlight_term:
+            from PySide6.QtCore import QTimer
+            def scroll_to_highlight():
+                cursor = body_text.document().find(highlight_term, 0)
+                if not cursor.isNull():
+                    body_text.setTextCursor(cursor)
+                    body_text.ensureCursorVisible()
+            QTimer.singleShot(100, scroll_to_highlight)
+
+        # Set height based on content
+        doc = body_text.document()
+        doc.setTextWidth(400)
+        content_height = int(doc.size().height()) + 20
+        body_text.setFixedHeight(min(content_height, 200))
+
+        entry_layout.addWidget(body_text)
+        self.extracted_checkboxes_layout.addWidget(entry_frame)
+
+    def _add_selected_sources_to_card(self):
+        """Add all checked source notes to the card text."""
+        if not hasattr(self, '_source_checkboxes'):
+            return
+
+        selected_texts = []
+        for checkbox in self._source_checkboxes:
+            if checkbox.isChecked():
+                source_text = checkbox.property("source_text")
+                if source_text:
+                    selected_texts.append(source_text)
+
+        if not selected_texts:
+            return
+
+        # Combine selected texts
+        combined_text = "\n\n---\n\n".join(selected_texts)
+
+        # Append to the main text edit (circumstances_text)
+        if hasattr(self, 'circumstances_text'):
+            current = self.circumstances_text.toPlainText()
+            if current.strip():
+                new_text = current + "\n\n--- SOURCE NOTES ---\n\n" + combined_text
+            else:
+                new_text = combined_text
+            self.circumstances_text.setPlainText(new_text)
+
+        # Uncheck all after adding
+        for checkbox in self._source_checkboxes:
+            checkbox.setChecked(False)
 
     def set_entries(self, items: list, date_info: str = ""):
-        """Display entries with collapsible dated entry boxes in yellow/gold UI."""
-        self._entries = items
+        """Display entries and generate narrative for current admission.
 
+        Matching iOS PTRCurrentAdmissionNarrativeSection:
+        - Detect admissions from timeline
+        - Filter notes to most recent admission (admission date + 2 weeks)
+        - Generate narrative with clickable references
+        """
+        from datetime import datetime, timedelta
+        from timeline_builder import build_timeline_with_external_check
+
+        self._entries = items
+        self._entry_frames.clear()
+        self._entry_body_texts.clear()
+
+        # Clear existing checkboxes
         for cb in self._extracted_checkboxes:
             cb.deleteLater()
         self._extracted_checkboxes.clear()
@@ -5174,6 +5864,7 @@ class TribunalCircumstancesPopup(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
+        # Convert string to items if needed
         if isinstance(items, str):
             if items.strip():
                 items = [{"date": None, "text": p.strip()} for p in items.split("\n\n") if p.strip()]
@@ -5182,136 +5873,176 @@ class TribunalCircumstancesPopup(QWidget):
 
         if not items:
             self.extracted_section.setVisible(False)
+            self.narrative_section.setVisible(False)
+            self.admissions_section.setVisible(False)
             return
 
-        self.extracted_section.setVisible(True)
+        # ====================================================
+        # BUILD TIMELINE AND FIND ADMISSIONS
+        # ====================================================
+        try:
+            notes_for_timeline = [
+                {'date': e['date'], 'datetime': e['date'],
+                 'content': e.get('content', e.get('text', '')),
+                 'text': e.get('content', e.get('text', '')),
+                 'source': e.get('source', '')}
+                for e in items if e.get('date')
+            ]
 
-        # Sort by date (newest first)
-        def get_sort_date(item):
-            dt = item.get("date")
-            if dt is None:
-                return ""
-            if hasattr(dt, "strftime"):
-                return dt.strftime("%Y-%m-%d")
-            return str(dt)
+            episodes = build_timeline_with_external_check(notes_for_timeline,
+                                                          check_external=False, debug=False)
+            inpatient_episodes = [ep for ep in episodes if ep.get('type') == 'inpatient']
 
-        sorted_items = sorted(items, key=get_sort_date, reverse=True)
+            # Populate admissions table
+            if inpatient_episodes:
+                self.admissions_section.setVisible(True)
+                self.admissions_table.setRowCount(len(inpatient_episodes))
 
-        for item in sorted_items:
-            dt = item.get("date")
-            text = item.get("text", "").strip()
-            if not text:
-                continue
+                for i, ep in enumerate(inpatient_episodes):
+                    start = ep['start']
+                    end = ep['end']
 
-            if dt:
-                if hasattr(dt, "strftime"):
-                    date_str = dt.strftime("%d %b %Y")
-                else:
-                    date_str = str(dt)
-            else:
-                date_str = "No date"
-
-            entry_frame = QFrame()
-            entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-            entry_frame.setStyleSheet("""
-                QFrame#entryFrame {
-                    background: rgba(255, 255, 255, 0.95);
-                    border: 1px solid rgba(180, 150, 50, 0.4);
-                    border-radius: 8px;
-                    padding: 4px;
-                }
-            """)
-            entry_layout = QVBoxLayout(entry_frame)
-            entry_layout.setContentsMargins(10, 8, 10, 8)
-            entry_layout.setSpacing(6)
-            entry_layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinAndMaxSize)
-
-            header_row = QHBoxLayout()
-            header_row.setSpacing(8)
-
-            toggle_btn = QPushButton("▸")
-            toggle_btn.setFixedSize(22, 22)
-            toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            toggle_btn.setStyleSheet("""
-                QPushButton {
-                    background: rgba(180, 150, 50, 0.2);
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 17px;
-                    font-weight: bold;
-                    color: #806000;
-                }
-                QPushButton:hover { background: rgba(180, 150, 50, 0.35); }
-            """)
-            header_row.addWidget(toggle_btn)
-
-            date_label = QLabel(f"📅 {date_str}")
-            date_label.setStyleSheet("""
-                QLabel {
-                    font-size: 17px;
-                    font-weight: 600;
-                    color: #806000;
-                    background: transparent;
-                    border: none;
-                }
-            """)
-            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
-            header_row.addWidget(date_label)
-            header_row.addStretch()
-
-            cb = QCheckBox()
-            cb.setProperty("full_text", text)
-            cb.setFixedSize(18, 18)
-            cb.setStyleSheet("""
-                QCheckBox { background: transparent; }
-                QCheckBox::indicator { width: 16px; height: 16px; }
-            """)
-            cb.stateChanged.connect(self._send_to_card)
-            header_row.addWidget(cb)
-
-            entry_layout.addLayout(header_row)
-
-            body_text = QTextEdit()
-            body_text.setPlainText(text)
-            body_text.setReadOnly(True)
-            body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-            body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-            body_text.setStyleSheet("""
-                QTextEdit {
-                    font-size: 17px;
-                    color: #333;
-                    background: rgba(255, 248, 220, 0.5);
-                    border: none;
-                    border-radius: 4px;
-                    padding: 6px;
-                }
-            """)
-            body_text.setVisible(False)
-
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
-
-            def make_toggle(btn, body):
-                def toggle():
-                    if body.isVisible():
-                        body.setVisible(False)
-                        btn.setText("▸")
+                    # Calculate duration
+                    days = (end - start).days
+                    if days < 7:
+                        duration_str = f"{days} day{'s' if days != 1 else ''}"
+                    elif days < 30:
+                        weeks = days // 7
+                        duration_str = f"{weeks} week{'s' if weeks != 1 else ''}"
+                    elif days < 365:
+                        months = days // 30
+                        duration_str = f"{months} month{'s' if months != 1 else ''}"
                     else:
-                        body.setVisible(True)
-                        btn.setText("▾")
-                return toggle
+                        years = days // 365
+                        rem_months = (days % 365) // 30
+                        duration_str = f"{years}y {rem_months}m" if rem_months else f"{years} year{'s' if years != 1 else ''}"
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
-            date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
+                    # Check if ongoing (end date is recent)
+                    is_ongoing = (datetime.now() - end).days < 2
 
-            entry_layout.addWidget(body_text)
-            self._extracted_checkboxes.append(cb)
-            self.extracted_checkboxes_layout.addWidget(entry_frame)
+                    self.admissions_table.setItem(i, 0, QTableWidgetItem(start.strftime("%d %b %Y")))
+                    self.admissions_table.setItem(i, 1, QTableWidgetItem("Ongoing" if is_ongoing else end.strftime("%d %b %Y")))
+                    self.admissions_table.setItem(i, 2, QTableWidgetItem(duration_str))
+
+                # Get most recent admission for narrative filtering
+                last_admission = inpatient_episodes[-1]
+                admission_start = last_admission['start']
+                two_weeks_post = admission_start + timedelta(days=14)
+
+                # Filter items to admission period
+                filtered_items = [
+                    e for e in items
+                    if e.get('date') and admission_start <= e['date'] <= two_weeks_post
+                ]
+
+                # Update date range label
+                self.date_range_label.setText(
+                    f"Showing notes from {admission_start.strftime('%d %b %Y')} to {two_weeks_post.strftime('%d %b %Y')} "
+                    f"({len(filtered_items)} entries)"
+                )
+
+                # Generate narrative for filtered entries
+                self._generate_narrative(filtered_items)
+            else:
+                self.admissions_section.setVisible(False)
+                self.date_range_label.setText("No admissions detected")
+                filtered_items = items
+                self._generate_narrative(items)
+
+        except Exception as ex:
+            print(f"[TribunalCircumstancesPopup] Timeline error: {ex}")
+            self.admissions_section.setVisible(False)
+            filtered_items = items
+            self._generate_narrative(items)
+
+        # ====================================================
+        # STORE SOURCE NOTES (but don't display - only show when link clicked)
+        # ====================================================
+        self.extracted_section.setVisible(False)  # Hidden until link clicked
+        self._all_items = items  # Store for lookup when links clicked
+
+        # Build lookup by date for narrative link clicks
+        self._items_by_date = {}
+        for item in items:
+            dt = item.get("date")
+            if dt and hasattr(dt, "strftime"):
+                date_key = dt.strftime("%d %b %Y")
+                if date_key not in self._items_by_date:
+                    self._items_by_date[date_key] = []
+                self._items_by_date[date_key].append(item)
+
+    def _generate_narrative(self, items: list):
+        """Generate narrative summary for the current admission entries.
+
+        Uses TribunalProgressPopup's narrative generation to create a flowing
+        clinical narrative with clickable references.
+        """
+        if not items:
+            self.narrative_section.setVisible(False)
+            self._narrative_text = ""
+            self._narrative_html = ""
+            return
+
+        self.narrative_section.setVisible(True)
+
+        try:
+            # Create a temporary TribunalProgressPopup instance to use its narrative generation
+            temp_popup = TribunalProgressPopup.__new__(TribunalProgressPopup)
+            temp_popup._entries = []
+            temp_popup._entry_frames = {}
+            temp_popup._entry_body_texts = {}
+
+            # Prepare entries with content field
+            prepared_entries = []
+            for item in items:
+                content = item.get('content', item.get('text', ''))
+                if not content:
+                    continue
+
+                date = item.get('date')
+                if not date:
+                    continue
+
+                prepared_entries.append({
+                    'date': date,
+                    'datetime': date,
+                    'content': content,
+                    'text': content,
+                    'type': item.get('type', ''),
+                    'originator': item.get('originator', ''),
+                })
+
+            if not prepared_entries:
+                self._narrative_text = ""
+                self._narrative_html = ""
+                self.narrative_text_widget.setPlainText("No entries to generate narrative from.")
+                return
+
+            # Generate narrative using TribunalProgressPopup's method
+            narrative_plain, narrative_html = temp_popup._generate_narrative_summary(prepared_entries)
+
+            self._narrative_text = narrative_plain
+            self._narrative_html = narrative_html
+
+            # Display in text browser
+            if narrative_html:
+                self.narrative_text_widget.setHtml(narrative_html)
+            elif narrative_plain:
+                self.narrative_text_widget.setPlainText(narrative_plain)
+            else:
+                self.narrative_text_widget.setPlainText("No narrative generated from entries.")
+
+            # Auto-send to card if checkbox is checked
+            if self.include_narrative_cb.isChecked():
+                self._send_to_card()
+
+        except Exception as ex:
+            print(f"[TribunalCircumstancesPopup] Narrative generation error: {ex}")
+            import traceback
+            traceback.print_exc()
+            self._narrative_text = ""
+            self._narrative_html = ""
+            self.narrative_text_widget.setPlainText(f"Error generating narrative: {ex}")
 
 
 # ================================================================
@@ -5391,7 +6122,8 @@ class TribunalProgressPopup(QWidget):
                 from timeline_builder import build_timeline_with_external_check
                 notes_for_timeline = [{'date': e['date'], 'datetime': e['date'],
                                        'content': e.get('content', e.get('text', '')),
-                                       'text': e.get('content', e.get('text', ''))}
+                                       'text': e.get('content', e.get('text', '')),
+                                       'source': e.get('source', '')}
                                       for e in items if e.get('date')]
 
                 episodes = build_timeline_with_external_check(notes_for_timeline,
@@ -5665,33 +6397,20 @@ class TribunalProgressPopup(QWidget):
         # Reset reference tracker for fresh narrative
         reset_reference_tracker()
 
-        # Get patient info
+        # Get patient info from central store
         from shared_data_store import get_shared_store
         store = get_shared_store()
         patient_info = store.patient_info
         patient_name = patient_info.get("name", "The patient")
         name = patient_name.split()[0] if patient_name else "The patient"
 
-        # Set up pronouns based on gender
-        gender_raw = patient_info.get("gender", "").lower()
-        if gender_raw in ("female", "f"):
-            pronoun = "she"
-            pronoun_obj = "her"
-            pronoun_poss = "her"
-            pronoun_cap = "She"
-            pronoun_poss_cap = "Her"
-        elif gender_raw in ("male", "m"):
-            pronoun = "he"
-            pronoun_obj = "him"
-            pronoun_poss = "his"
-            pronoun_cap = "He"
-            pronoun_poss_cap = "His"
-        else:
-            pronoun = "they"
-            pronoun_obj = "them"
-            pronoun_poss = "their"
-            pronoun_cap = "They"
-            pronoun_poss_cap = "Their"
+        # Set up pronouns using central utilities
+        pronouns = store.gender_pronouns  # Uses patient_demographics.get_pronouns()
+        pronoun = pronouns['subject']
+        pronoun_obj = pronouns['object']
+        pronoun_poss = pronouns['possessive']
+        pronoun_cap = pronoun.capitalize()
+        pronoun_poss_cap = pronoun_poss.capitalize()
 
         # Function to strip signature blocks from content before analysis
         def strip_signature_block(text):
@@ -5870,6 +6589,33 @@ class TribunalProgressPopup(QWidget):
                 # "did not pose any aggressive behaviour"
                 r'did\s+not\s+pose\s+(any\s+)?' + re.escape(keyword),
                 r'didn\'?t\s+pose\s+(any\s+)?' + re.escape(keyword),
+                # "did not want to go into seclusion" / "didn't want seclusion"
+                r'did\s+not\s+want\s+[^.]*' + re.escape(keyword),
+                r'didn\'?t\s+want\s+[^.]*' + re.escape(keyword),
+                r'does\s+not\s+want\s+[^.]*' + re.escape(keyword),
+                r'doesn\'?t\s+want\s+[^.]*' + re.escape(keyword),
+                # "did not feel she would like" patterns
+                r'did\s+not\s+feel\s+[^.]*' + re.escape(keyword),
+                r'didn\'?t\s+feel\s+[^.]*' + re.escape(keyword),
+                r'does\s+not\s+feel\s+[^.]*' + re.escape(keyword),
+                r'doesn\'?t\s+feel\s+[^.]*' + re.escape(keyword),
+                # "did not want to be secluded/restrained" - the key pattern!
+                r'did\s+not\s+want\s+to\s+be\s+' + re.escape(keyword),
+                r'didn\'?t\s+want\s+to\s+be\s+' + re.escape(keyword),
+                r'does\s+not\s+want\s+to\s+be\s+' + re.escape(keyword),
+                r'doesn\'?t\s+want\s+to\s+be\s+' + re.escape(keyword),
+                # "as she did not want" - subordinate clause pattern
+                r'as\s+(she|he|they)\s+did\s+not\s+want\s+[^.]*' + re.escape(keyword),
+                r'as\s+(she|he|they)\s+didn\'?t\s+want\s+[^.]*' + re.escape(keyword),
+                # "would not like to be" patterns
+                r'would\s+not\s+like\s+to\s+[^.]*' + re.escape(keyword),
+                r'wouldn\'?t\s+like\s+to\s+[^.]*' + re.escape(keyword),
+                # "refused to go into seclusion" / "declined seclusion"
+                r'refused\s+[^.]*' + re.escape(keyword),
+                r'declined\s+[^.]*' + re.escape(keyword),
+                # "not requiring seclusion" / "did not require"
+                r'not\s+requir(e|ing|ed)\s+[^.]*' + re.escape(keyword),
+                r'did\s+not\s+require\s+[^.]*' + re.escape(keyword),
                 # "didn't display any signs of aggression"
                 r'didn\'?t\s+display\s+(any\s+)?(signs?\s+of\s+)?' + re.escape(keyword),
                 r'did\s+not\s+display\s+(any\s+)?(signs?\s+of\s+)?' + re.escape(keyword),
@@ -6191,6 +6937,7 @@ class TribunalProgressPopup(QWidget):
                 'score': score,
                 'drivers': drivers,
                 'type': note_type,
+                'source': entry.get('source', ''),  # Preserve source for timeline builder
             })
 
         if not entries_data:
@@ -6512,32 +7259,15 @@ class TribunalProgressPopup(QWidget):
         narrative_parts.append("")
 
         # --- DEMOGRAPHIC INTRODUCTION ---
-        # Calculate age from DOB if available
-        dob = patient_info.get('dob')
-        age_str = ""
-        if dob:
-            if isinstance(dob, str):
-                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y']:
-                    try:
-                        dob = datetime.strptime(dob, fmt)
-                        break
-                    except:
-                        pass
-            if hasattr(dob, 'year'):
-                today = datetime.now()
-                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                age_str = f"{age} year old "
+        # Get age using central utilities (calculates from DOB)
+        age = store.age
+        age_str = f"{age} year old " if age else ""
 
         ethnicity = patient_info.get('ethnicity', '')
         ethnicity_str = f"{ethnicity} " if ethnicity else ""
 
-        # Gender descriptor
-        if gender_raw in ("female", "f"):
-            gender_desc = "woman"
-        elif gender_raw in ("male", "m"):
-            gender_desc = "man"
-        else:
-            gender_desc = "person"
+        # Gender descriptor using central utilities
+        gender_desc = store.gender_descriptor
 
         # Build diagnosis string
         diagnoses = patient_info.get('diagnosis', [])
@@ -6687,41 +7417,34 @@ class TribunalProgressPopup(QWidget):
         actual_violence = category_data['risk_violence']['actual_entries']
         absent_violence = category_data['risk_violence']['absent_entries']
 
-        # DEBUG: Show what terms are contributing to risk_violence
-        print(f"[VIOLENCE-DEBUG] risk_violence terms: {category_data['risk_violence']['terms']}")
-        print(f"[VIOLENCE-DEBUG] actual_entries count: {len(actual_violence)}")
-        print(f"[VIOLENCE-DEBUG] absent_entries count: {len(absent_violence)}")
-        if actual_violence:
-            for i, e in enumerate(actual_violence[:5]):
-                print(f"[VIOLENCE-DEBUG] actual_entry {i}: {e['content'][:150]}...")
 
         if actual_violence:
-            # There are ACTUAL incidents of violence/aggression
+            # There are ACTUAL incidents of violence/aggression - use make_multi_link to show ALL
             count = len(actual_violence)
-            sample = actual_violence[0]
-            link = make_link(f"{count} occasion(s)", None, 'aggression', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'aggression'} for e in actual_violence]
+            link = make_multi_link(f"{count} occasion(s)", incidents, 'aggression')
             theme_sentences.append(f"There were incidents involving aggression or challenging behaviour documented on {link}.")
         elif absent_violence:
             # Only "no aggression" type entries - this is a POSITIVE finding
             count = len(absent_violence)
-            sample = absent_violence[0]
-            link = make_link(f"{count} entry/entries", None, 'no aggression', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'no aggression'} for e in absent_violence]
+            link = make_multi_link(f"{count} entry/entries", incidents, 'no aggression')
             theme_sentences.append(f"Documentation confirms an absence of physical aggression or violence ({link}).")
 
         actual_self_harm = category_data['risk_self_harm']['actual_entries']
         absent_self_harm = category_data['risk_self_harm']['absent_entries']
 
         if actual_self_harm:
-            # There are ACTUAL self-harm concerns
+            # There are ACTUAL self-harm concerns - use make_multi_link to show ALL
             count = len(actual_self_harm)
-            sample = actual_self_harm[0]
-            link = make_link(f"{count} entry/entries", None, 'self-harm', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'self-harm'} for e in actual_self_harm]
+            link = make_multi_link(f"{count} entry/entries", incidents, 'self-harm')
             theme_sentences.append(f"Self-harm related concerns were documented in {link}.")
         elif absent_self_harm:
             # Only "no self-harm" type entries - this is a POSITIVE finding
             count = len(absent_self_harm)
-            sample = absent_self_harm[0]
-            link = make_link(f"{count} entry/entries", None, 'no self-harm', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'no self-harm'} for e in absent_self_harm]
+            link = make_multi_link(f"{count} entry/entries", incidents, 'no self-harm')
             theme_sentences.append(f"Records confirm no self-harm concerns during this period ({link}).")
 
         # Scan ALL entries for police keywords (not just score drivers) to match click handler
@@ -6779,8 +7502,8 @@ class TribunalProgressPopup(QWidget):
 
         if police_entries:
             count = len(police_entries)
-            sample = police_entries[0]
-            link = make_link(f"{count} entry/entries", None, 'police', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'police'} for e in police_entries]
+            link = make_multi_link(f"{count} entry/entries", incidents, 'police')
             theme_sentences.append(f"Police involvement or contact was referenced in {link}.")
 
         # Scan ALL entries for substance keywords (not just score drivers) to match click handler
@@ -6841,8 +7564,9 @@ class TribunalProgressPopup(QWidget):
                     substance_entries.append(e)
 
         if substance_entries:
-            sample = substance_entries[0]
-            link = make_link("the records", None, 'drug', sample['content'][:150])
+            count = len(substance_entries)
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'drug'} for e in substance_entries]
+            link = make_multi_link(f"{count} entry/entries", incidents, 'drug')
             theme_sentences.append(f"Substance use was a documented theme in {link}.")
 
         # Helper to extract a meaningful snippet from content around a keyword
@@ -6904,15 +7628,18 @@ class TribunalProgressPopup(QWidget):
             elif any('paranoid' in t for t in actual_terms):
                 symptom_desc = "paranoid thoughts"
 
-            link = make_link("occasions during this period", None, 'delusion', sample['content'][:150])
+            count = len(psychosis_actual)
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'delusion'} for e in psychosis_actual]
+            link = make_multi_link(f"{count} occasion(s)", incidents, 'delusion')
             snippet = extract_context_snippet(sample['content'], ['delusion', 'hallucin', 'paranoid', 'voices', 'psycho'])
             if snippet and len(snippet) > 20:
                 theme_sentences.append(f"Documentation indicates {symptom_desc} on {link}, including: \"{snippet}\"")
             else:
                 theme_sentences.append(f"Documentation indicates {symptom_desc} on {link}.")
         elif psychosis_absent:
-            sample = psychosis_absent[0]
-            link = make_link("the clinical records", None, 'no delusion', sample['content'][:150])
+            count = len(psychosis_absent)
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'no delusion'} for e in psychosis_absent]
+            link = make_multi_link(f"{count} entry/entries", incidents, 'no delusion')
             theme_sentences.append(f"Psychotic symptoms were noted to be absent or well-controlled in {link}.")
 
         # Agitation themes - with filtering
@@ -6920,8 +7647,10 @@ class TribunalProgressPopup(QWidget):
                           if not is_mental_state_negated(e.get('content', ''), ['agitat', 'irrita', 'frustrat', 'upset'])]
 
         if agitation_actual:
+            count = len(agitation_actual)
             sample = agitation_actual[0]
-            link = make_link("occasions", None, 'agitation', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'agitation'} for e in agitation_actual]
+            link = make_multi_link(f"{count} occasion(s)", incidents, 'agitation')
             snippet = extract_context_snippet(sample['content'], ['agitat', 'irrita', 'frustrat', 'upset', 'distress'])
             if snippet and len(snippet) > 20:
                 theme_sentences.append(f"Periods of agitation or irritability were documented on {link}: \"{snippet}\"")
@@ -6933,8 +7662,10 @@ class TribunalProgressPopup(QWidget):
                            if not is_mental_state_negated(e.get('content', ''), ['withdraw', 'isolat', 'mute', 'reclusive'])]
 
         if withdrawal_actual:
+            count = len(withdrawal_actual)
             sample = withdrawal_actual[0]
-            link = make_link("occasions", None, 'withdraw', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'withdraw'} for e in withdrawal_actual]
+            link = make_multi_link(f"{count} occasion(s)", incidents, 'withdraw')
             snippet = extract_context_snippet(sample['content'], ['withdraw', 'isolat', 'mute', 'reclusive'])
             if snippet and len(snippet) > 20:
                 theme_sentences.append(f"Social withdrawal or isolation was observed on {link}: \"{snippet}\"")
@@ -6964,8 +7695,10 @@ class TribunalProgressPopup(QWidget):
                                  if not is_engagement_negated(e.get('content', ''), ['refus', 'decline', 'noncomplian', 'disengage'])]
 
         if poor_engagement_actual:
+            count = len(poor_engagement_actual)
             sample = poor_engagement_actual[0]
-            link = make_link("occasions", None, 'refus', sample['content'][:150])
+            incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'refus'} for e in poor_engagement_actual]
+            link = make_multi_link(f"{count} occasion(s)", incidents, 'refus')
             snippet = extract_context_snippet(sample['content'], ['refus', 'decline', 'noncomplian', 'disengage'])
             if snippet and len(snippet) > 20:
                 theme_sentences.append(f"Reduced engagement or refusal was documented on {link}: \"{snippet}\"")
@@ -6982,13 +7715,15 @@ class TribunalProgressPopup(QWidget):
             positive_details.append('family/social support')
 
         if positive_details:
-            # Get a sample entry for the link
+            # Collect all positive entries for multi-link
+            all_positive = []
             for cat in ['positive_presentation', 'good_engagement', 'social_support']:
-                if category_data[cat]['actual_entries']:
-                    sample = category_data[cat]['actual_entries'][-1]
-                    link = make_link("multiple entries", None, 'stable', sample['content'][:150])
-                    theme_sentences.append(f"Protective factors documented include {', '.join(positive_details)} ({link}).")
-                    break
+                all_positive.extend(category_data[cat]['actual_entries'])
+            if all_positive:
+                count = len(all_positive)
+                incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'stable'} for e in all_positive]
+                link = make_multi_link(f"{count} entry/entries", incidents, 'stable')
+                theme_sentences.append(f"Protective factors documented include {', '.join(positive_details)} ({link}).")
 
         # Output the narrative
         if theme_sentences:
@@ -7010,7 +7745,7 @@ class TribunalProgressPopup(QWidget):
         # Uses core density detection + optional external provider check
         try:
             from timeline_builder import build_timeline_with_external_check
-            notes_for_timeline = [{'date': e['date'], 'datetime': e['date'], 'content': e['content'], 'text': e['content']} for e in entries_data]
+            notes_for_timeline = [{'date': e['date'], 'datetime': e['date'], 'content': e['content'], 'text': e['content'], 'source': e.get('source', '')} for e in entries_data]
             episodes = build_timeline_with_external_check(notes_for_timeline, check_external=False, debug=False)
             # DEBUG: Print all episodes detected
             print(f"[NARRATIVE-DEBUG] Timeline detected {len(episodes)} episodes:")
@@ -7467,37 +8202,75 @@ class TribunalProgressPopup(QWidget):
             return incidents
 
         def extract_engagement_detailed(entries):
-            """Extract meaningful engagement content - services, appointments, reviews."""
-            engagement = []
-            seen = set()
+            """Extract meaningful engagement content - services, appointments, reviews.
 
+            Now collects ALL entries for each engagement type and counts sessions offered/attended.
+            Only counts entries where the discipline is the ORIGINATOR (content starts with discipline name),
+            not just mentions like "did not have a psychology session scheduled today".
+            """
+            from collections import defaultdict
+
+            # Patterns to match entries that START with the discipline (actual session notes)
+            # Format: (start_pattern, content_pattern, type, description)
             engagement_patterns = [
-                (r'\bpsycholog(y|ical|ist)\b', 'psychology', 'engaged with psychology services'),
-                (r'\boccupational\s+therap(y|ist)\b|\bOT\b', 'ot', 'received occupational therapy'),
-                (r'\bsocial\s+work(er)?\b', 'social_work', 'received social work support'),
-                (r'\bcpa\b|\bcare\s+(programme|plan)\s+approach\b', 'cpa', 'attended CPA reviews'),
-                (r'\bward\s+r(ound|eview)\b', 'ward_review', 'attended ward reviews'),
-                (r'\bmdt\b|\bmulti.?disciplinary\b', 'mdt', 'was discussed at MDT meetings'),
-                (r'\bcare\s*co.?ordinator\b', 'care_coord', 'maintained contact with her care coordinator'),
-                (r'\boutpatient\s+(appointment|clinic)\b', 'outpatient', 'attended outpatient appointments'),
-                (r'\bdepot\b', 'depot', 'received depot medication'),
-                (r'\bclozapine\s+clinic\b', 'clozapine_clinic', 'attended clozapine clinic appointments'),
-                (r'\b(cpn|community\s+(psych|mental\s+health)\s+nurse)\b', 'cpn', 'received CPN visits'),
-                (r'\brelapse\s+prevention\b', 'relapse_work', 'engaged in relapse prevention work'),
-                (r'\bgroup\s+(therapy|work|session)\b', 'group', 'participated in group therapy'),
+                (r'^psychology\s*[-–]', r'\bpsycholog', 'psychology', 'psychology'),
+                (r'^ot\s*[-–]|^occupational\s+therap', r'\boccupational|\bOT\b', 'ot', 'occupational therapy'),
+                (r'^social\s+work', r'\bsocial\s+work', 'social_work', 'social work'),
+                (r'^nursing.*1.?1|^1.?1.*nursing', r'\bnursing\s+1.?1', 'nursing_1to1', 'nursing 1:1'),
             ]
 
+            # Patterns to detect declined/DNA vs attended
+            declined_patterns = [
+                r'\bdeclined\b', r'\brefused\b', r'\bdna\b', r'\bdid\s+not\s+attend\b',
+                r'\bfailed\s+to\s+attend\b', r'\bwould\s+not\b', r'\bwouldn\'t\b',
+                r'\bnot\s+willing\b', r'\bunwilling\b', r'\bopt(ed)?\s+out\b',
+                r'\basleep\b', r'\bin\s+bed\b',  # Also count as declined
+            ]
+            attended_patterns = [
+                r'\battended\b', r'\baccepted\b', r'\bengaged\b', r'\bparticipated\b',
+                r'\bcompleted\b', r'\bagreed\s+to\b', r'\bwilling(ly)?\b',
+            ]
+
+            # Collect all entries per type with attendance status
+            engagement_by_type = defaultdict(lambda: {'entries': [], 'attended': 0, 'declined': 0, 'offered': 0})
+
             for e in entries:
-                cl = e['content_lower']
-                for pattern, eng_type, description in engagement_patterns:
-                    if re.search(pattern, cl, re.IGNORECASE) and eng_type not in seen:
-                        seen.add(eng_type)
-                        engagement.append({
-                            'type': eng_type,
-                            'description': description,
-                            'entry': e,
-                            'keyword': pattern.split(r'\b')[1] if r'\b' in pattern else eng_type
-                        })
+                content = e.get('content', '') or e.get('text', '')
+                cl = content.lower().strip()
+
+                for start_pattern, content_pattern, eng_type, description in engagement_patterns:
+                    # Only count if content STARTS with the discipline (actual session note)
+                    if re.match(start_pattern, cl, re.IGNORECASE):
+                        engagement_by_type[eng_type]['entries'].append(e)
+                        engagement_by_type[eng_type]['description'] = description
+                        engagement_by_type[eng_type]['keyword'] = content_pattern.replace(r'\b', '')
+                        engagement_by_type[eng_type]['offered'] += 1
+
+                        # Check if attended or declined
+                        is_declined = any(re.search(p, cl, re.IGNORECASE) for p in declined_patterns)
+                        is_attended = any(re.search(p, cl, re.IGNORECASE) for p in attended_patterns)
+
+                        if is_declined and not is_attended:
+                            engagement_by_type[eng_type]['declined'] += 1
+                        elif is_attended:
+                            engagement_by_type[eng_type]['attended'] += 1
+                        # If neither attended nor declined, still counts as offered but status unknown
+                        break  # Only count once per entry
+
+            # Convert to list format
+            engagement = []
+            for eng_type, data in engagement_by_type.items():
+                if data['entries']:
+                    engagement.append({
+                        'type': eng_type,
+                        'description': data['description'],
+                        'entries': data['entries'],  # ALL matching entries
+                        'entry': data['entries'][-1],  # Most recent for backwards compat
+                        'keyword': data['keyword'],
+                        'offered': data['offered'],
+                        'attended': data['attended'],
+                        'declined': data['declined'],
+                    })
             return engagement
 
         def extract_mental_state_detailed(entries):
@@ -7584,39 +8357,76 @@ class TribunalProgressPopup(QWidget):
             Returns the entry with discharge evidence, or None if not found.
 
             MUST have explicit discharge language, not just planning/viewing.
+            Requires STRONG evidence - single ambiguous matches are not enough.
             """
-            # Explicit discharge markers - these prove discharge happened
-            # Must be specific to avoid matching "discharge summary from Plastics"
-            discharge_markers = [
+            # STRONG discharge markers - these definitively prove discharge happened
+            strong_discharge_markers = [
+                'was discharged from the ward', 'has been discharged from the ward',
+                'patient discharged from the ward', 'discharged from the ward today',
+                'discharged from hospital today', 'discharged from this ward',
+                'discharged to the community', 'discharged to community accommodation',
+                'discharged home today', 'left the ward today', 'left the unit today',
+                'discharge completed', 'formal discharge', 'discharge has taken place',
+            ]
+
+            # WEAK discharge markers - need additional context to confirm
+            weak_discharge_markers = [
                 'was discharged', 'has been discharged', 'patient discharged',
                 'discharged today', 'discharged on', 'discharged from the ward',
                 'discharged from hospital', 'discharged to', 'left the ward',
                 'left the unit', 'transferred to community', 'transferred to the community',
-                'moved to supported', 'moved to accommodation', 'discharge completed',
+                'moved to supported', 'moved to accommodation',
             ]
 
-            # NOT discharge - these are planning or documents, not actual discharge
+            # NOT discharge - these are planning, documents, or other contexts
             not_discharge_markers = [
                 'view accommodation', 'viewing accommodation', 'view places',
                 'potential accommodation', 'potential placement',
                 'discharge planning', 'planning for discharge', 'plan for discharge',
                 'towards discharge', 'work towards', 'working towards',
                 'if discharged', 'when discharged', 'upon discharge planning',
-                'prior to discharge', 'before discharge',
+                'prior to discharge', 'before discharge', 'ready for discharge',
                 'discharge summary from', 'copies of discharge', 'copy of discharge',
                 'discharge summary attached', 'referral letter',
+                # Medical/non-psychiatric discharge contexts
+                'discharged from a&e', 'discharged from hospital back to ward',
+                'discharged from general hospital', 'discharged back to the ward',
+                'discharged from clinic', 'discharged from outpatient',
+                'wound discharge', 'nasal discharge', 'eye discharge',
+                # Still on ward contexts
+                'on the ward', 'ward round', 'nursing entry', '1:1 observation',
+                'medication administered', 'obs completed', 'night shift',
             ]
 
+            # First pass: look for STRONG evidence
             for e in entries:
                 content_lower = e.get('content_lower', e.get('content', '').lower())
 
-                # Check for NOT discharge markers first
+                # Skip if NOT discharge markers present
                 if any(marker in content_lower for marker in not_discharge_markers):
                     continue
 
-                # Check for explicit discharge markers
-                if any(marker in content_lower for marker in discharge_markers):
+                # Check for STRONG discharge markers
+                if any(marker in content_lower for marker in strong_discharge_markers):
                     return e
+
+            # Second pass: only accept WEAK evidence if NO inpatient indicators present
+            for e in entries:
+                content_lower = e.get('content_lower', e.get('content', '').lower())
+
+                # Skip if NOT discharge markers present
+                if any(marker in content_lower for marker in not_discharge_markers):
+                    continue
+
+                # Check for weak markers but require NO inpatient context
+                if any(marker in content_lower for marker in weak_discharge_markers):
+                    # Additional check: entry should NOT contain inpatient indicators
+                    inpatient_indicators = [
+                        'ward round', 'on the ward', 'nursing entry', '1:1',
+                        'observation', 'medication', 'mdt', 'review',
+                    ]
+                    if not any(ind in content_lower for ind in inpatient_indicators):
+                        return e
 
             return None
 
@@ -7991,6 +8801,75 @@ class TribunalProgressPopup(QWidget):
                             med_links.append(med_link)
                         ep_narrative.append(f"Medication during this admission included {', '.join(med_links)}.")
 
+                    # FULL ADMISSION ENGAGEMENT STATS (Psychology, Nursing 1:1, Social Work, OT)
+                    # Extract engagement for the FULL admission period, not yearly
+                    def format_admission_engagement(attended, offered, service_name):
+                        """Convert attendance ratio to natural language for admission summary."""
+                        if offered == 0:
+                            return None
+                        pct = (attended / offered) * 100
+
+                        # Remove "sessions" from service_name if present (we'll add it ourselves)
+                        clean_name = service_name.replace(' sessions', '').replace(' session', '')
+
+                        if pct <= 1:
+                            return f"mostly refused {clean_name}"
+                        elif pct <= 10:
+                            return f"rarely attended {clean_name}"
+                        elif pct <= 20:
+                            return f"attended about one in ten {clean_name} sessions"
+                        elif pct < 25:
+                            return f"attended just under a quarter of {clean_name} sessions"
+                        elif pct <= 30:
+                            return f"attended just over a quarter of {clean_name} sessions"
+                        elif pct < 33:
+                            return f"attended just under a third of {clean_name} sessions"
+                        elif pct <= 40:
+                            return f"attended around a third of {clean_name} sessions"
+                        elif pct < 50:
+                            return f"attended just under half of {clean_name} sessions"
+                        elif pct <= 60:
+                            return f"attended around half of {clean_name} sessions"
+                        elif pct < 66:
+                            return f"attended just over half of {clean_name} sessions"
+                        elif pct <= 75:
+                            return f"attended around two thirds of {clean_name} sessions"
+                        elif pct < 80:
+                            return f"attended just under three quarters of {clean_name} sessions"
+                        elif pct <= 90:
+                            return f"attended around three quarters of {clean_name} sessions"
+                        elif pct < 100:
+                            return f"attended nearly all {clean_name} sessions"
+                        else:
+                            return f"attended all {clean_name} sessions"
+
+                    # Extract engagement for FULL admission
+                    full_admission_engagement = extract_engagement_detailed(ep_entries)
+
+                    # Focus on key services: psychology, nursing 1:1, social work, OT
+                    key_services = ['psychology', 'nursing_1to1', 'social_work', 'ot']
+                    engagement_parts = []
+
+                    for eng in full_admission_engagement:
+                        if eng['type'] in key_services:
+                            offered = eng.get('offered', 0)
+                            attended = eng.get('attended', 0)
+
+                            if offered > 0:
+                                desc = format_admission_engagement(attended, offered, eng['description'])
+                                if desc:
+                                    # Create multi-link for all entries
+                                    all_entries = eng.get('entries', [eng['entry']])
+                                    if len(all_entries) > 1:
+                                        incidents_for_link = [{'entry': e, 'keyword': eng['keyword']} for e in all_entries]
+                                        eng_link = make_multi_link(desc, incidents_for_link, eng['keyword'])
+                                    else:
+                                        eng_link = make_link(desc, eng['entry']['date'], eng['keyword'], eng['entry']['content'][:200])
+                                    engagement_parts.append(eng_link)
+
+                    if engagement_parts:
+                        ep_narrative.append(f"During this admission, {pronoun} {', '.join(engagement_parts)}.")
+
                     # Incidents - summarize narratively for many, list for few
                     if all_incidents:
                         # Helper to describe count without exact numbers
@@ -8125,12 +9004,21 @@ class TribunalProgressPopup(QWidget):
 
                     # REFINE discharge/community start date by searching for discharge notes
                     # Search 1 week before and 2 weeks after the timeline-detected start date
+                    # Use STRONG markers only to avoid false positives
                     DISCHARGE_KEYWORDS_COMMUNITY = [
-                        "discharged from the ward", "discharged from ward", "discharged today",
-                        "discharged to the community", "discharged to community",
-                        "discharged home", "discharged to", "patient discharged",
-                        "was discharged", "has been discharged", "discharge cpa",
-                        "left the ward", "transferred to community",
+                        "discharged from the ward today", "discharged from this ward",
+                        "discharged to the community", "discharged to community accommodation",
+                        "discharged home today", "patient has been discharged",
+                        "formal discharge", "discharge has taken place",
+                        "left the ward today", "left the unit today",
+                    ]
+                    # Markers that EXCLUDE discharge (still inpatient)
+                    NOT_DISCHARGE_COMMUNITY = [
+                        "discharged from a&e", "discharged back to the ward",
+                        "discharged from general hospital", "discharged from clinic",
+                        "discharge planning", "towards discharge", "ready for discharge",
+                        "if discharged", "when discharged", "prior to discharge",
+                        "ward round", "on the ward", "nursing entry", "1:1 observation",
                     ]
                     window_start_comm = start_d - timedelta(days=7)
                     window_end_comm = start_d + timedelta(days=14)
@@ -8140,6 +9028,9 @@ class TribunalProgressPopup(QWidget):
                         e_date = e['date'].date() if hasattr(e['date'], 'date') else e['date']
                         if window_start_comm <= e_date <= window_end_comm:
                             content_lower = e.get('content_lower', e.get('content', '').lower())
+                            # Check for exclusions first
+                            if any(excl in content_lower for excl in NOT_DISCHARGE_COMMUNITY):
+                                continue
                             if any(kw in content_lower for kw in DISCHARGE_KEYWORDS_COMMUNITY):
                                 # Found discharge note - refine community start date
                                 start_d = e_date
@@ -8152,6 +9043,26 @@ class TribunalProgressPopup(QWidget):
                     # Introduction - check what evidence we have
                     discharge_entry = refined_community_start_entry or find_discharge_evidence(ep_entries)
                     is_planning = is_community_planning_only(ep_entries)
+
+                    # SAFETY CHECK: If this is the LAST episode (trailing community period),
+                    # be EXTRA skeptical about discharge evidence.
+                    # Trailing periods often occur when notes become sparse, not due to actual discharge.
+                    is_trailing_episode = (i == len(episodes) - 1)
+                    if is_trailing_episode and discharge_entry:
+                        # For trailing episodes, require VERY STRONG evidence
+                        # Check if the discharge entry contains DEFINITIVE language
+                        discharge_content = discharge_entry.get('content_lower', discharge_entry.get('content', '').lower())
+                        definitive_markers = [
+                            'has been discharged from the ward',
+                            'patient has been discharged',
+                            'discharged to the community',
+                            'formal discharge',
+                            'discharge has taken place',
+                        ]
+                        if not any(marker in discharge_content for marker in definitive_markers):
+                            # Not definitive - don't trust it for trailing episode
+                            print(f"[NARRATIVE] Trailing episode - discharge evidence not definitive, using neutral language")
+                            discharge_entry = None
 
                     if discharge_entry:
                         # We have explicit discharge evidence - use discharge language
@@ -8218,6 +9129,48 @@ class TribunalProgressPopup(QWidget):
                                 med_links.append(med_link)
                             ep_narrative.append(f"Medication during this period included {', '.join(med_links)}.")
 
+                        # Helper function for natural language attendance description
+                        def format_attendance_ratio_yearly(attended, offered, service_name):
+                            """Convert attendance ratio to natural language description."""
+                            # Remove "sessions" from service_name if present
+                            clean_name = service_name.replace(' sessions', '').replace(' session', '')
+
+                            if offered == 0:
+                                return f"received {clean_name}"
+                            pct = (attended / offered) * 100
+
+                            if pct <= 1:
+                                phrase = f"mostly refused {clean_name}"
+                            elif pct <= 10:
+                                phrase = f"rarely attended {clean_name}"
+                            elif pct <= 20:
+                                phrase = f"attended about one in ten {clean_name} sessions"
+                            elif pct < 25:
+                                phrase = f"attended just under a quarter of {clean_name} sessions"
+                            elif pct <= 30:
+                                phrase = f"attended just over a quarter of {clean_name} sessions"
+                            elif pct < 33:
+                                phrase = f"attended just under a third of {clean_name} sessions"
+                            elif pct <= 40:
+                                phrase = f"attended around a third of {clean_name} sessions"
+                            elif pct < 50:
+                                phrase = f"attended just under half of {clean_name} sessions"
+                            elif pct <= 60:
+                                phrase = f"attended around half of {clean_name} sessions"
+                            elif pct < 66:
+                                phrase = f"attended just over half of {clean_name} sessions"
+                            elif pct <= 75:
+                                phrase = f"attended around two thirds of {clean_name} sessions"
+                            elif pct < 80:
+                                phrase = f"attended just under three quarters of {clean_name} sessions"
+                            elif pct <= 90:
+                                phrase = f"attended around three quarters of {clean_name} sessions"
+                            elif pct < 100:
+                                phrase = f"attended nearly all {clean_name} sessions"
+                            else:
+                                phrase = f"attended all {clean_name} sessions"
+                            return phrase
+
                         # Output each year with meaningful content - avoid repetition by grouping thin years
                         content_free_years = []  # Years with no meaningful content at all
 
@@ -8229,7 +9182,29 @@ class TribunalProgressPopup(QWidget):
                             if data['engagement']:
                                 eng_parts = []
                                 for eng in data['engagement'][:3]:  # Max 3 engagement items
-                                    eng_link = make_link(eng['description'], eng['entry']['date'], eng['keyword'], eng['entry']['content'][:200])
+                                    # Build description with natural language attendance ratio
+                                    offered = eng.get('offered', 0)
+                                    attended = eng.get('attended', 0)
+
+                                    # Clean service name (remove duplicate "sessions")
+                                    clean_name = eng['description'].replace(' sessions', '').replace(' session', '')
+                                    if offered > 1:
+                                        desc_text = format_attendance_ratio_yearly(attended, offered, eng['description'])
+                                    elif offered == 1:
+                                        if attended == 1:
+                                            desc_text = f"attended one {clean_name} session"
+                                        else:
+                                            desc_text = f"was offered one {clean_name} session but declined"
+                                    else:
+                                        desc_text = f"received {clean_name}"
+
+                                    all_entries = eng.get('entries', [eng['entry']])
+                                    if len(all_entries) > 1:
+                                        # Wrap entries in incident format for make_multi_link
+                                        incidents_for_link = [{'entry': e, 'keyword': eng['keyword']} for e in all_entries]
+                                        eng_link = make_multi_link(desc_text, incidents_for_link, eng['keyword'])
+                                    else:
+                                        eng_link = make_link(desc_text, eng['entry']['date'], eng['keyword'], eng['entry']['content'][:200])
                                     eng_parts.append(eng_link)
                                 if eng_parts:
                                     year_parts.append(', '.join(eng_parts))
@@ -8252,13 +9227,35 @@ class TribunalProgressPopup(QWidget):
                                 if leave_parts:
                                     year_parts.append(' and '.join(leave_parts))
 
-                            # Incidents (if any)
+                            # Incidents (if any) - COMPACT repeated types into date lists
                             if data['incidents']:
-                                inc_parts = []
+                                # Group incidents by type
+                                incidents_by_type = {}
                                 for inc in data['incidents']:
-                                    inc_link = make_link(f"{inc['type']} ({inc['date_str']})", inc['entry']['date'], inc['keyword'], inc['entry']['content'][:200])
-                                    inc_parts.append(inc_link)
-                                year_parts.append(f"concerns included {', '.join(inc_parts)}")
+                                    inc_type = inc['type']
+                                    if inc_type not in incidents_by_type:
+                                        incidents_by_type[inc_type] = []
+                                    incidents_by_type[inc_type].append(inc)
+
+                                inc_parts = []
+                                for inc_type, incidents in incidents_by_type.items():
+                                    if len(incidents) == 1:
+                                        # Single incident - show as before
+                                        inc = incidents[0]
+                                        inc_link = make_link(f"{inc_type} ({inc['date_str']})", inc['entry']['date'], inc['keyword'], inc['entry']['content'][:200])
+                                        inc_parts.append(inc_link)
+                                    else:
+                                        # Multiple incidents of same type - compact to date list
+                                        # Use first incident for the link, list all dates
+                                        first_inc = incidents[0]
+                                        date_strs = [inc['date_str'] for inc in incidents]
+                                        # Format: "aggression was noted on 04 Sep, 07 Sep, 08 Sep"
+                                        dates_text = ', '.join(date_strs)
+                                        inc_link = make_link(f"{inc_type} was noted on {dates_text}", first_inc['entry']['date'], first_inc['keyword'], first_inc['entry']['content'][:200])
+                                        inc_parts.append(inc_link)
+
+                                if inc_parts:
+                                    year_parts.append(f"concerns included {'; '.join(inc_parts)}")
 
                             # Build year narrative with flowing prose
                             if year_parts:
@@ -8320,23 +9317,91 @@ class TribunalProgressPopup(QWidget):
                                 med_links.append(med_link)
                             ep_narrative.append(f"Medication included {', '.join(med_links)}.")
 
-                        # Extract engagement, mental state for shorter periods too
+                        # Extract engagement from EPISODE entries only (this admission period)
                         period_engagement = extract_engagement_detailed(ep_entries)
                         period_mental_state = extract_mental_state_detailed(ep_entries)
+
+                        def format_attendance_ratio(attended, offered, service_name):
+                            """Convert attendance ratio to natural language description."""
+                            # Remove "sessions" from service_name if present
+                            clean_name = service_name.replace(' sessions', '').replace(' session', '')
+
+                            if offered == 0:
+                                return f"received {clean_name}"
+                            pct = (attended / offered) * 100
+
+                            # Determine natural language description (no percentages)
+                            if pct <= 1:
+                                phrase = f"mostly refused {clean_name}"
+                            elif pct <= 10:
+                                phrase = f"rarely attended {clean_name}"
+                            elif pct <= 20:
+                                phrase = f"attended about one in ten {clean_name} sessions"
+                            elif pct < 25:
+                                phrase = f"attended just under a quarter of {clean_name} sessions"
+                            elif pct <= 30:
+                                phrase = f"attended just over a quarter of {clean_name} sessions"
+                            elif pct < 33:
+                                phrase = f"attended just under a third of {clean_name} sessions"
+                            elif pct <= 40:
+                                phrase = f"attended around a third of {clean_name} sessions"
+                            elif pct < 50:
+                                phrase = f"attended just under half of {clean_name} sessions"
+                            elif pct <= 60:
+                                phrase = f"attended around half of {clean_name} sessions"
+                            elif pct < 66:
+                                phrase = f"attended just over half of {clean_name} sessions"
+                            elif pct <= 75:
+                                phrase = f"attended around two thirds of {clean_name} sessions"
+                            elif pct < 80:
+                                phrase = f"attended just under three quarters of {clean_name} sessions"
+                            elif pct <= 90:
+                                phrase = f"attended around three quarters of {clean_name} sessions"
+                            elif pct < 100:
+                                phrase = f"attended nearly all {clean_name} sessions"
+                            else:
+                                phrase = f"attended all {clean_name} sessions"
+                            return phrase
 
                         # Services/engagement (psychology, OT, CPN, CPA, etc.)
                         if period_engagement:
                             eng_parts = []
                             seen_types = set()
                             for eng in period_engagement:
-                                if eng['description'] not in seen_types:
-                                    seen_types.add(eng['description'])
-                                    eng_link = make_link(eng['description'], eng['entry']['date'], eng['keyword'], eng['entry']['content'][:200])
+                                if eng['type'] not in seen_types:
+                                    seen_types.add(eng['type'])
+                                    # Build description with natural language attendance ratio
+                                    offered = eng.get('offered', 0)
+                                    attended = eng.get('attended', 0)
+
+                                    # Clean service name (remove duplicate "sessions")
+                                    clean_name = eng['description'].replace(' sessions', '').replace(' session', '')
+                                    # Always show attendance stats
+                                    if offered > 1:
+                                        desc_text = format_attendance_ratio(attended, offered, eng['description'])
+                                    elif offered == 1:
+                                        # Single session offered
+                                        if attended == 1:
+                                            desc_text = f"attended one {clean_name} session"
+                                        else:
+                                            desc_text = f"was offered one {clean_name} session but declined"
+                                    else:
+                                        desc_text = f"received {clean_name}"
+
+                                    # Use multi-link if multiple entries
+                                    all_entries = eng.get('entries', [eng['entry']])
+                                    if len(all_entries) > 1:
+                                        # Wrap entries in incident format for make_multi_link
+                                        incidents_for_link = [{'entry': e, 'keyword': eng['keyword']} for e in all_entries]
+                                        eng_link = make_multi_link(desc_text, incidents_for_link, eng['keyword'])
+                                    else:
+                                        eng_link = make_link(desc_text, eng['entry']['date'], eng['keyword'], eng['entry']['content'][:200])
                                     eng_parts.append(eng_link)
                                     if len(eng_parts) >= 4:
                                         break
                             if eng_parts:
-                                ep_narrative.append(f"During this period, {pronoun} engaged with {', '.join(eng_parts)}.")
+                                # Build sentence - the engagement phrases now include verbs like "attended", "received"
+                                ep_narrative.append(f"During this period, {pronoun} {', '.join(eng_parts)}.")
 
                         # Mental state observations - positive and negative
                         if period_mental_state:
@@ -8486,16 +9551,95 @@ class TribunalProgressPopup(QWidget):
                         med_links.append(med_link)
                     year_text += f" Medication included {', '.join(med_links)}."
                 if all_incidents:
-                    inc_links = []
-                    for inc in all_incidents:  # ALL incidents, no limit
-                        inc_link = make_link(f"{inc['type']} ({inc['date_str']})", inc['entry']['date'], inc['keyword'], inc['entry']['content'][:200])
-                        inc_links.append(inc_link)
-                    year_text += f" Incidents: {', '.join(inc_links)}."
+                    # Group incidents by type for compact output
+                    incidents_by_type = defaultdict(list)
+                    for inc in all_incidents:
+                        incidents_by_type[inc['type']].append(inc)
+
+                    inc_parts = []
+                    for inc_type in ['self-harm', 'aggression', 'AWOL']:  # Consistent order
+                        if inc_type in incidents_by_type:
+                            type_incidents = incidents_by_type[inc_type]
+                            if len(type_incidents) == 1:
+                                inc = type_incidents[0]
+                                inc_link = make_link(f"{inc_type} ({inc['date_str']})", inc['entry']['date'], inc['keyword'], inc['entry']['content'][:200])
+                                inc_parts.append(inc_link)
+                            else:
+                                # Multiple incidents - compact to date list
+                                first_inc = type_incidents[0]
+                                date_strs = [inc['date_str'] for inc in type_incidents]
+                                inc_link = make_link(f"{inc_type} was noted on {', '.join(date_strs)}", first_inc['entry']['date'], first_inc['keyword'], first_inc['entry']['content'][:200])
+                                inc_parts.append(inc_link)
+
+                    if inc_parts:
+                        year_text += f" Incidents: {'; '.join(inc_parts)}."
                 else:
                     year_text += " No significant incidents documented."
 
                 narrative_parts.append(year_text)
                 narrative_parts.append("")
+
+        # === INCIDENT LOG ===
+        # Collect all incidents from entire document, deduplicate, sort by type
+        all_document_incidents = []
+        seen_entries = set()  # Track seen entries to avoid duplicates
+
+        # Define ALL risk categories with their keywords
+        risk_categories = [
+            ('Physical Aggression', ['violent', 'assault', 'attack', 'hit', 'punch', 'kick', 'restrain', 'seclusion', 'physical aggression'], 'physical'),
+            ('Verbal Aggression', ['verbal aggression', 'verbally aggressive', 'threatening', 'threats', 'shouting', 'swearing', 'abusive language'], 'verbal'),
+            ('Self-Harm', ['self-harm', 'self harm', 'cutting', 'overdose', 'ligature', 'suicidal', 'suicide', 'self-injur'], 'self-harm'),
+            ('AWOL/Absconding', ['abscond', 'awol', 'failed to return', 'missing', 'left without'], 'awol'),
+            ('Property Damage', ['damage', 'smashed', 'broke', 'destroyed', 'property damage', 'broke window', 'broke door'], 'property'),
+            ('Sexual Concerns', ['sexual', 'sexually', 'inappropriate touch', 'indecent', 'sexually disinhibited'], 'sexual'),
+            ('Fire Risk', ['fire', 'arson', 'lighter', 'matches', 'set fire'], 'fire'),
+            ('Substance Use', ['cannabis', 'drugs', 'alcohol', 'intoxicated', 'spice', 'substance', 'illicit'], 'substance'),
+        ]
+
+        # Extract incidents for each category
+        for category_name, keywords, category_type in risk_categories:
+            category_incidents = extract_incidents_detailed(entries_data, keywords, category_type)
+            for inc in category_incidents:
+                # Create unique key based on date, content, and type to avoid duplicates
+                entry_key = (inc['date'].strftime('%Y-%m-%d'), inc['entry']['content'][:100], category_type)
+                if entry_key not in seen_entries:
+                    seen_entries.add(entry_key)
+                    inc['category'] = category_name
+                    all_document_incidents.append(inc)
+
+        if all_document_incidents:
+            narrative_parts.append("")
+            narrative_parts.append("<b>INCIDENT LOG</b>")
+            narrative_parts.append("")
+
+            # Group by category
+            incidents_by_category = {}
+            for inc in all_document_incidents:
+                cat = inc['category']
+                if cat not in incidents_by_category:
+                    incidents_by_category[cat] = []
+                incidents_by_category[cat].append(inc)
+
+            # Output each category in order
+            category_order = ['Physical Aggression', 'Verbal Aggression', 'Self-Harm', 'AWOL/Absconding',
+                            'Property Damage', 'Sexual Concerns', 'Fire Risk', 'Substance Use']
+
+            for category in category_order:
+                if category in incidents_by_category:
+                    incidents = sorted(incidents_by_category[category], key=lambda x: x['date'])
+                    narrative_parts.append(f"<b>{category}</b> ({len(incidents)} entries)")
+
+                    # List each incident: Date - Keyword (clickable)
+                    for inc in incidents:
+                        date_str = inc['date'].strftime('%d %B %Y')
+                        # Capitalize the matched keyword
+                        matched_keyword = inc.get('matched_keyword', inc['keyword']).capitalize()
+                        # Create clickable link: "Date - Keyword"
+                        link_text = f"{date_str} - {matched_keyword}"
+                        inc_link = make_link(link_text, inc['entry']['date'], inc['keyword'], inc['entry']['content'][:200])
+                        narrative_parts.append(f"• {inc_link}")
+
+                    narrative_parts.append("")
 
         # === FORMAT OUTPUT ===
         plain_text = "\n".join(narrative_parts)
