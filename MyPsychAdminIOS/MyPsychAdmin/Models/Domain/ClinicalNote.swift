@@ -9,6 +9,7 @@ struct ClinicalNote: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
     var date: Date
     var type: String
+    var rawType: String
     var author: String
     var body: String
     var source: NoteSource
@@ -21,6 +22,7 @@ struct ClinicalNote: Identifiable, Codable, Equatable, Hashable {
         id: UUID = UUID(),
         date: Date = Date(),
         type: String = "",
+        rawType: String = "",
         author: String = "",
         body: String = "",
         source: NoteSource = .manual,
@@ -29,6 +31,7 @@ struct ClinicalNote: Identifiable, Codable, Equatable, Hashable {
         self.id = id
         self.date = date
         self.type = type
+        self.rawType = rawType
         self.author = author
         self.body = body
         self.source = source

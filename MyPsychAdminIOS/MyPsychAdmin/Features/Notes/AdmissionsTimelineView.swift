@@ -354,6 +354,10 @@ struct TimelineBuilder {
                         break
                     }
                 }
+                // Fallback: if no keyword match, use first note in window
+                if updated.clerkingNote == nil, let firstNote = windowNotes.first {
+                    updated.clerkingNote = firstNote
+                }
             } else {
                 // Community episode — attach the first note in the period
                 let windowNotes = notes
@@ -500,7 +504,14 @@ struct TimelineBuilder {
     static func buildEPJSTimeline(from notes: [ClinicalNote]) -> [Episode] {
         let calendar = Calendar.current
 
-        let sorted = notes.sorted { $0.date < $1.date }
+        // Filter out bad dates (data entry errors like 1921, 1930)
+        var minValidComponents = DateComponents()
+        minValidComponents.year = 1990
+        minValidComponents.month = 1
+        minValidComponents.day = 1
+        let minValid = calendar.date(from: minValidComponents)!
+
+        let sorted = notes.filter { $0.date >= minValid }.sorted { $0.date < $1.date }
         guard !sorted.isEmpty else { return [] }
 
         let firstDate = calendar.startOfDay(for: sorted.first!.date)
@@ -610,13 +621,35 @@ struct TimelineBuilder {
             let firstLine = note.body.components(separatedBy: "\n")
                 .first?.lowercased().trimmingCharacters(in: .whitespaces) ?? ""
             let lower = note.body.lowercased()
+            let rawLower = note.rawType.lowercased()
+
+            // rawType contains "community" → strong community indicator
+            if rawLower.contains("community") { communityScore += 3; continue }
 
             // Discharge Notification = strong confirmed discharge
             if lower.contains("discharge notification") { communityScore += 5; continue }
+
+            // "discharged" + "home"/"community" = confirmed discharge
+            if lower.contains("discharged") &&
+               (lower.contains("home") || lower.contains("community")) {
+                communityScore += 3; continue
+            }
+
             // CC/Main Contact = care coordinator (strong community indicator)
             if firstLine.hasPrefix("cc") { communityScore += 2; continue }
             // Community-prefixed notes
             if firstLine.hasPrefix("community") { communityScore += 2; continue }
+
+            // Outpatient/clinic = community care
+            if firstLine.contains("outpatient") || firstLine.contains("clinic") {
+                communityScore += 2; continue
+            }
+
+            // Home visit / telephone contact = community
+            if firstLine.contains("home visit") || firstLine.contains("telephone contact") {
+                communityScore += 1; continue
+            }
+
             // STaR/Support Worker = community support
             if firstLine.contains("star") || firstLine.contains("support worker") {
                 communityScore += 1; continue
@@ -632,16 +665,57 @@ struct TimelineBuilder {
         return communityScore >= 5
     }
 
-    /// Check if an EPJS note is from an inpatient stay by looking for "Inpatient" prefix in body
+    // Bracket subtypes that indicate inpatient (from desktop _IP_SUBTYPES)
+    private static let ipSubtypes: Set<String> = [
+        "ward nurse", "health care assistant", "nursing student",
+        "place of safety", "therapy assistant",
+    ]
+    // Bracket subtypes that indicate community (from desktop _COMMUNITY_SUBTYPES)
+    private static let communitySubtypes: Set<String> = [
+        "community nurse",
+    ]
+    // Body keywords that indicate inpatient context (from desktop _IP_BODY_KW)
+    private static let ipBodyKeywords: [String] = [
+        "ward round", "on the ward", "observation level", "obs level",
+        "1:1 observation", "detained under", "mha status", "section 2",
+        "section 3", "section 17", "s17 leave", "ground leave",
+        "night shift", "day shift", "handover", "medication round",
+        "de-escalation", "seclusion", "restraint", "prn administered",
+        "nursing observation", "level 1", "level 2", "level 3", "level 4",
+    ]
+
+    /// Check if an EPJS note is from an inpatient stay.
+    /// Uses bracket subtypes from rawType, "inpatient" prefix in type/body, and body keywords.
     private static func noteIsInpatient(_ note: ClinicalNote) -> Bool {
-        // Check type field
+        // 1. Check rawType bracket subtypes (e.g. "Nursing - Ward Nurse")
+        let rawLower = note.rawType.lowercased()
+        if !rawLower.isEmpty {
+            // Check for community subtypes first (they override)
+            for sub in communitySubtypes {
+                if rawLower.contains(sub) { return false }
+            }
+            // Check for inpatient subtypes
+            for sub in ipSubtypes {
+                if rawLower.contains(sub) { return true }
+            }
+        }
+
+        // 2. Check type field for "inpatient"
         if note.type.lowercased().contains("inpatient") { return true }
-        // Check first 3 lines of body for EPJS type headers like "Inpatient - Nursing"
+
+        // 3. Check first 3 lines of body for EPJS type headers like "Inpatient - Nursing"
         let lines = note.body.components(separatedBy: "\n")
         for line in lines.prefix(3) {
             let lower = line.lowercased().trimmingCharacters(in: .whitespaces)
             if lower.hasPrefix("inpatient") { return true }
         }
+
+        // 4. Check body keywords (first 500 chars)
+        let bodyPrefix = String(note.body.prefix(500)).lowercased()
+        for kw in ipBodyKeywords {
+            if bodyPrefix.contains(kw) { return true }
+        }
+
         return false
     }
 

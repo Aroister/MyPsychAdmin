@@ -490,7 +490,252 @@ def build_rio_timeline(notes: List[Dict[str, Any]], debug: bool = True):
 
 
 # ============================================================
-# 3. MASTER WRAPPER
+# 3. EPJS (Inpatient prefix + 30-day gap tolerance)
+# ============================================================
+
+# Bracket subtypes that are clearly inpatient
+_IP_SUBTYPES = {
+    "ward nurse", "health care assistant", "nursing student",
+    "place of safety", "therapy assistant",
+}
+# Bracket subtypes that are clearly community
+_COMMUNITY_SUBTYPES = {"community nurse"}
+
+# Body keywords strongly indicating inpatient
+_IP_BODY_KW = [
+    "ward round", "on the ward", "observation level", "obs level",
+    "1:1 observation", "detained under", "mha status", "section 2",
+    "section 3", "section 17", "s17 leave", "ground leave",
+    "night shift", "day shift", "handover", "medication round",
+    "de-escalation", "seclusion", "restraint", "prn administered",
+    "nursing observation", "level 1", "level 2", "level 3", "level 4",
+]
+
+
+def _note_is_inpatient(note):
+    """Check if EPJS note is inpatient (subtype, body keywords, or explicit prefix)."""
+    # 1. Check raw_type bracket subtype (e.g. "Nursing - Ward Nurse")
+    raw = (note.get("raw_type") or "").lower()
+    # Explicit community subtype → definitely not inpatient
+    for cs in _COMMUNITY_SUBTYPES:
+        if cs in raw:
+            return False
+    # Explicit inpatient subtype
+    for ips in _IP_SUBTYPES:
+        if ips in raw:
+            return True
+
+    # 2. Check canonical type or raw_type for "inpatient"
+    t = (note.get("type") or "").lower()
+    if "inpatient" in t or "inpatient" in raw:
+        return True
+
+    # 3. Check first 5 body lines for "Inpatient" prefix or body keywords
+    text = (note.get("text", "") or note.get("content", "")).lower()
+    lines = text.split("\n")[:5]
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("inpatient"):
+            return True
+
+    # 4. Body keyword scan (full text, first 500 chars for speed)
+    snippet = text[:500]
+    for kw in _IP_BODY_KW:
+        if kw in snippet:
+            return True
+
+    return False
+
+
+def _has_confirmed_community(notes, start_date, end_date):
+    """Score gap notes for community indicators. >= 5 = confirmed community."""
+    score = 0
+    for n in notes:
+        if not isinstance(n.get("date"), datetime):
+            continue
+        day = n["date"].date()
+        if not (start_date < day < end_date):
+            continue
+        text = (n.get("text") or n.get("content") or "").lower()
+        first_line = text.split("\n")[0].strip() if text else ""
+
+        # EPJS bracket subtype check
+        raw = (n.get("raw_type") or "").lower()
+        if "community" in raw:
+            score += 3
+            continue
+
+        if "discharge notification" in text:
+            score += 5
+            continue
+        if "discharged" in text[:200] and ("home" in text[:200] or "community" in text[:200]):
+            score += 3
+            continue
+        if first_line.startswith("cc"):
+            score += 2
+            continue
+        if first_line.startswith("community"):
+            score += 2
+            continue
+        if "outpatient" in first_line or "clinic" in first_line:
+            score += 2
+            continue
+        if "home visit" in text[:200] or "telephone contact" in text[:200]:
+            score += 1
+            continue
+        if "star" in first_line or "support worker" in first_line:
+            score += 1
+            continue
+        if first_line.startswith("cr/") or "htt" in first_line or "home treatment" in first_line:
+            score += 1
+            continue
+    return score >= 5
+
+
+def _merge_non_community_gaps(segments, notes):
+    """Merge adjacent segments when gap lacks community evidence."""
+    if len(segments) <= 1:
+        return segments
+    merged = [segments[0]]
+    for seg in segments[1:]:
+        prev_end = merged[-1]["end"]
+        if _has_confirmed_community(notes, prev_end, seg["start"]):
+            merged.append(seg)
+        else:
+            merged[-1]["end"] = seg["end"]
+    return merged
+
+
+def _build_episodes(segments, first, last):
+    """Convert segments to episode list with community gaps."""
+    episodes = []
+    if first < segments[0]["start"]:
+        episodes.append({
+            "type": "community",
+            "start": first,
+            "end": segments[0]["start"] - timedelta(days=1)
+        })
+    for i, seg in enumerate(segments):
+        episodes.append({
+            "type": "inpatient",
+            "start": seg["start"],
+            "end": seg["end"],
+            "label": f"Admission {i+1}"
+        })
+        if i < len(segments) - 1:
+            nxt = segments[i+1]
+            com_start = seg["end"] + timedelta(days=1)
+            com_end = nxt["start"] - timedelta(days=1)
+            if com_start <= com_end:
+                episodes.append({
+                    "type": "community",
+                    "start": com_start,
+                    "end": com_end
+                })
+    if segments[-1]["end"] < last:
+        episodes.append({
+            "type": "community",
+            "start": segments[-1]["end"] + timedelta(days=1),
+            "end": last
+        })
+    return episodes
+
+
+def build_epjs_timeline(notes, debug=True):
+    """EPJS timeline: detect admissions by 'Inpatient' note type prefix."""
+    if not notes:
+        return []
+
+    # Filter out notes with obviously bad dates (data entry errors)
+    min_valid = datetime(1990, 1, 1)
+    ordered = [n for n in notes
+               if isinstance(n.get("date"), datetime) and n["date"] >= min_valid]
+    if not ordered:
+        return []
+    ordered.sort(key=lambda n: n["date"])
+
+    first = min(n["date"].date() for n in ordered)
+    last = max(n["date"].date() for n in ordered)
+
+    # Collect inpatient dates
+    all_note_dates = set()
+    inpatient_dates = set()
+    for n in ordered:
+        day = n["date"].date()
+        all_note_dates.add(day)
+        if _note_is_inpatient(n):
+            inpatient_dates.add(day)
+
+    if debug:
+        print(f">>> [TIMELINE DEBUG] ==========================================")
+        print(f">>> [TIMELINE DEBUG] EPJS pipeline (Inpatient prefix detection)")
+        print(f">>> [TIMELINE DEBUG] Total notes: {len(notes)}, dated: {len(ordered)}")
+        print(f">>> [TIMELINE DEBUG] Range: {first} to {last}")
+        print(f">>> [TIMELINE DEBUG] Inpatient dates: {len(inpatient_dates)}, All dates: {len(all_note_dates)}")
+        print(f">>> [TIMELINE DEBUG] ==========================================")
+
+    if not inpatient_dates:
+        if debug:
+            print(f">>> [TIMELINE DEBUG] No inpatient notes found — returning community only")
+        return [{"type": "community", "start": first, "end": last}]
+
+    # Build segments with 30-day gap tolerance
+    sorted_ip = sorted(inpatient_dates)
+    segments = []
+    seg_start = sorted_ip[0]
+    seg_end = sorted_ip[0]
+
+    for d in sorted_ip[1:]:
+        gap = (d - seg_end).days
+        if gap <= 30:
+            seg_end = d
+        else:
+            segments.append({"start": seg_start, "end": seg_end})
+            seg_start = d
+            seg_end = d
+    segments.append({"start": seg_start, "end": seg_end})
+
+    if debug:
+        print(f">>> [TIMELINE DEBUG] Raw inpatient segments (30-day gap tolerance): {len(segments)}")
+        for i, seg in enumerate(segments):
+            print(f">>>   Segment {i+1}: {seg['start']} to {seg['end']}")
+
+    # Merge non-community gaps (transfer detection)
+    segments = _merge_non_community_gaps(segments, ordered)
+
+    if debug:
+        print(f">>> [TIMELINE DEBUG] After community-gap merging: {len(segments)} segments")
+
+    # Extend discharge-day (7-day lookahead)
+    sorted_all = sorted(all_note_dates)
+    for i, seg in enumerate(segments):
+        next_start = segments[i+1]["start"] if i+1 < len(segments) else seg["end"] + timedelta(days=3650)
+        for nd in sorted_all:
+            if nd <= seg["end"]:
+                continue
+            if nd >= next_start:
+                break
+            if (nd - seg["end"]).days <= 7:
+                segments[i]["end"] = nd
+            else:
+                break
+
+    # Build episodes
+    episodes = _build_episodes(segments, first, last)
+
+    if debug:
+        print(f">>> [TIMELINE DEBUG] ==========================================")
+        print(f">>> [TIMELINE DEBUG] FINAL EPISODES:")
+        for ep in episodes:
+            print(f">>>   {ep['type'].upper()}: {ep['start']} to {ep['end']}" +
+                  (f" ({ep.get('label', '')})" if ep.get('label') else ""))
+        print(f">>> [TIMELINE DEBUG] ==========================================")
+
+    return episodes
+
+
+# ============================================================
+# 4. MASTER WRAPPER
 # ============================================================
 
 def build_timeline(notes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -500,11 +745,14 @@ def build_timeline(notes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if pipeline == "carenotes":
         return build_carenotes_timeline(notes)
 
+    if pipeline == "epjs":
+        return build_epjs_timeline(notes)
+
     return build_rio_timeline(notes)
 
 
 # ============================================================
-# 4. EXTERNAL PROVIDER DETECTION (Post-processing layer)
+# 5. EXTERNAL PROVIDER DETECTION (Post-processing layer)
 # ============================================================
 # This runs ON TOP of the core timeline - does not replace it.
 # HIGH THRESHOLD: Only detects clear admissions to external providers.

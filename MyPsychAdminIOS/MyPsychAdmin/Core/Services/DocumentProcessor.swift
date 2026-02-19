@@ -34,6 +34,10 @@ actor DocumentProcessor {
     private static let confirmedBySigPattern = try! NSRegularExpression(pattern: "-{5,}\\s*Confirmed\\s+By\\s+(.+?),\\s*(\\d{1,2}/\\d{1,2}/\\d{4})", options: .caseInsensitive)
     // "dd/mm/yyyy HH:MM" alone on a line (from Excel date serial with time component)
     private static let dateTimeDMYPattern = try! NSRegularExpression(pattern: "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(\\d{1,2}:\\d{2}(?::\\d{2})?)$")
+    // ISO datetime: "yyyy-mm-dd HH:MM[:SS]" alone on a line
+    private static let dateTimeISOPattern = try! NSRegularExpression(pattern: "^(\\d{4}-\\d{2}-\\d{2})\\s+(\\d{1,2}:\\d{2}(?::\\d{2})?)$")
+    // "Originator: NAME" line (EPJS note boundary)
+    private static let originatorPattern = try! NSRegularExpression(pattern: "^Originator:\\s*(.+)", options: .caseInsensitive)
     // Date at start of line with content: "17/02/2024 14:30 Nursing Note..." or "17/02/2024 Nursing Note..."
     private static let dateStartWithTimePattern = try! NSRegularExpression(pattern: "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(\\d{1,2}:\\d{2}(?::\\d{2})?)\\s+(\\S.*)")
     private static let dateStartNoTimePattern = try! NSRegularExpression(pattern: "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(?!\\d)(\\S.*)")
@@ -189,7 +193,6 @@ actor DocumentProcessor {
 
         // Filter out Excel errors and common junk values
         if lower == "nan" || lower == "none" || lower == "<na>" || lower == "nat" ||
-           lower == "detail" || lower == "amend" || lower == "lock" ||
            lower == "#name?" || lower == "#value!" || lower == "#ref!" ||
            lower == "#div/0!" || lower == "#n/a" || lower == "#null!" ||
            lower == "#num!" || lower == "#error!" || lower == "#spill!" || lower == "#calc!" ||
@@ -563,18 +566,27 @@ actor DocumentProcessor {
 
         // Helper to save accumulated note
         func saveCurrentNote() {
-            guard !currentBody.isEmpty else { return }
+            guard !currentBody.isEmpty else {
+                currentBody = []; currentOriginator = ""
+                return
+            }
             // Skip notes with no date — these are pre-header UI metadata (not clinical content)
-            guard currentDate != nil else { return }
+            guard currentDate != nil else {
+                currentBody = []; currentOriginator = ""
+                return
+            }
             // Clean body: remove "confirmed by" and dash-only lines (like desktop lines 215-220)
             let cleanedBody = currentBody.filter { ln in
                 let lower = ln.lowercased()
                 if lower.contains("confirmed by") { return false }
-                if ln.hasPrefix("---") { return false }
+                if ln.hasPrefix("---") && ln.replacingOccurrences(of: "-", with: "").trimmingCharacters(in: .whitespaces).isEmpty { return false }
                 return true
             }
             let text = cleanedBody.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { return }
+            guard !text.isEmpty else {
+                currentBody = []; currentOriginator = ""
+                return
+            }
 
             // Extract author from body if not already set (3-tier like desktop lines 176-209)
             if currentOriginator.isEmpty {
@@ -595,11 +607,30 @@ actor DocumentProcessor {
                 }
             }
 
+            // Extract raw_type from bracket notation "[ Nursing - Ward Nurse ]"
+            var rawType = ""
+            for ln in cleanedBody {
+                let trimLn = ln.trimmingCharacters(in: .whitespaces)
+                guard !trimLn.isEmpty else { continue }
+                if trimLn.hasPrefix("["), let endIdx = trimLn.firstIndex(of: "]") {
+                    rawType = String(trimLn[trimLn.index(after: trimLn.startIndex)..<endIdx])
+                        .trimmingCharacters(in: .whitespaces)
+                } else if trimLn.contains(":") {
+                    rawType = String(trimLn.prefix(while: { $0 != ":" }))
+                        .trimmingCharacters(in: .whitespaces)
+                } else {
+                    rawType = trimLn
+                }
+                break
+            }
+
             let noteDate = currentDate ?? Date()
+            let noteType = extractNoteType(from: cleanedBody)
             notes.append(ClinicalNote(
                 date: noteDate,
-                type: extractNoteType(from: cleanedBody),
-                author: currentOriginator,
+                type: noteType,
+                rawType: rawType,
+                author: currentOriginator.isEmpty ? "Unknown" : currentOriginator,
                 body: text,
                 source: .epjs
             ))
@@ -644,13 +675,29 @@ actor DocumentProcessor {
                 i += 1; continue
             }
 
-            // 3. Standalone "dd/mm/yyyy HH:MM" line (from cleanCell date serial conversion) — note START boundary
+            // 3a. Standalone "dd/mm/yyyy HH:MM" line (from cleanCell date serial conversion) — note START boundary
             if let match = Self.dateTimeDMYPattern.firstMatch(in: trimmed, range: range),
                let dateRange = Range(match.range(at: 1), in: trimmed),
                let timeRange = Range(match.range(at: 2), in: trimmed) {
                 let dateStr = String(trimmed[dateRange])
                 let timeStr = String(trimmed[timeRange])
-                if let parsedDate = Self.rioFormatters[0].date(from: "\(dateStr) \(timeStr)") {
+                if let parsedDate = Self.rioFormatters[0].date(from: "\(dateStr) \(timeStr)")
+                    ?? Self.rioFormatters[1].date(from: "\(dateStr) \(timeStr)") {
+                    saveCurrentNote()
+                    currentDate = parsedDate
+                    currentBody = []; currentOriginator = ""
+                    i += 1; continue
+                }
+            }
+
+            // 3b. ISO "yyyy-mm-dd HH:MM[:SS]" standalone line — note START boundary
+            if let match = Self.dateTimeISOPattern.firstMatch(in: trimmed, range: range),
+               let dateRange = Range(match.range(at: 1), in: trimmed),
+               let timeRange = Range(match.range(at: 2), in: trimmed) {
+                let dateStr = String(trimmed[dateRange])
+                let timeStr = String(trimmed[timeRange])
+                if let parsedDate = Self.rioFormatters[3].date(from: "\(dateStr) \(timeStr)")
+                    ?? Self.rioFormatters[4].date(from: dateStr) {
                     saveCurrentNote()
                     currentDate = parsedDate
                     currentBody = []; currentOriginator = ""
@@ -720,7 +767,7 @@ actor DocumentProcessor {
                 // Fall through to content
             }
 
-            // 5. Date+time on same line "17 Feb 2024 14:30" — note START boundary
+            // 6. Date+time on same line "17 Feb 2024 14:30" — note START boundary
             if let epjsDateTime = isEPJSDateTime(trimmed) {
                 saveCurrentNote()
                 currentDate = Self.epjsFormatters[0].date(from: "\(epjsDateTime.date) \(epjsDateTime.time)")
@@ -728,7 +775,7 @@ actor DocumentProcessor {
                 i += 1; continue
             }
 
-            // 6. Plain "Confirmed By NAME, date" (no dashes) — metadata, extract author + date
+            // 7a. Plain "Confirmed By NAME, date" (no dashes) — metadata, extract author + date
             if let match = Self.confirmedByPattern.firstMatch(in: trimmed, range: range),
                let nameRange = Range(match.range(at: 1), in: trimmed) {
                 currentOriginator = String(trimmed[nameRange]).trimmingCharacters(in: .whitespaces)
@@ -741,20 +788,53 @@ actor DocumentProcessor {
                 i += 1; continue
             }
 
-            // 7. Skip EPJS metadata lines that follow boundaries (not clinical content)
-            let lower = trimmed.lowercased()
-            if lower.hasPrefix("event by") || lower.hasPrefix("entered by") ||
-               lower.hasPrefix("amended by") || lower.hasPrefix("locked by") ||
-               lower == "detail" || lower == "amend" || lower == "lock" {
+            // 7b. "Originator: NAME" — save previous note, set author for next
+            if let match = Self.originatorPattern.firstMatch(in: trimmed, range: range),
+               let nameRange = Range(match.range(at: 1), in: trimmed) {
+                saveCurrentNote()
+                currentOriginator = String(trimmed[nameRange]).trimmingCharacters(in: .whitespaces)
+                currentBody = []
                 i += 1; continue
             }
 
-            // 8. Skip dash-only lines
+            // 8. Skip EPJS metadata lines that follow boundaries (not clinical content)
+            let lower = trimmed.lowercased()
+            if lower.hasPrefix("event by") || lower.hasPrefix("entered by") ||
+               lower.hasPrefix("amended by") || lower.hasPrefix("locked by") ||
+               lower == "detail" || lower == "amend" || lower == "lock" ||
+               lower == "actionsoverview" {
+                // Also skip the metadata VALUE on the next line (e.g. "System Admin")
+                if lower.hasPrefix("event by") || lower.hasPrefix("entered by") ||
+                   lower.hasPrefix("amended by") || lower.hasPrefix("locked by") {
+                    i += 1
+                    if i < lines.count {
+                        let peek = lines[i].trimmingCharacters(in: .whitespaces)
+                        let peekLower = peek.lowercased()
+                        let peekRange = NSRange(peek.startIndex..., in: peek)
+                        // Skip one value line unless it's itself a boundary/metadata
+                        if !peek.isEmpty && !isDateLine(peek) &&
+                           !peekLower.hasPrefix("event by") && !peekLower.hasPrefix("entered by") &&
+                           !peekLower.hasPrefix("amended by") && !peekLower.hasPrefix("locked by") &&
+                           Self.confirmedBySigPattern.firstMatch(in: peek, range: peekRange) == nil &&
+                           Self.epjsSigPattern.firstMatch(in: peek, range: peekRange) == nil &&
+                           Self.dateTimeDMYPattern.firstMatch(in: peek, range: peekRange) == nil &&
+                           Self.dateTimeISOPattern.firstMatch(in: peek, range: peekRange) == nil &&
+                           isEPJSDateTime(peek) == nil {
+                            i += 1  // Skip the value line
+                        }
+                    }
+                } else {
+                    i += 1
+                }
+                continue
+            }
+
+            // 9. Skip dash-only lines
             if trimmed.hasPrefix("---") && trimmed.filter({ $0 != "-" && !$0.isWhitespace }).isEmpty {
                 i += 1; continue
             }
 
-            // 9. Regular content
+            // 10. Regular content
             currentBody.append(trimmed)
             i += 1
         }

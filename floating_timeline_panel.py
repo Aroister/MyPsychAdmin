@@ -483,6 +483,8 @@ class AdmissionClerkingPanel(QWidget):
 
     # Signal emitted with list of admissions that have clerking notes
     admissionsWithClerkings = Signal(list)
+    # Signal emitted when a clerking entry is expanded (carries the note date)
+    entryClicked = Signal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -500,7 +502,7 @@ class AdmissionClerkingPanel(QWidget):
         layout.setSpacing(0)
 
         # Title
-        title = QLabel("Admission Clerking Notes")
+        title = QLabel("Episode Notes")
         title.setStyleSheet("""
             font-size: 16px;
             font-weight: bold;
@@ -564,11 +566,8 @@ class AdmissionClerkingPanel(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
-        # Get only inpatient episodes (admissions)
-        admissions = [ep for ep in self._episodes if ep.get("type") == "inpatient"]
-
-        if not admissions:
-            no_data = QLabel("No admissions found")
+        if not self._episodes:
+            no_data = QLabel("No episodes found")
             no_data.setStyleSheet("color: #888; font-style: italic; padding: 20px;")
             no_data.setAlignment(Qt.AlignCenter)
             self.content_layout.addWidget(no_data)
@@ -580,55 +579,91 @@ class AdmissionClerkingPanel(QWidget):
         clerking_notes = []
         seen_keys = set()
 
-        # For each admission, find the first clerking note in 2-week window
-        for adm in admissions:
-            adm_start = adm.get("start")
-            if not adm_start:
+        for ep in self._episodes:
+            ep_start = ep.get("start")
+            ep_end = ep.get("end")
+            if not ep_start or not ep_end:
                 continue
 
-            # 2-week window from admission date
-            window_end = adm_start + timedelta(days=14)
+            if ep.get("type") == "inpatient":
+                # --- Inpatient: find first clerking note in 2-week window ---
+                window_end = ep_start + timedelta(days=14)
 
-            # Collect notes within window
-            admission_window_notes = []
-            for note in self._notes:
-                note_date = note.get("date")
-                if not note_date:
-                    continue
+                admission_window_notes = []
+                for note in self._notes:
+                    note_date = note.get("date")
+                    if not note_date:
+                        continue
+                    if hasattr(note_date, "date"):
+                        note_date_obj = note_date.date()
+                    else:
+                        note_date_obj = note_date
+                    if ep_start <= note_date_obj <= window_end:
+                        admission_window_notes.append((note_date_obj, note))
 
-                if hasattr(note_date, "date"):
-                    note_date_obj = note_date.date()
-                else:
-                    note_date_obj = note_date
+                admission_window_notes.sort(key=lambda x: x[0])
 
-                if adm_start <= note_date_obj <= window_end:
-                    admission_window_notes.append((note_date_obj, note))
+                # Try keyword-matched clerking note first
+                found_admission_note = None
+                for note_date_obj, note in admission_window_notes:
+                    text = (note.get("text", "") or note.get("content", "")).lower()
+                    if any(kw in text for kw in ADMISSION_KEYWORDS):
+                        key = (note_date_obj, text[:100])
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            found_admission_note = {
+                                "date": note.get("date"),
+                                "text": note.get("text", "") or note.get("content", ""),
+                                "admission_label": ep.get("label", "Admission"),
+                                "ward": ep.get("ward", ""),
+                                "admission_start": ep_start,
+                            }
+                        break
 
-            # Sort by date to find the FIRST matching entry
-            admission_window_notes.sort(key=lambda x: x[0])
+                # Fallback: first note in window (so admissions are never silently dropped)
+                if not found_admission_note and admission_window_notes:
+                    first_note = admission_window_notes[0][1]
+                    found_admission_note = {
+                        "date": first_note.get("date"),
+                        "text": first_note.get("text", "") or first_note.get("content", ""),
+                        "admission_label": ep.get("label", "Admission"),
+                        "ward": ep.get("ward", ""),
+                        "admission_start": ep_start,
+                    }
 
-            found_admission_note = None
-            for note_date_obj, note in admission_window_notes:
-                text = (note.get("text", "") or note.get("content", "")).lower()
-                if any(kw in text for kw in ADMISSION_KEYWORDS):
-                    key = (note_date_obj, text[:100])
-                    if key not in seen_keys:
-                        seen_keys.add(key)
-                        found_admission_note = {
-                            "date": note.get("date"),
-                            "text": note.get("text", "") or note.get("content", ""),
-                            "admission_label": adm.get("label", "Admission"),
-                            "ward": adm.get("ward", ""),
-                            "admission_start": adm_start  # Store admission date for matching
-                        }
-                    break
+                if found_admission_note:
+                    clerking_notes.append(found_admission_note)
+                    self._matched_admissions.append(ep)
 
-            if found_admission_note:
-                clerking_notes.append(found_admission_note)
-                self._matched_admissions.append(adm)  # Track matched admission
+            else:
+                # --- Community: find first note in the period ---
+                community_notes = []
+                for note in self._notes:
+                    note_date = note.get("date")
+                    if not note_date:
+                        continue
+                    if hasattr(note_date, "date"):
+                        note_date_obj = note_date.date()
+                    else:
+                        note_date_obj = note_date
+                    if ep_start <= note_date_obj <= ep_end:
+                        community_notes.append((note_date_obj, note))
+
+                community_notes.sort(key=lambda x: x[0])
+                if community_notes:
+                    first_note = community_notes[0][1]
+                    clerking_notes.append({
+                        "date": first_note.get("date"),
+                        "text": first_note.get("text", "") or first_note.get("content", ""),
+                        "admission_label": "Community",
+                        "ward": "",
+                        "admission_start": ep_start,
+                        "is_community": True,
+                    })
+                    self._matched_admissions.append(ep)
 
         if not clerking_notes:
-            no_data = QLabel("No clerking notes found")
+            no_data = QLabel("No episode notes found")
             no_data.setStyleSheet("color: #888; font-style: italic; padding: 20px;")
             no_data.setAlignment(Qt.AlignCenter)
             self.content_layout.addWidget(no_data)
@@ -679,6 +714,9 @@ class AdmissionClerkingPanel(QWidget):
         text = clerking.get("text", "").strip()
         adm_label = clerking.get("admission_label", "")
         ward = clerking.get("ward", "")
+        is_community = clerking.get("is_community", False)
+        color = "#5cb85c" if is_community else "#d9534f"
+        header_prefix = "First Community Note" if is_community else adm_label
 
         # Format date
         if dt:
@@ -707,28 +745,28 @@ class AdmissionClerkingPanel(QWidget):
         toggle_btn = QPushButton("▶")
         toggle_btn.setFixedSize(18, 18)
         toggle_btn.setCursor(Qt.PointingHandCursor)
-        toggle_btn.setStyleSheet("""
-            QPushButton {
+        toggle_btn.setStyleSheet(f"""
+            QPushButton {{
                 background: transparent;
                 border: none;
                 font-size: 11px;
-                color: #d9534f;
-            }
+                color: {color};
+            }}
         """)
         header_layout.addWidget(toggle_btn)
 
-        # Simple label: Admission 1 - Ward Name (date)
-        label_text = adm_label
+        # Simple label: Admission 1 - Ward Name (date) / First Community Note (date)
+        label_text = header_prefix
         if ward:
             label_text += f" - {ward}"
         label_text += f" ({date_str})"
 
         title_label = QLabel(label_text)
         title_label.setCursor(Qt.PointingHandCursor)
-        title_label.setStyleSheet("""
+        title_label.setStyleSheet(f"""
             font-size: 15px;
             font-weight: 600;
-            color: #d9534f;
+            color: {color};
             background: transparent;
             border: none;
         """)
@@ -743,24 +781,28 @@ class AdmissionClerkingPanel(QWidget):
         content.setVisible(False)
         content.setMinimumHeight(100)
         content.setMaximumHeight(250)
-        content.setStyleSheet("""
-            QTextEdit {
+        content.setStyleSheet(f"""
+            QTextEdit {{
                 background: #fafafa;
                 border: none;
-                border-left: 3px solid #d9534f;
+                border-left: 3px solid {color};
                 font-size: 14px;
                 color: #333;
                 padding: 8px;
                 margin-left: 18px;
-            }
+            }}
         """)
         frame_layout.addWidget(content)
 
-        # Toggle function
+        # Toggle function — also emit entryClicked to navigate notes panel
+        note_date = clerking.get("date")
+
         def toggle_content():
             is_visible = content.isVisible()
             content.setVisible(not is_visible)
             toggle_btn.setText("▼" if not is_visible else "▶")
+            if not is_visible and note_date is not None:
+                self.entryClicked.emit(note_date)
 
         toggle_btn.clicked.connect(toggle_content)
         title_label.mousePressEvent = lambda e: toggle_content()
@@ -854,6 +896,8 @@ class FloatingTimelinePanel(QFrame):
             """)
             # Connect signal to filter timeline when clerking notes are found
             self.clerking_panel.admissionsWithClerkings.connect(self._on_clerkings_found)
+            # Connect clerking entry clicks to navigate notes panel
+            self.clerking_panel.entryClicked.connect(self.episodeClicked.emit)
             h_layout.addWidget(self.clerking_panel, 1)
 
             layout.addWidget(h_container, 1)
@@ -938,22 +982,21 @@ class FloatingTimelinePanel(QFrame):
             self.clerking_panel.set_data(episodes, notes)
 
     def _on_clerkings_found(self, matched_admissions):
-        """Filter timeline to only show admissions with clerking notes."""
+        """Filter timeline to only show episodes with notes found."""
         if not self.embedded or not matched_admissions:
             return
 
-        # Get the start dates of matched admissions
+        # Get the start dates of matched episodes (both inpatient and community)
         matched_starts = {adm.get("start") for adm in matched_admissions}
 
-        # Filter episodes: keep community periods + only matched inpatient admissions
+        # Filter: keep matched inpatient, matched community, unmatched community
+        # (only hide inpatient episodes that have no clerking note)
         filtered_episodes = []
         for ep in self._all_episodes:
             if ep.get("type") == "inpatient":
-                # Only include if it has a clerking note
                 if ep.get("start") in matched_starts:
                     filtered_episodes.append(ep)
             else:
-                # Keep community periods
                 filtered_episodes.append(ep)
 
         # Update timeline with filtered episodes
@@ -964,10 +1007,9 @@ class FloatingTimelinePanel(QFrame):
         if not self.embedded or not hasattr(self, 'clerking_panel'):
             return
 
-        # Find the episode that was clicked
+        # Find the episode that was clicked (any type)
         for ep in self._all_episodes:
-            if ep.get("type") == "inpatient" and ep.get("start") == clicked_date:
-                # Expand the clerking for this admission
+            if ep.get("start") == clicked_date:
                 self.clerking_panel.expand_clerking_for_date(clicked_date)
                 break
 
