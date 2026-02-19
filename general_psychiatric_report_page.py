@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from datetime import datetime
 from typing import Optional
 
@@ -22,11 +23,10 @@ from PySide6.QtWidgets import (
     QGridLayout, QApplication
 )
 from PySide6.QtCore import QDate
-from letter_rich_text_editor import MyPsychAdminRichTextEditor
+from mypsy_richtext_editor import MyPsychAdminRichTextEditor
 
 from background_history_popup import BackgroundHistoryPopup, CollapsibleSection, ResizableSection
 from shared_widgets import create_zoom_row, add_lock_to_popup
-from spell_check_textedit import enable_spell_check_on_textedit
 from physical_health_popup import PhysicalHealthPopup
 from drugs_alcohol_popup import DrugsAlcoholPopup
 
@@ -67,8 +67,7 @@ class GPRToolbar(QWidget):
     redo = Signal()
 
     export_docx = Signal()
-    import_file = Signal()
-    open_data_extractor = Signal()
+    check_spelling = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -148,10 +147,14 @@ class GPRToolbar(QWidget):
         export_btn.clicked.connect(self.export_docx.emit)
         layout.addWidget(export_btn)
 
-        # Import File button
+        # Uploaded Docs button (dropdown menu)
+        from PySide6.QtWidgets import QMenu
         import_btn = QToolButton()
-        import_btn.setText("Import File")
-        import_btn.setFixedSize(130, 42)
+        import_btn.setText("Uploaded Docs")
+        import_btn.setFixedSize(160, 42)
+        import_btn.setPopupMode(QToolButton.InstantPopup)
+        self.upload_menu = QMenu()
+        import_btn.setMenu(self.upload_menu)
         import_btn.setStyleSheet("""
             QToolButton {
                 background: #10b981;
@@ -164,35 +167,18 @@ class GPRToolbar(QWidget):
             }
             QToolButton:hover { background: #059669; }
             QToolButton:pressed { background: #047857; }
+            QToolButton::menu-indicator { image: none; }
         """)
-        import_btn.clicked.connect(self.import_file.emit)
         layout.addWidget(import_btn)
-
-        # View Data button (Data Extractor)
-        data_btn = QToolButton()
-        data_btn.setText("View Data")
-        data_btn.setFixedSize(130, 42)
-        data_btn.setStyleSheet("""
-            QToolButton {
-                background: #8b5cf6;
-                color: white;
-                font-size: 18px;
-                font-weight: 600;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 16px;
-            }
-            QToolButton:hover { background: #7c3aed; }
-            QToolButton:pressed { background: #6d28d9; }
-        """)
-        data_btn.clicked.connect(self.open_data_extractor.emit)
-        layout.addWidget(data_btn)
 
         # Font Family
         self.font_combo = NoWheelComboBox()
         self.font_combo.setFixedWidth(160)
         families = QFontDatabase.families()
-        preferred = ["Avenir Next", "Avenir", "SF Pro Text", "Helvetica Neue", "Helvetica"]
+        if sys.platform == "win32":
+            preferred = ["Segoe UI", "Calibri", "Cambria", "Arial", "Times New Roman"]
+        else:
+            preferred = ["Avenir Next", "Avenir", "SF Pro Text", "Helvetica Neue", "Helvetica"]
         added = set()
         for f in preferred:
             if f in families:
@@ -225,6 +211,27 @@ class GPRToolbar(QWidget):
         layout.addWidget(btn("A", self._choose_text_color))
         layout.addWidget(btn("⟲", self.undo.emit))
         layout.addWidget(btn("⟳", self.redo.emit))
+
+        # Spell Check button
+        spell_btn = QToolButton()
+        spell_btn.setText("Spell Check")
+        spell_btn.setFixedSize(120, 38)
+        spell_btn.setStyleSheet("""
+            QToolButton {
+                background: #f59e0b;
+                color: white;
+                font-size: 16px;
+                font-weight: 600;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 12px;
+            }
+            QToolButton:hover { background: #d97706; }
+            QToolButton:pressed { background: #b45309; }
+        """)
+        spell_btn.setToolTip("Jump to next spelling error")
+        spell_btn.clicked.connect(self.check_spelling.emit)
+        layout.addWidget(spell_btn)
 
         scroll.setWidget(container)
         outer_layout.addWidget(scroll)
@@ -1422,10 +1429,49 @@ class GPRPsychHistoryPopup(QWidget):
             body_text.setVisible(False)
             entry_layout.addWidget(body_text)
 
-            def make_toggle(btn, body, frame, popup_self):
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(37,99,235,0.1), stop:0.5 rgba(37,99,235,0.3), stop:1 rgba(37,99,235,0.1));
+                    border-radius: 2px; margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(37,99,235,0.2), stop:0.5 rgba(37,99,235,0.5), stop:1 rgba(37,99,235,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+            entry_layout.addWidget(drag_bar)
+
+            def make_toggle(btn, body, frame, popup_self, bar):
                 def toggle():
                     is_visible = body.isVisible()
                     body.setVisible(not is_visible)
+                    bar.setVisible(not is_visible)
                     btn.setText("▾" if not is_visible else "▸")
                     frame.updateGeometry()
                     if hasattr(popup_self, 'clerking_container'):
@@ -1433,7 +1479,7 @@ class GPRPsychHistoryPopup(QWidget):
                         popup_self.clerking_container.update()
                 return toggle
 
-            toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self)
+            toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self, drag_bar)
             toggle_btn.clicked.connect(toggle_fn)
             date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
@@ -1574,10 +1620,49 @@ class GPRPsychHistoryPopup(QWidget):
                 body_text.setVisible(False)
                 entry_layout.addWidget(body_text)
 
-                def make_toggle(btn, body, frame, popup_self):
+                drag_bar = QFrame()
+                drag_bar.setFixedHeight(8)
+                drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+                drag_bar.setStyleSheet("""
+                    QFrame {
+                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                        border-radius: 2px; margin: 2px 40px;
+                    }
+                    QFrame:hover {
+                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                    }
+                """)
+                drag_bar.setVisible(False)
+                drag_bar._drag_y = None
+                drag_bar._init_h = None
+                def _make_drag_handlers(handle, text_widget):
+                    def press(ev):
+                        handle._drag_y = ev.globalPosition().y()
+                        handle._init_h = text_widget.height()
+                    def move(ev):
+                        if handle._drag_y is not None:
+                            delta = int(ev.globalPosition().y() - handle._drag_y)
+                            new_h = max(60, handle._init_h + delta)
+                            text_widget.setMinimumHeight(new_h)
+                            text_widget.setMaximumHeight(new_h)
+                    def release(ev):
+                        if handle._drag_y is not None:
+                            text_widget.setMaximumHeight(16777215)
+                            handle._drag_y = None
+                    return press, move, release
+                dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+                drag_bar.mousePressEvent = dp
+                drag_bar.mouseMoveEvent = dm
+                drag_bar.mouseReleaseEvent = dr
+                entry_layout.addWidget(drag_bar)
+
+                def make_toggle(btn, body, frame, popup_self, bar):
                     def toggle():
                         is_visible = body.isVisible()
                         body.setVisible(not is_visible)
+                        bar.setVisible(not is_visible)
                         btn.setText("▾" if not is_visible else "▸")
                         frame.updateGeometry()
                         if hasattr(popup_self, 'extracted_container'):
@@ -1585,7 +1670,7 @@ class GPRPsychHistoryPopup(QWidget):
                             popup_self.extracted_container.update()
                     return toggle
 
-                toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self)
+                toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self, drag_bar)
                 toggle_btn.clicked.connect(toggle_fn)
                 date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
@@ -2549,7 +2634,7 @@ class GPRRiskPopup(QWidget):
             entry_layout.setContentsMargins(6, 6, 6, 6)
             entry_layout.setSpacing(4)
 
-            # Header row with toggle, risk type badge, date, severity, and checkbox
+            # Header row: toggle → date → risk badge → severity → stretch → checkbox
             header_row = QHBoxLayout()
             header_row.setSpacing(8)
 
@@ -2569,6 +2654,20 @@ class GPRRiskPopup(QWidget):
                 QPushButton:hover { background: rgba(180, 150, 50, 0.35); }
             """)
             header_row.addWidget(toggle_btn)
+
+            # Date label
+            date_label = QLabel(f"📅 {date_str}")
+            date_label.setStyleSheet("""
+                QLabel {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #806000;
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
+            header_row.addWidget(date_label)
 
             # Risk type badge
             risk_badge = QLabel(f"{cat_name}: {subcat_name}")
@@ -2599,20 +2698,6 @@ class GPRRiskPopup(QWidget):
                 }}
             """)
             header_row.addWidget(sev_badge)
-
-            # Date label
-            date_label = QLabel(f"📅 {date_str}")
-            date_label.setStyleSheet("""
-                QLabel {
-                    font-size: 16px;
-                    font-weight: 500;
-                    color: #806000;
-                    background: transparent;
-                    border: none;
-                }
-            """)
-            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
-            header_row.addWidget(date_label)
             header_row.addStretch()
 
             # Checkbox on the RIGHT
@@ -2654,11 +2739,50 @@ class GPRRiskPopup(QWidget):
             body_text.setVisible(False)
             entry_layout.addWidget(body_text)
 
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px; margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(50, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+            entry_layout.addWidget(drag_bar)
+
             # Toggle function
-            def make_toggle(btn, body, frame, popup_self):
+            def make_toggle(btn, body, frame, popup_self, bar):
                 def toggle():
                     is_visible = body.isVisible()
                     body.setVisible(not is_visible)
+                    bar.setVisible(not is_visible)
                     btn.setText("▾" if not is_visible else "▸")
                     frame.updateGeometry()
                     if hasattr(popup_self, 'extracted_container'):
@@ -2666,11 +2790,13 @@ class GPRRiskPopup(QWidget):
                         popup_self.extracted_container.update()
                 return toggle
 
-            toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self)
+            toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self, drag_bar)
             toggle_btn.clicked.connect(toggle_fn)
             date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
             self._risk_incidents_layout.addWidget(entry_frame)
+
+        self._risk_incidents_layout.addStretch()
 
 
 # ================================================================
@@ -3778,21 +3904,39 @@ class GPRSubstanceUsePopup(QWidget):
             entry_layout.setContentsMargins(6, 6, 6, 6)
             entry_layout.setSpacing(4)
 
-            # Header row with checkbox, subcategory badge, date, severity
+            # Header row: toggle → date → subcategory badge → severity → stretch → checkbox
             header_row = QHBoxLayout()
             header_row.setSpacing(8)
 
-            # Checkbox
-            cb = QCheckBox()
-            cb.setProperty("full_text", text)
-            cb.setFixedSize(18, 18)
-            cb.setStyleSheet("""
-                QCheckBox { background: transparent; }
-                QCheckBox::indicator { width: 16px; height: 16px; }
+            # Toggle button
+            toggle_btn = QPushButton("▸")
+            toggle_btn.setFixedSize(22, 22)
+            toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            toggle_btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(180, 150, 50, 0.2);
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 17px;
+                    font-weight: bold;
+                    color: #806000;
+                }
+                QPushButton:hover { background: rgba(180, 150, 50, 0.35); }
             """)
-            cb.stateChanged.connect(self._update_main_preview)
-            header_row.addWidget(cb)
-            self._extracted_checkboxes.append(cb)
+            header_row.addWidget(toggle_btn)
+
+            # Date label
+            date_label = QLabel(f"📅 {date_str}")
+            date_label.setStyleSheet("""
+                QLabel {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #806000;
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            header_row.addWidget(date_label)
 
             # Subcategory badge
             badge_text = f"Substance Misuse: {subcat_name}" if subcat_name else "Substance Misuse"
@@ -3824,21 +3968,20 @@ class GPRSubstanceUsePopup(QWidget):
                 }}
             """)
             header_row.addWidget(sev_badge)
-
-            # Date label
-            date_label = QLabel(f"📅 {date_str}")
-            date_label.setStyleSheet("""
-                QLabel {
-                    font-size: 16px;
-                    font-weight: 500;
-                    color: #806000;
-                    background: transparent;
-                    border: none;
-                }
-            """)
-            header_row.addWidget(date_label)
-
             header_row.addStretch()
+
+            # Checkbox on the RIGHT
+            cb = QCheckBox()
+            cb.setProperty("full_text", text)
+            cb.setFixedSize(18, 18)
+            cb.setStyleSheet("""
+                QCheckBox { background: transparent; }
+                QCheckBox::indicator { width: 16px; height: 16px; }
+            """)
+            cb.stateChanged.connect(self._update_main_preview)
+            header_row.addWidget(cb)
+            self._extracted_checkboxes.append(cb)
+
             entry_layout.addLayout(header_row)
 
             # Text content
@@ -3861,9 +4004,65 @@ class GPRSubstanceUsePopup(QWidget):
                     color: #4a4a4a;
                 }
             """)
+            body_text.setVisible(False)
             entry_layout.addWidget(body_text)
 
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px; margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+            entry_layout.addWidget(drag_bar)
+
+            def make_toggle(btn, body, bar):
+                def toggle():
+                    if body.isVisible():
+                        body.setVisible(False)
+                        bar.setVisible(False)
+                        btn.setText("▸")
+                    else:
+                        body.setVisible(True)
+                        bar.setVisible(True)
+                        btn.setText("▾")
+                return toggle
+
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
+            date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
+
             self._substance_incidents_layout.addWidget(entry_frame)
+
+        self._substance_incidents_layout.addStretch()
 
 
 # ================================================================
@@ -4298,8 +4497,9 @@ class GPRMedicationPopup(QWidget):
             entry_layout = QVBoxLayout(entry_frame)
             entry_layout.setContentsMargins(6, 6, 6, 6)
             entry_layout.setSpacing(4)
+            entry_layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinAndMaxSize)
 
-            # Header row with toggle, source badge, date, checkbox
+            # Header row: toggle → date → source badge → stretch → checkbox
             header_row = QHBoxLayout()
             header_row.setSpacing(8)
 
@@ -4320,6 +4520,20 @@ class GPRMedicationPopup(QWidget):
             """)
             header_row.addWidget(toggle_btn)
 
+            # Date label
+            date_label = QLabel(f"📅 {date_str}")
+            date_label.setStyleSheet("""
+                QLabel {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #806000;
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
+            header_row.addWidget(date_label)
+
             # Source badge
             badge_text = "Medication" if not source_label else source_label[:30]
             source_badge = QLabel(badge_text)
@@ -4335,20 +4549,6 @@ class GPRMedicationPopup(QWidget):
                 }
             """)
             header_row.addWidget(source_badge)
-
-            # Date label
-            date_label = QLabel(f"📅 {date_str}")
-            date_label.setStyleSheet("""
-                QLabel {
-                    font-size: 16px;
-                    font-weight: 500;
-                    color: #806000;
-                    background: transparent;
-                    border: none;
-                }
-            """)
-            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
-            header_row.addWidget(date_label)
             header_row.addStretch()
 
             # Checkbox on the RIGHT
@@ -4389,11 +4589,50 @@ class GPRMedicationPopup(QWidget):
             body_text.setVisible(False)
             entry_layout.addWidget(body_text)
 
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px; margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+            entry_layout.addWidget(drag_bar)
+
             # Toggle function
-            def make_toggle(btn, body, frame, popup_self):
+            def make_toggle(btn, body, frame, popup_self, bar):
                 def toggle():
                     is_visible = body.isVisible()
                     body.setVisible(not is_visible)
+                    bar.setVisible(not is_visible)
                     btn.setText("▾" if not is_visible else "▸")
                     frame.updateGeometry()
                     if hasattr(popup_self, 'extracted_container'):
@@ -4401,11 +4640,13 @@ class GPRMedicationPopup(QWidget):
                         popup_self.extracted_container.update()
                 return toggle
 
-            toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self)
+            toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self, drag_bar)
             toggle_btn.clicked.connect(toggle_fn)
             date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
             self.extracted_checkboxes_layout.addWidget(entry_frame)
+
+        self.extracted_checkboxes_layout.addStretch()
 
         if has_entries:
             self.extracted_section.setVisible(True)
@@ -5030,7 +5271,7 @@ class GPRDiagnosisPopup(QWidget):
             entry_layout.setContentsMargins(6, 6, 6, 6)
             entry_layout.setSpacing(4)
 
-            # Header row with toggle, source badge, date, checkbox
+            # Header row: toggle → date → source badge → stretch → checkbox
             header_row = QHBoxLayout()
             header_row.setSpacing(8)
 
@@ -5051,6 +5292,20 @@ class GPRDiagnosisPopup(QWidget):
             """)
             header_row.addWidget(toggle_btn)
 
+            # Date label
+            date_label = QLabel(f"📅 {date_str}")
+            date_label.setStyleSheet("""
+                QLabel {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #806000;
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
+            header_row.addWidget(date_label)
+
             # Source badge
             badge_text = "Diagnosis" if not source_label else source_label[:30]
             source_badge = QLabel(badge_text)
@@ -5066,20 +5321,6 @@ class GPRDiagnosisPopup(QWidget):
                 }
             """)
             header_row.addWidget(source_badge)
-
-            # Date label
-            date_label = QLabel(f"📅 {date_str}")
-            date_label.setStyleSheet("""
-                QLabel {
-                    font-size: 16px;
-                    font-weight: 500;
-                    color: #806000;
-                    background: transparent;
-                    border: none;
-                }
-            """)
-            date_label.setCursor(Qt.CursorShape.PointingHandCursor)
-            header_row.addWidget(date_label)
             header_row.addStretch()
 
             # Checkbox on the RIGHT
@@ -5625,14 +5866,25 @@ class GPRLegalCriteriaPopup(QWidget):
 
     sent = Signal(str)
 
-    def __init__(self, parent=None, gender=None):
+    def __init__(self, parent=None, gender=None, icd10_dict=None):
         super().__init__(parent)
         self.gender = gender or "neutral"
-        self._diagnosis_text = ""  # Will be set from section 11
+        self.icd10_dict = icd10_dict or {}
+        print(f"[GPRLegalCriteriaPopup] __init__: gender={self.gender}, icd10_dict has {len(self.icd10_dict)} entries")
+        self._diagnosis_text = ""  # Will be set from section 11 or combo
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._extracted_checkboxes = []
         self._setup_ui()
+        print(f"[GPRLegalCriteriaPopup] After _setup_ui: dx_combos={len(self.dx_combos)}, items_in_first_combo={self.dx_combos[0].count() if self.dx_combos else 'N/A'}")
         add_lock_to_popup(self, show_button=False)
+
+    def eventFilter(self, obj, event):
+        """Block wheel events on combo boxes to prevent accidental scrolling changes."""
+        from PySide6.QtCore import QEvent
+        from PySide6.QtWidgets import QComboBox
+        if event.type() == QEvent.Type.Wheel and isinstance(obj, QComboBox):
+            return True
+        return super().eventFilter(obj, event)
 
     def _get_pronouns(self):
         g = (self.gender or "").lower().strip()
@@ -5677,7 +5929,7 @@ class GPRLegalCriteriaPopup(QWidget):
         # ====================================================
         # SECTION 2: INPUT FORM (collapsible with drag bar)
         # ====================================================
-        self.input_section = CollapsibleSection("Legal Criteria", start_collapsed=True)
+        self.input_section = CollapsibleSection("Legal Criteria", start_collapsed=False)
         self.input_section.set_content_height(800)
         self.input_section._min_height = 200
         self.input_section._max_height = 1200
@@ -5762,6 +6014,63 @@ class GPRLegalCriteriaPopup(QWidget):
         md_row.addWidget(self.md_absent)
         md_row.addStretch()
         form_layout.addLayout(md_row)
+
+        # ICD-10 diagnosis combo (shown when Present is selected)
+        self.dx_container = QWidget()
+        self.dx_container.setStyleSheet("background: transparent;")
+        dx_layout = QVBoxLayout(self.dx_container)
+        dx_layout.setContentsMargins(0, 4, 0, 0)
+        dx_layout.setSpacing(6)
+
+        dx_lbl = QLabel("Diagnosis (ICD-10)")
+        dx_lbl.setStyleSheet("font-size: 17px; font-weight: 600; color: #374151; background: transparent;")
+        dx_layout.addWidget(dx_lbl)
+
+        from PySide6.QtWidgets import QComboBox, QCompleter, QStyleFactory
+        self.dx_combos = []
+        for i in range(3):
+            combo = QComboBox()
+            combo.setStyle(QStyleFactory.create("Fusion"))
+            combo.setEditable(True)
+            combo.lineEdit().setReadOnly(True)
+            combo.lineEdit().setPlaceholderText("Start typing to search...")
+            combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            combo.setMinimumContentsLength(25)
+            combo.setStyleSheet("""
+                QComboBox {
+                    padding: 6px;
+                    font-size: 17px;
+                    background: white;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                }
+                QComboBox QAbstractItemView {
+                    min-width: 400px;
+                }
+            """)
+            combo.addItem("Not specified", None)
+            for diagnosis, meta in sorted(
+                self.icd10_dict.items(),
+                key=lambda x: x[0].lower()
+            ):
+                icd_code = meta.get("icd10") if isinstance(meta, dict) else meta
+                combo.addItem(diagnosis, {"diagnosis": diagnosis, "icd10": icd_code})
+
+            completer = QCompleter(combo.model(), combo)
+            completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+            completer.setFilterMode(Qt.MatchFlag.MatchContains)
+            completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+            combo.setCompleter(completer)
+            combo.setMaxVisibleItems(15)
+            combo.currentIndexChanged.connect(self._update_preview)
+            combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            combo.installEventFilter(self)
+
+            dx_layout.addWidget(combo)
+            self.dx_combos.append(combo)
+
+        self.dx_container.hide()
+        form_layout.addWidget(self.dx_container)
 
         # Container for criteria (shown when Present is selected)
         self.criteria_container = QWidget()
@@ -6228,11 +6537,42 @@ class GPRLegalCriteriaPopup(QWidget):
     # TOGGLE HANDLERS
     # ============================================
     def _on_md_toggled(self, checked):
-        if self.md_present.isChecked():
-            self.criteria_container.show()
-        else:
-            self.criteria_container.hide()
+        try:
+            present = self.md_present.isChecked()
+            print(f"[GPRLegalCriteriaPopup] _on_md_toggled: checked={checked}, present={present}, icd10_items={len(self.icd10_dict)}")
+            self.dx_container.setVisible(present)
+            self.criteria_container.setVisible(present)
+            # Force layout recalculation (nested scroll areas can fail to update on Windows)
+            if present:
+                self.dx_container.updateGeometry()
+                self.criteria_container.updateGeometry()
+                parent = self.dx_container.parentWidget()
+                while parent and parent is not self:
+                    if parent.layout():
+                        parent.layout().activate()
+                    parent.updateGeometry()
+                    parent = parent.parentWidget()
+                from PySide6.QtWidgets import QApplication
+                QApplication.processEvents()
+                # Scroll dx_container into view
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(100, lambda: self._scroll_to_widget(self.dx_container))
+            print(f"[GPRLegalCriteriaPopup] dx_container visible={self.dx_container.isVisible()}, size={self.dx_container.size().width()}x{self.dx_container.size().height()}")
+        except Exception as e:
+            print(f"[GPRLegalCriteriaPopup] ERROR in _on_md_toggled: {e}")
+            import traceback
+            traceback.print_exc()
         self._update_preview()
+
+    def _scroll_to_widget(self, widget):
+        """Scroll the nearest parent QScrollArea to make widget visible."""
+        from PySide6.QtWidgets import QScrollArea
+        parent = widget.parentWidget()
+        while parent:
+            if isinstance(parent, QScrollArea):
+                parent.ensureWidgetVisible(widget, 50, 50)
+                break
+            parent = parent.parentWidget()
 
     def _on_cwd_toggled(self, checked):
         if self.cwd_met.isChecked():
@@ -6319,15 +6659,35 @@ class GPRLegalCriteriaPopup(QWidget):
         # Send directly to card
         self.sent.emit(text)
 
+    def _get_selected_diagnoses(self) -> list:
+        """Get list of selected diagnosis strings from ICD-10 combos."""
+        diagnoses = []
+        for combo in self.dx_combos:
+            meta = combo.currentData()
+            if meta and isinstance(meta, dict):
+                dx = meta.get("diagnosis", "")
+                icd = meta.get("icd10", "")
+                if dx:
+                    diagnoses.append(f"{dx} ({icd})" if icd else dx)
+        return diagnoses
+
     def generate_text(self) -> str:
         p = self._get_pronouns()
         parts = []
 
         # 1. Mental Disorder + Nature/Degree (combined into one sentence)
         if self.md_present.isChecked():
-            # Build base mental disorder text
-            if self._diagnosis_text:
-                md_base = f"{p['subj']} {p['suffers']} from {self._diagnosis_text} which is a mental disorder under the Mental Health Act"
+            # Build diagnosis text from combo selection, then fallback to external set_diagnosis
+            combo_diagnoses = self._get_selected_diagnoses()
+            if combo_diagnoses:
+                dx_text = ", ".join(combo_diagnoses[:-1]) + " and " + combo_diagnoses[-1] if len(combo_diagnoses) > 1 else combo_diagnoses[0]
+            elif self._diagnosis_text:
+                dx_text = self._diagnosis_text
+            else:
+                dx_text = ""
+
+            if dx_text:
+                md_base = f"{p['subj']} {p['suffers']} from {dx_text} which is a mental disorder under the Mental Health Act"
             else:
                 md_base = f"{p['subj']} {p['suffers']} from a mental disorder under the Mental Health Act"
 
@@ -6513,9 +6873,15 @@ class GPRLegalCriteriaPopup(QWidget):
             self.extracted_section.setVisible(False)
 
     def get_state(self) -> dict:
+        dx_list = []
+        for combo in self.dx_combos:
+            meta = combo.currentData()
+            if meta:
+                dx_list.append(meta)
         return {
             "md_present": self.md_present.isChecked(),
             "md_absent": self.md_absent.isChecked(),
+            "diagnoses": dx_list,
             "cwd_met": self.cwd_met.isChecked(),
             "cwd_not_met": self.cwd_not_met.isChecked(),
             "nature": self.nature_cb.isChecked(),
@@ -6550,6 +6916,18 @@ class GPRLegalCriteriaPopup(QWidget):
             self.md_present.setChecked(True)
         elif state.get("md_absent"):
             self.md_absent.setChecked(True)
+
+        # Restore ICD-10 combo selections
+        dx_list = state.get("diagnoses", [])
+        for i, combo in enumerate(self.dx_combos):
+            if i < len(dx_list) and dx_list[i]:
+                meta = dx_list[i]
+                dx_name = meta.get("diagnosis", "")
+                for j in range(combo.count()):
+                    d = combo.itemData(j)
+                    if d and isinstance(d, dict) and d.get("diagnosis") == dx_name:
+                        combo.setCurrentIndex(j)
+                        break
 
         if state.get("cwd_met"):
             self.cwd_met.setChecked(True)
@@ -8204,6 +8582,13 @@ class GeneralPsychReportPage(QWidget):
         # Track last popup text for each section to preserve user additions
         self._last_popup_text = {}
 
+        # Guard flags to prevent reprocessing on navigation
+        self._data_processed_id = None
+        self._notes_processed_id = None
+
+        # Imported report data (from DOCX tribunal report parser)
+        self._imported_report_data = {}
+
         self._setup_ui()
 
         # Connect to SharedDataStore for cross-report data sharing
@@ -8217,7 +8602,9 @@ class GeneralPsychReportPage(QWidget):
             shared_store.patient_info_changed.connect(self._on_patient_info_changed)
             shared_store.notes_changed.connect(self._on_notes_changed)
             shared_store.extracted_data_changed.connect(self._on_extracted_data_changed)
-            print("[GPR] Connected to SharedDataStore signals (patient_info, notes, extracted_data)")
+            if hasattr(shared_store, 'report_sections_changed'):
+                shared_store.report_sections_changed.connect(self._on_shared_report_sections_changed)
+            print("[GPR] Connected to SharedDataStore signals (patient_info, notes, extracted_data, report_sections)")
 
             # Check for existing data in shared store
             self._check_shared_store_for_existing_data()
@@ -8247,8 +8634,30 @@ class GeneralPsychReportPage(QWidget):
             if extracted_data:
                 print(f"[GPR] Found existing extracted data in SharedDataStore")
                 self._on_extracted_data_changed(extracted_data)
+
+            # Check for existing report sections from another form
+            if hasattr(shared_store, 'report_sections'):
+                report_sections = shared_store.report_sections
+                report_source = shared_store.get_report_source()
+                if report_sections and report_source and report_source != "general_psychiatric":
+                    print(f"[GPR] Found existing report sections from {report_source}")
+                    self._on_shared_report_sections_changed(report_sections, report_source)
         except Exception as e:
             print(f"[GPR] Error checking shared store: {e}")
+
+    def _has_report_data(self):
+        """Check if report data has been imported (local or via SharedDataStore)."""
+        if self._imported_report_data:
+            return True
+        try:
+            from shared_data_store import get_shared_store
+            shared_store = get_shared_store()
+            source = shared_store.get_report_source()
+            if source and source != "general_psychiatric" and shared_store.report_sections:
+                return True
+        except Exception:
+            pass
+        return False
 
     def _on_patient_info_changed(self, patient_info: dict):
         """Handle patient info updates from SharedDataStore."""
@@ -8258,6 +8667,9 @@ class GeneralPsychReportPage(QWidget):
 
     def _on_notes_changed(self, notes: list):
         """Handle notes updates from SharedDataStore."""
+        if self._has_report_data():
+            print("[GPR] Skipping _on_notes_changed - report data takes priority")
+            return
         if notes:
             print(f"[GPR] Received {len(notes)} notes from SharedDataStore")
             self._extracted_raw_notes = notes
@@ -8266,6 +8678,9 @@ class GeneralPsychReportPage(QWidget):
 
     def _on_extracted_data_changed(self, data: dict):
         """Handle extracted data updates from SharedDataStore - full popup population."""
+        if self._has_report_data():
+            print("[GPR] Skipping _on_extracted_data_changed - report data takes priority")
+            return
         if not data:
             return
 
@@ -8297,6 +8712,29 @@ class GeneralPsychReportPage(QWidget):
                 self._populate_popup_with_extracted_data(key, popup)
 
         print(f"[GPR] Refreshed popups with SharedDataStore data")
+
+    def _on_shared_report_sections_changed(self, sections: dict, source_form: str):
+        """Handle report sections imported from another form (cross-talk)."""
+        if source_form == "general_psychiatric":
+            return  # Skip own exports
+
+        print(f"[GPR] Cross-talk received from {source_form}: {len(sections)} sections")
+
+        # Store imported data for popups
+        for key, content in sections.items():
+            if not content:
+                continue
+            # Map incoming key to GPR section key if needed
+            gpr_key = self.CATEGORY_TO_SECTION.get(key, key)
+            self._imported_report_data[gpr_key] = content
+
+            # Delete cached popup for refresh
+            if gpr_key in self.popups:
+                old = self.popups.pop(gpr_key)
+                self.popup_stack.removeWidget(old)
+                old.deleteLater()
+
+        print(f"[GPR] Cross-talk stored {len(sections)} sections from {source_form}")
 
     def _refresh_notes_based_popups(self):
         """Refresh popups that depend on notes data."""
@@ -8340,6 +8778,17 @@ class GeneralPsychReportPage(QWidget):
         """
         if not notes:
             return
+
+        if self._has_report_data():
+            print("[GPR] Skipping set_notes - report data takes priority")
+            return
+
+        # Skip if these exact notes were already processed
+        notes_sig = (len(notes), id(notes))
+        if self._notes_processed_id == notes_sig:
+            print(f"[GeneralPsych] Skipping set_notes - notes already processed")
+            return
+        self._notes_processed_id = notes_sig
 
         # Store raw notes at page level for use in sections
         self._extracted_raw_notes = notes
@@ -8417,9 +8866,11 @@ class GeneralPsychReportPage(QWidget):
         # Toolbar
         self.toolbar = GPRToolbar()
         self.toolbar.export_docx.connect(self._export_docx)
-        self.toolbar.import_file.connect(self._import_file)
-        self.toolbar.open_data_extractor.connect(self._open_data_extractor_overlay)
-
+        # Connect uploaded docs menu to SharedDataStore
+        from shared_data_store import get_shared_store
+        self._shared_store = get_shared_store()
+        self._shared_store.uploaded_documents_changed.connect(self._refresh_upload_menu)
+        self._refresh_upload_menu(self._shared_store.get_uploaded_documents())
         # Track last active editor (persists when toolbar clicked)
         self._active_editor = None
 
@@ -8451,6 +8902,18 @@ class GeneralPsychReportPage(QWidget):
         )
         self.toolbar.undo.connect(lambda: safe_call("undo"))
         self.toolbar.redo.connect(lambda: safe_call("redo"))
+
+        def check_spelling():
+            editor = get_active_editor()
+            if editor and hasattr(editor, 'jump_to_next_error'):
+                if not editor.jump_to_next_error():
+                    QMessageBox.information(
+                        self,
+                        "Spell Check",
+                        "No spelling errors found."
+                    )
+
+        self.toolbar.check_spelling.connect(check_spelling)
 
         main_layout.addWidget(self.toolbar)
 
@@ -8731,10 +9194,14 @@ class GeneralPsychReportPage(QWidget):
         # Get the most recent (last) inpatient episode
         most_recent = inpatient_episodes[-1]
         admission_start = most_recent["start"]
-        two_weeks_post = admission_start + timedelta(days=14)
+        admission_end = most_recent["end"]
 
-        print(f"[GPR] Most recent admission: {admission_start} to {most_recent['end']}")
-        print(f"[GPR] Filtering notes from {admission_start} to {two_weeks_post}")
+        # Use actual admission end date from timeline
+        if admission_end is None:
+            admission_end = admission_start + timedelta(days=14)
+
+        print(f"[GPR] Most recent admission: {admission_start} to {admission_end}")
+        print(f"[GPR] Filtering notes from {admission_start} to {admission_end}")
 
         # Filter notes within the date range
         filtered_entries = []
@@ -8743,8 +9210,11 @@ class GeneralPsychReportPage(QWidget):
             if not isinstance(note_date, datetime):
                 continue
 
-            note_date_only = note_date.date()
-            if admission_start <= note_date_only <= two_weeks_post:
+            note_date_only = note_date.date() if isinstance(note_date, datetime) else note_date
+            # Ensure consistent date comparison (handle date vs datetime)
+            start_date = admission_start.date() if isinstance(admission_start, datetime) else admission_start
+            end_date = admission_end.date() if isinstance(admission_end, datetime) else admission_end
+            if start_date <= note_date_only <= end_date:
                 # Format as entry for GPRFixedDataPanel
                 text = note.get("text") or note.get("content") or note.get("body") or ""
                 if text.strip():
@@ -8945,7 +9415,8 @@ class GeneralPsychReportPage(QWidget):
         elif key == "legal_criteria":
             # Use legal criteria popup with nature/degree/necessity sections
             gender = getattr(self, '_current_gender', 'Male')
-            popup = GPRLegalCriteriaPopup(parent=self, gender=gender)
+            from icd10_dict import ICD10_DICT
+            popup = GPRLegalCriteriaPopup(parent=self, gender=gender, icd10_dict=ICD10_DICT)
             popup.sent.connect(lambda text: self._on_popup_sent(key, text))
             # Pre-populate if we have extracted data
             self._populate_popup_with_extracted_data(key, popup)
@@ -9115,6 +9586,8 @@ class GeneralPsychReportPage(QWidget):
                     "risk",             # Prose format with CURRENT/HISTORICAL sections
                     "substance_use",    # Prose format from DrugsAlcoholPopup
                     "forensic",         # Prose format
+                    "medication",       # Prose format from GPRMedicationPopup
+                    "diagnosis",        # Prose format from GPRDiagnosisPopup
                     "legal_criteria",   # Prose format from GPRLegalCriteriaPopup
                     "strengths",        # Prose format
                 )
@@ -9424,7 +9897,7 @@ class GeneralPsychReportPage(QWidget):
                     entry_layout_v.setContentsMargins(6, 6, 6, 6)
                     entry_layout_v.setSpacing(4)
 
-                    # Header row with toggle, date badge, checkbox
+                    # Header row: toggle → date → source badge → stretch → checkbox
                     header_row = QHBoxLayout()
                     header_row.setSpacing(8)
 
@@ -9445,22 +9918,8 @@ class GeneralPsychReportPage(QWidget):
                     """)
                     header_row.addWidget(toggle_btn)
 
-                    # Source badge
-                    source_badge = QLabel("Forensic")
-                    source_badge.setStyleSheet("""
-                        QLabel {
-                            font-size: 14px;
-                            font-weight: 600;
-                            color: white;
-                            background: #607d8b;
-                            border: none;
-                            border-radius: 3px;
-                            padding: 2px 6px;
-                        }
-                    """)
-                    header_row.addWidget(source_badge)
-
                     # Date label (if date available)
+                    date_label = None
                     if date_str:
                         date_label = QLabel(f"📅 {date_str}")
                         date_label.setStyleSheet("""
@@ -9475,6 +9934,20 @@ class GeneralPsychReportPage(QWidget):
                         date_label.setCursor(Qt.CursorShape.PointingHandCursor)
                         header_row.addWidget(date_label)
 
+                    # Source badge
+                    source_badge = QLabel("Forensic")
+                    source_badge.setStyleSheet("""
+                        QLabel {
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: white;
+                            background: #607d8b;
+                            border: none;
+                            border-radius: 3px;
+                            padding: 2px 6px;
+                        }
+                    """)
+                    header_row.addWidget(source_badge)
                     header_row.addStretch()
 
                     # Checkbox on the RIGHT
@@ -9527,10 +10000,10 @@ class GeneralPsychReportPage(QWidget):
 
                     toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, popup)
                     toggle_btn.clicked.connect(toggle_fn)
-                    if date_str:
+                    if date_label:
                         date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
-                    # Connect checkbox to append text when checked
+                    # Connect checkbox to add/remove text from card
                     def make_handler(checkbox, txt):
                         def handler(checked):
                             if checked and "forensic" in self.cards:
@@ -9539,6 +10012,13 @@ class GeneralPsychReportPage(QWidget):
                                     if current and not current.endswith('\n'):
                                         current += '\n\n'
                                     self.cards["forensic"].editor.setPlainText(current + txt)
+                            elif not checked and "forensic" in self.cards:
+                                current = self.cards["forensic"].editor.toPlainText()
+                                if txt in current:
+                                    new_text = current.replace(txt, '')
+                                    while '\n\n\n' in new_text:
+                                        new_text = new_text.replace('\n\n\n', '\n\n')
+                                    self.cards["forensic"].editor.setPlainText(new_text.strip())
                         return handler
 
                     cb.toggled.connect(make_handler(cb, text))
@@ -9645,7 +10125,7 @@ class GeneralPsychReportPage(QWidget):
                     entry_layout_v.setContentsMargins(6, 6, 6, 6)
                     entry_layout_v.setSpacing(4)
 
-                    # Header row with toggle, date badge, checkbox
+                    # Header row: toggle → date → source badge → stretch → checkbox
                     header_row = QHBoxLayout()
                     header_row.setSpacing(8)
 
@@ -9666,22 +10146,8 @@ class GeneralPsychReportPage(QWidget):
                     """)
                     header_row.addWidget(toggle_btn)
 
-                    # Source badge
-                    source_badge = QLabel("Risk")
-                    source_badge.setStyleSheet("""
-                        QLabel {
-                            font-size: 14px;
-                            font-weight: 600;
-                            color: white;
-                            background: #dc2626;
-                            border: none;
-                            border-radius: 3px;
-                            padding: 2px 6px;
-                        }
-                    """)
-                    header_row.addWidget(source_badge)
-
                     # Date label (if date available)
+                    date_label = None
                     if date_str:
                         date_label = QLabel(f"📅 {date_str}")
                         date_label.setStyleSheet("""
@@ -9696,6 +10162,20 @@ class GeneralPsychReportPage(QWidget):
                         date_label.setCursor(Qt.CursorShape.PointingHandCursor)
                         header_row.addWidget(date_label)
 
+                    # Source badge
+                    source_badge = QLabel("Risk")
+                    source_badge.setStyleSheet("""
+                        QLabel {
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: white;
+                            background: #dc2626;
+                            border: none;
+                            border-radius: 3px;
+                            padding: 2px 6px;
+                        }
+                    """)
+                    header_row.addWidget(source_badge)
                     header_row.addStretch()
 
                     # Checkbox on the RIGHT
@@ -9748,10 +10228,10 @@ class GeneralPsychReportPage(QWidget):
 
                     toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, popup)
                     toggle_btn.clicked.connect(toggle_fn)
-                    if date_str:
+                    if date_label:
                         date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
-                    # Connect checkbox to append text when checked
+                    # Connect checkbox to add/remove text from card
                     def make_handler(checkbox, txt):
                         def handler(checked):
                             if checked and "risk" in self.cards:
@@ -9760,6 +10240,13 @@ class GeneralPsychReportPage(QWidget):
                                     if current and not current.endswith('\n'):
                                         current += '\n\n'
                                     self.cards["risk"].editor.setPlainText(current + txt)
+                            elif not checked and "risk" in self.cards:
+                                current = self.cards["risk"].editor.toPlainText()
+                                if txt in current:
+                                    new_text = current.replace(txt, '')
+                                    while '\n\n\n' in new_text:
+                                        new_text = new_text.replace('\n\n\n', '\n\n')
+                                    self.cards["risk"].editor.setPlainText(new_text.strip())
                         return handler
 
                     cb.toggled.connect(make_handler(cb, text))
@@ -9923,7 +10410,7 @@ class GeneralPsychReportPage(QWidget):
                 entry_layout_v.setContentsMargins(6, 6, 6, 6)
                 entry_layout_v.setSpacing(4)
 
-                # Header row with toggle, date badge, checkbox
+                # Header row: toggle → date → source badge → stretch → checkbox
                 header_row = QHBoxLayout()
                 header_row.setSpacing(8)
 
@@ -9944,22 +10431,6 @@ class GeneralPsychReportPage(QWidget):
                 """)
                 header_row.addWidget(toggle_btn)
 
-                # Source badge
-                source_label = section_key.replace("_", " ").title()
-                source_badge = QLabel(source_label)
-                source_badge.setStyleSheet(f"""
-                    QLabel {{
-                        font-size: 14px;
-                        font-weight: 600;
-                        color: white;
-                        background: {section_color};
-                        border: none;
-                        border-radius: 3px;
-                        padding: 2px 6px;
-                    }}
-                """)
-                header_row.addWidget(source_badge)
-
                 # Date label (if date available)
                 date_label = None
                 if date_str:
@@ -9976,6 +10447,21 @@ class GeneralPsychReportPage(QWidget):
                     date_label.setCursor(Qt.CursorShape.PointingHandCursor)
                     header_row.addWidget(date_label)
 
+                # Source badge
+                source_label = section_key.replace("_", " ").title()
+                source_badge = QLabel(source_label)
+                source_badge.setStyleSheet(f"""
+                    QLabel {{
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: white;
+                        background: {section_color};
+                        border: none;
+                        border-radius: 3px;
+                        padding: 2px 6px;
+                    }}
+                """)
+                header_row.addWidget(source_badge)
                 header_row.addStretch()
 
                 # Checkbox on the RIGHT
@@ -10032,7 +10518,7 @@ class GeneralPsychReportPage(QWidget):
                 if date_label:
                     date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
-                # Connect checkbox to append text when checked
+                # Connect checkbox to add/remove text from card
                 def make_handler(checkbox, txt, key):
                     def handler(checked):
                         if checked and key in self.cards:
@@ -10041,6 +10527,13 @@ class GeneralPsychReportPage(QWidget):
                                 if current and not current.endswith('\n'):
                                     current += '\n\n'
                                 self.cards[key].editor.setPlainText(current + txt)
+                        elif not checked and key in self.cards:
+                            current = self.cards[key].editor.toPlainText()
+                            if txt in current:
+                                new_text = current.replace(txt, '')
+                                while '\n\n\n' in new_text:
+                                    new_text = new_text.replace('\n\n\n', '\n\n')
+                                self.cards[key].editor.setPlainText(new_text.strip())
                     return handler
 
                 cb.toggled.connect(make_handler(cb, text, section_key))
@@ -10091,6 +10584,10 @@ class GeneralPsychReportPage(QWidget):
             # Clear extracted data
             self._extracted_categories = {}
             self._extracted_raw_notes = []
+            if hasattr(self, '_imported_report_data'):
+                self._imported_report_data = {}
+            if hasattr(self, '_imported_report_sections'):
+                self._imported_report_sections = {}
 
             # Clear data extractor if it exists
             if hasattr(self, '_data_extractor_overlay') and self._data_extractor_overlay:
@@ -10110,18 +10607,163 @@ class GeneralPsychReportPage(QWidget):
                 if widget != getattr(self, '_data_extractor_overlay', None):
                     widget.deleteLater()
 
+            # Restore signature card from my details
+            if self._my_details and "signature" in self.cards:
+                popup = GPRSignaturePopup(parent=self, my_details=self._my_details)
+                popup.hide()
+                text = popup.generate_text()
+                if text and text.strip():
+                    self.cards["signature"].editor.setPlainText(text)
+                popup.deleteLater()
+
             print("[GPR] Report cleared")
 
-    def _import_file(self):
-        """Import a document file directly."""
-        file_path, _ = QFileDialog.getOpenFileName(
+    def _refresh_upload_menu(self, docs=None):
+        """Rebuild the Uploaded Docs dropdown menu from SharedDataStore."""
+        menu = self.toolbar.upload_menu
+        menu.clear()
+        if docs is None:
+            from shared_data_store import get_shared_store
+            docs = get_shared_store().get_uploaded_documents()
+        if not docs:
+            action = menu.addAction("No documents uploaded")
+            action.setEnabled(False)
+        else:
+            for doc in docs:
+                path = doc["path"]
+                action = menu.addAction(doc["filename"])
+                action.triggered.connect(lambda checked=False, p=path: self._import_from_upload(p))
+
+    def _import_from_upload(self, file_path):
+        """Process an uploaded file — DOCX tribunal reports get dedicated parser."""
+        if file_path.lower().endswith('.docx'):
+            try:
+                from gpr_report_parser import parse_gpr_report
+                result = parse_gpr_report(file_path)
+                if result and result.get("sections"):
+                    self._populate_from_parsed_report(result)
+                    return
+                else:
+                    print("[GPR] No sections found in DOCX, falling back to Data Extractor")
+            except Exception as e:
+                print(f"[GPR] DOCX parsing failed: {e}, falling back to Data Extractor")
+                import traceback
+                traceback.print_exc()
+        # Fallback for PDF/DOC/RTF or empty DOCX
+        self._send_to_data_extractor(file_path)
+
+    def _populate_from_parsed_report(self, result: dict):
+        """Populate GPR sections from parsed tribunal report DOCX."""
+        from PySide6.QtWidgets import QMessageBox
+        import os
+
+        sections = result.get('sections', {})
+        patient_info = result.get('patient_info')
+        source_file = result.get('source_file', 'report')
+        fmt = result.get('format', 'unknown')
+
+        # Ask add/replace
+        action = self._ask_import_action(source_file, "report")
+        if action == "cancel":
+            return
+        if action == "replace":
+            self._imported_report_data.clear()
+
+        # Store imported data
+        merged_sections = {}
+        for section_key, content in sections.items():
+            if not content:
+                continue
+            if action == "add" and section_key in self._imported_report_data:
+                self._imported_report_data[section_key] += '\n\n' + content
+            else:
+                self._imported_report_data[section_key] = content
+            merged_sections[section_key] = self._imported_report_data[section_key]
+            print(f"[GPR] Stored report section '{section_key}' (ready in popup)")
+
+        # Fill patient details
+        if patient_info:
+            self._fill_patient_details(patient_info)
+            # Push to shared store
+            try:
+                from shared_data_store import get_shared_store
+                shared_store = get_shared_store()
+                shared_store.set_patient_info(patient_info, source="gpr_report")
+            except Exception as e:
+                print(f"[GPR] Error pushing patient info to SharedDataStore: {e}")
+
+        # Populate popups with imported data
+        for section_key, content in merged_sections.items():
+            if not content:
+                continue
+
+            # Delete cached popup so it gets recreated with new data
+            if section_key in self.popups:
+                old_popup = self.popups.pop(section_key)
+                self.popup_stack.removeWidget(old_popup)
+                old_popup.deleteLater()
+                print(f"[GPR] Deleted cached '{section_key}' popup for refresh")
+
+            # Create popup and populate with imported data
+            popup = self._create_popup(section_key)
+            if popup:
+                self.popups[section_key] = popup
+                self.popup_stack.addWidget(popup)
+                self._add_imported_data_to_popup(popup, section_key, content=content)
+                print(f"[GPR] Populated '{section_key}' popup with imported data")
+
+        # Push to SharedDataStore for cross-talk
+        try:
+            from shared_data_store import get_shared_store
+            shared_store = get_shared_store()
+            shared_store.set_report_sections(merged_sections, source_form="general_psychiatric")
+        except Exception as e:
+            print(f"[GPR] Error pushing report sections to SharedDataStore: {e}")
+
+        # Show success
+        mapped_count = len(merged_sections)
+        action_word = "Added" if action == "add" else "Loaded"
+        QMessageBox.information(
             self,
-            "Import Document",
-            "",
-            "All Supported Files (*.pdf *.docx *.doc *.txt *.rtf *.xls *.xlsx);;PDF Files (*.pdf);;Word Documents (*.docx *.doc);;Excel Files (*.xls *.xlsx);;All Files (*)"
+            "Report Loaded",
+            f"Successfully {action_word.lower()} report from:\n{source_file}\n\n"
+            f"Format: {fmt}\n"
+            f"{action_word} {mapped_count} sections to popups.\n\n"
+            f"Click each card to review and send the content."
         )
-        if file_path:
-            self._send_to_data_extractor(file_path)
+        print(f"[GPR] {action_word} {mapped_count} sections from DOCX ({fmt}) to popups")
+
+    def _ask_import_action(self, source_filename: str, import_type: str = "notes") -> str:
+        """Ask user whether to add to existing imported data or replace it.
+
+        Returns: 'add', 'replace', or 'cancel'
+        """
+        from PySide6.QtWidgets import QMessageBox
+
+        has_existing = (hasattr(self, '_extracted_raw_notes') and bool(self._extracted_raw_notes)) or \
+                       (hasattr(self, '_imported_report_data') and bool(self._imported_report_data))
+
+        if not has_existing:
+            return "replace"
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Import Data")
+        msg.setText(
+            f"Clinical notes have already been loaded.\n\n"
+            f"Would you like to add these notes to the existing set, or replace them?"
+        )
+        add_btn = msg.addButton("Add to Existing", QMessageBox.AcceptRole)
+        replace_btn = msg.addButton("Replace All", QMessageBox.DestructiveRole)
+        cancel_btn = msg.addButton("Cancel", QMessageBox.RejectRole)
+        msg.setDefaultButton(add_btn)
+        msg.exec()
+
+        clicked = msg.clickedButton()
+        if clicked == cancel_btn:
+            return "cancel"
+        elif clicked == replace_btn:
+            return "replace"
+        return "add"
 
     def _send_to_data_extractor(self, file_path: str):
         """Send a file to the data extractor for processing."""
@@ -10147,12 +10789,13 @@ class GeneralPsychReportPage(QWidget):
             print(f"[GPR] ❌ Data extractor overlay not available!")
 
     def _open_data_extractor_overlay(self):
-        """Open the data extractor in the popup stack."""
+        """Create the data extractor (hidden) for background processing."""
         from data_extractor_popup import DataExtractorPopup
 
         # Create data extractor if not exists
         if not hasattr(self, '_data_extractor_overlay') or not self._data_extractor_overlay:
             self._data_extractor_overlay = DataExtractorPopup(parent=self)
+            self._data_extractor_overlay.hide()
 
             # Prevent it from closing itself after extraction
             self._data_extractor_overlay.close = lambda: None
@@ -10161,25 +10804,31 @@ class GeneralPsychReportPage(QWidget):
             if hasattr(self._data_extractor_overlay, 'data_extracted'):
                 self._data_extractor_overlay.data_extracted.connect(self._on_data_extracted)
 
-            # Add to popup stack
-            self.popup_stack.addWidget(self._data_extractor_overlay)
-
-        # Show in popup stack
-        self.popup_stack.setCurrentWidget(self._data_extractor_overlay)
-        self.panel_title.setText("Data Extractor")
-
     def _on_data_extracted(self, data: dict):
         """Handle extracted data from data extractor.
 
         Only populates 'Extracted from Notes' in popups - does NOT prefill cards directly.
         """
+        if self._has_report_data():
+            print("[GPR] Skipping _on_data_extracted - report data takes priority")
+            return
         print(f"[GPR] Data extracted: {list(data.keys())}")
+        cov = data.get("_coverage")
+        if cov and cov.get("uncategorised", 0) > 0:
+            print(f"[GPR] Warning: {cov['uncategorised']} paragraphs uncategorised "
+                  f"({cov['categorised']}/{cov['total_paragraphs']} categorised)")
 
+        # Skip if this exact data was already processed
         categories = data.get("categories", {})
-        print(f"[GPR] Categories received: {list(categories.keys())}")
+        cat_keys = tuple(sorted(categories.keys())) if categories else ()
+        cat_count = sum(len(v.get("items", [])) if isinstance(v, dict) else 0 for v in categories.values())
+        content_sig = (cat_keys, cat_count)
+        if self._data_processed_id == content_sig:
+            print(f"[GPR] Skipping _on_data_extracted - data already processed")
+            return
+        self._data_processed_id = content_sig
 
-        # Store at page level
-        self._extracted_categories = categories
+        print(f"[GPR] Categories received: {list(categories.keys())}")
 
         # Get raw notes - first try local extractor, then fall back to SharedDataStore
         raw_notes = []
@@ -10197,6 +10846,25 @@ class GeneralPsychReportPage(QWidget):
             except Exception as e:
                 print(f"[GPR] Error getting notes from SharedDataStore: {e}")
 
+        # Ask add/replace if existing notes
+        action = self._ask_import_action("", "notes")
+        if action == "cancel":
+            return
+        if action == "add":
+            existing_notes = getattr(self, '_extracted_raw_notes', []) or []
+            raw_notes = existing_notes + raw_notes
+            existing_cats = getattr(self, '_extracted_categories', {}) or {}
+            for cat_name, cat_data in categories.items():
+                if cat_name in existing_cats and isinstance(existing_cats[cat_name], dict) and isinstance(cat_data, dict):
+                    existing_items = existing_cats[cat_name].get("items", [])
+                    new_items = cat_data.get("items", [])
+                    existing_cats[cat_name]["items"] = existing_items + new_items
+                else:
+                    existing_cats[cat_name] = cat_data
+            categories = existing_cats
+
+        # Store at page level
+        self._extracted_categories = categories
         self._extracted_raw_notes = raw_notes
 
         # Count how many sections have data

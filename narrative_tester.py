@@ -232,6 +232,34 @@ class NarrativeTester(QMainWindow):
 
         main_layout.addWidget(splitter, 1)
 
+    def _detect_notes_source(self, entries):
+        """Detect source system from note content patterns."""
+        # Sample first 50 entries to detect source
+        sample = entries[:50] if len(entries) > 50 else entries
+        carenotes_patterns = 0
+        rio_patterns = 0
+
+        for e in sample:
+            content = str(e.get('content', '') or e.get('text', '')).lower()
+            originator = str(e.get('originator', '')).lower()
+            note_type = str(e.get('type', '')).lower()
+
+            # CareNotes patterns
+            if any(p in content for p in ['title:', 'main patient details:', 'keeping well:', 'keeping safe:']):
+                carenotes_patterns += 1
+            if ' - ' in originator and any(p in note_type for p in ['nursing day', 'nursing night', 'psychology 1:1']):
+                carenotes_patterns += 1
+
+            # RIO patterns
+            if any(p in content for p in ['rio reference:', 'progress note', 'care coordinator']):
+                rio_patterns += 1
+
+        if carenotes_patterns > rio_patterns and carenotes_patterns > 5:
+            return 'carenotes'
+        elif rio_patterns > carenotes_patterns and rio_patterns > 5:
+            return 'rio'
+        return ''
+
     def _load_cached_notes(self):
         """Load notes from cache file if it exists."""
         if NOTES_CACHE_FILE.exists():
@@ -241,6 +269,16 @@ class NarrativeTester(QMainWindow):
                 self.entries = cached_data.get('entries', [])
                 if self.entries:
                     print(f"[NarrativeTester] Loaded {len(self.entries)} notes from cache")
+
+                    # Detect and apply source if missing
+                    sources = set(str(e.get('source', '')).strip() for e in self.entries)
+                    if sources == {''} or sources == set():
+                        detected_source = self._detect_notes_source(self.entries)
+                        if detected_source:
+                            print(f"[NarrativeTester] Detected source: {detected_source}")
+                            for e in self.entries:
+                                e['source'] = detected_source
+
                     # Push to shared store
                     from shared_data_store import get_shared_store
                     shared_store = get_shared_store()
@@ -338,8 +376,9 @@ class NarrativeTester(QMainWindow):
             'diagnosis': []
         }
 
-        # Combine all text for searching
-        all_text = "\n".join([e.get('text', '') or e.get('content', '') for e in entries[:500]])  # First 500 entries
+        # Combine all text for searching - use all entries for demographic extraction
+        # Age/DOB info often appears in admission notes at start or end of record
+        all_text = "\n".join([e.get('text', '') or e.get('content', '') for e in entries])
         all_text_lower = all_text.lower()
 
         # Words that should NOT start a patient name
@@ -348,6 +387,7 @@ class NarrativeTester(QMainWindow):
             'nurse', 'doctor', 'staff', 'consultant', 'registrar', 'ward', 'unit',
             'team', 'service', 'hospital', 'clinic', 'department', 'section',
             'mr', 'mrs', 'ms', 'miss', 'prof', 'professor',  # titles without names
+            'no', 'not', 'other', 'regarding', 'garding',
         }
 
         # Staff role indicators - if these appear before/after a name, it's likely staff
@@ -357,6 +397,78 @@ class NarrativeTester(QMainWindow):
             'psychologist', 'psychiatrist', 'social worker', 'ot', 'physio',
             'staff', 'manager', 'coordinator', 'lead', 'team', 'ward',
         ]
+
+        # Words that should NEVER appear in a patient name (anywhere)
+        invalid_name_words = {
+            'participation', 'action', 'other', 'regarding', 'garding',
+            'no', 'not', 'none', 'nil', 'unknown', 'patient', 'client',
+            'assessment', 'review', 'report', 'notes', 'entry', 'entries',
+            'required', 'needed', 'completed', 'pending', 'outcome',
+            'contact', 'follow', 'discharge', 'admission', 'transfer',
+            'medication', 'treatment', 'therapy', 'intervention', 'session',
+            'appointment', 'meeting', 'tribunal', 'hearing', 'tribunal',
+            'progress', 'update', 'summary', 'section', 'status',
+            'clinical', 'medical', 'nursing', 'psychology', 'psychiatry',
+            'date', 'time', 'day', 'night', 'shift', 'today', 'yesterday',
+            'morning', 'afternoon', 'evening', 'weekly', 'daily', 'monthly',
+            # Common false positives from note templates
+            'brewer', 'group', 'sessions', 'activities', 'activity',
+            'leave', 'escorted', 'unescorted', 'ground', 'community',
+            'risk', 'level', 'observation', 'observations', 'obs',
+            # Prepositions and articles that shouldn't be in names
+            'to', 'from', 'for', 'with', 'and', 'the', 'a', 'an', 'of', 'in', 'on', 'at', 'by',
+            # More common false positives
+            'some', 'emotions', 'their', 'his', 'her', 'presenting', 'problems',
+            'service', 'user', 'users', 'led', 'topic', 'topics',
+            'understanding', 'areas', 'difficulty', 'experienced',
+            'shared', 'members', 'previous', 'whereby', 'followed',
+            # Meal/food related words that can appear in clinical notes
+            'dinner', 'lunch', 'breakfast', 'snack', 'meal', 'meals',
+            'food', 'eating', 'ate', 'drink', 'drinks',
+            # Place/building words
+            'room', 'office', 'hall', 'area', 'areas', 'corridor',
+            'communal', 'lounge', 'garden', 'bedroom', 'bathroom',
+            # Common verbs that might be capitalized (sentence starts)
+            'was', 'is', 'has', 'had', 'have', 'been', 'being',
+            'agreed', 'accepted', 'declined', 'refused', 'attended',
+            'presented', 'remains', 'continues', 'continued',
+            'spoke', 'discussed', 'stated', 'reported', 'explained',
+            'appeared', 'seemed', 'looked', 'felt', 'said',
+            'came', 'went', 'left', 'arrived', 'returned',
+            'expressed', 'showed', 'displayed', 'demonstrated',
+            'exhibited', 'manifested', 'indicated', 'suggested',
+            'mentioned', 'noted', 'observed', 'recorded',
+            'watts', 'watt',  # Common technical words
+        }
+
+        # Also try to find patient name from clinical context patterns
+        # Look for: "[Name] was seen", "[Name] agreed to", "[Name] remains", etc.
+        def find_patient_first_name_from_context(text):
+            """Find patient first name from clinical note patterns."""
+            context_patterns = [
+                r'\b([A-Z][a-z]+)\s+(?:was|is|has been|has|agreed|accepted|declined|refused|attended|presented|remains|continues)',
+                r'\b(?:patient|client)\s+([A-Z][a-z]+)\s+',
+                r'\b([A-Z][a-z]+)\s+(?:spoke|discussed|stated|reported|explained)',
+            ]
+            first_name_counts = Counter()
+            text_lower = text.lower()
+
+            for pattern in context_patterns:
+                matches = re.findall(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    name = match.strip()
+                    name_lower = name.lower()
+                    # Filter out common non-names
+                    if name_lower not in invalid_name_words and name_lower not in invalid_name_starts:
+                        if len(name) >= 3 and len(name) <= 15:
+                            first_name_counts[name] += 1
+
+            if first_name_counts:
+                # Return most common first name (must appear 5+ times)
+                most_common = first_name_counts.most_common(1)
+                if most_common and most_common[0][1] >= 5:
+                    return most_common[0][0]
+            return None
 
         def is_valid_patient_name(name):
             """Check if extracted name is likely a patient name, not staff/other."""
@@ -373,6 +485,11 @@ class NarrativeTester(QMainWindow):
             # Check if any word is a staff indicator
             for word in words:
                 if word in staff_indicators:
+                    return False
+
+            # Check if any word is in the invalid name words list
+            for word in words:
+                if word in invalid_name_words:
                     return False
 
             # Name should have 2-4 words typically
@@ -440,9 +557,16 @@ class NarrativeTester(QMainWindow):
                 if demographics['name']:
                     break
 
-        # Last resort: Find most frequently mentioned proper name (2+ words, capitalized)
+        # Better fallback: Find patient first name from clinical context patterns
         if not demographics['name']:
-            # Find all potential names (capitalized word pairs/triples)
+            first_name = find_patient_first_name_from_context(all_text)
+            if first_name:
+                # Just use the first name - surname detection is unreliable
+                # The narrative generator will use first name naturally anyway
+                demographics['name'] = first_name.title()
+
+        # Absolute last resort: Find most frequently mentioned proper name (2+ words, capitalized)
+        if not demographics['name']:
             potential_names = re.findall(r'\b([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', all_text)
             name_counts = Counter(potential_names)
             for name, count in name_counts.most_common(10):
@@ -469,6 +593,25 @@ class NarrativeTester(QMainWindow):
                         pass
                 if demographics['dob']:
                     break
+
+        # If no DOB found, try to extract age directly from text like "[Name] is a 35-year-old"
+        if not demographics.get('dob'):
+            age_patterns = [
+                r'(?:patient|client|he|she|\b[A-Z][a-z]+)\s+is\s+(?:a\s+)?(\d{1,2})\s*-?\s*year\s*-?\s*old',
+                r'(\d{1,2})\s*-?\s*year\s*-?\s*old\s+(?:male|female|man|woman|patient)',
+                r'aged?\s+(\d{1,2})\s*(?:years?)?',
+                r'age[:\s]+(\d{1,2})\b',
+            ]
+            for pattern in age_patterns:
+                matches = re.findall(pattern, all_text, re.IGNORECASE)
+                if matches:
+                    # Take most common age if multiple matches
+                    from collections import Counter
+                    age_counts = Counter(int(m) for m in matches if 18 <= int(m) <= 100)
+                    if age_counts:
+                        most_common_age = age_counts.most_common(1)[0][0]
+                        demographics['age'] = most_common_age
+                        break
 
         # Extract gender - more robust detection
         # Priority 1: Explicit gender fields
@@ -509,20 +652,22 @@ class NarrativeTester(QMainWindow):
                 elif he_count > she_count * 2:
                     demographics['gender'] = 'male'
 
-        # Extract ethnicity
+        # Extract ethnicity - ONLY from labeled fields to avoid false positives
+        # Do NOT match ethnicity words appearing in general clinical text
         ethnicity_patterns = [
-            r'ethnicity\s*[:\s]+\s*([A-Za-z\s\-]+?)(?:\.|,|\n|$)',
-            r'ethnic\s+(?:background|origin)\s*[:\s]+\s*([A-Za-z\s\-]+?)(?:\.|,|\n|$)',
-            r'\b(white british|black british|black african|black caribbean|asian british|british asian|mixed race|mixed heritage|african|caribbean|indian|pakistani|bangladeshi|chinese|caucasian)\b',
+            r'ethnicity\s*[:\-]\s*([A-Za-z\s\-]+?)(?:\.|,|\n|$|\t)',
+            r'ethnic\s+(?:group|background|origin|category)\s*[:\-]\s*([A-Za-z\s\-]+?)(?:\.|,|\n|$|\t)',
+            r'ethnic\s*code\s*[:\-]\s*([A-Za-z0-9\s\-]+?)(?:\.|,|\n|$|\t)',
         ]
         for pattern in ethnicity_patterns:
             match = re.search(pattern, all_text, re.IGNORECASE)
             if match:
                 ethnicity = match.group(1).strip()
                 # Clean up ethnicity value
-                ethnicity = re.sub(r'\s*(gender|sex|dob|date|address|nhs).*', '', ethnicity, flags=re.IGNORECASE)
+                ethnicity = re.sub(r'\s*(gender|sex|dob|date|address|nhs|ward|hospital).*', '', ethnicity, flags=re.IGNORECASE)
                 ethnicity = ethnicity.strip()
-                if len(ethnicity) > 2 and len(ethnicity) < 50:
+                # Validate it's not another field label or placeholder
+                if len(ethnicity) > 2 and len(ethnicity) < 50 and not re.match(r'(?:not|unknown|n/?a|date|name)', ethnicity, re.IGNORECASE):
                     demographics['ethnicity'] = ethnicity.title()
                     break
 
@@ -676,6 +821,7 @@ class NarrativeTester(QMainWindow):
                 'name': demographics['name'] or 'The patient',
                 'gender': demographics['gender'] or '',
                 'dob': demographics['dob'],
+                'age': demographics.get('age'),  # Direct age if DOB not available
                 'ethnicity': demographics['ethnicity'] or '',
                 'diagnosis': demographics['diagnosis'],
             }
@@ -708,6 +854,7 @@ class NarrativeTester(QMainWindow):
                         'datetime': entry_date,
                         'type': entry.get('type', ''),
                         'originator': entry.get('originator', ''),
+                        'source': entry.get('source', ''),  # Preserve source for timeline builder
                     })
 
             print(f"[NarrativeTester] Generating narrative from {len(self.prepared_entries)} entries")
@@ -1273,6 +1420,30 @@ class NarrativeTester(QMainWindow):
                 # "did not pose any aggressive behaviour"
                 r'\bdid\s+not\s+pose\s+(any\s+)?' + re.escape(kw),
                 r'\bdidn\'?t\s+pose\s+(any\s+)?' + re.escape(kw),
+                # "did not want to be secluded/restrained" - CRITICAL FIX
+                r'\bdid\s+not\s+want\s+[^.]*' + re.escape(kw),
+                r'\bdidn\'?t\s+want\s+[^.]*' + re.escape(kw),
+                r'\bdoes\s+not\s+want\s+[^.]*' + re.escape(kw),
+                r'\bdoesn\'?t\s+want\s+[^.]*' + re.escape(kw),
+                # "did not feel she would like" patterns
+                r'\bdid\s+not\s+feel\s+[^.]*' + re.escape(kw),
+                r'\bdidn\'?t\s+feel\s+[^.]*' + re.escape(kw),
+                r'\bdoes\s+not\s+feel\s+[^.]*' + re.escape(kw),
+                r'\bdoesn\'?t\s+feel\s+[^.]*' + re.escape(kw),
+                # "did not want to be secluded" - explicit pattern
+                r'\bdid\s+not\s+want\s+to\s+be\s+' + re.escape(kw),
+                r'\bdidn\'?t\s+want\s+to\s+be\s+' + re.escape(kw),
+                r'\bdoes\s+not\s+want\s+to\s+be\s+' + re.escape(kw),
+                r'\bdoesn\'?t\s+want\s+to\s+be\s+' + re.escape(kw),
+                # "as she did not want" - subordinate clause pattern
+                r'\bas\s+(she|he|they)\s+did\s+not\s+want\s+[^.]*' + re.escape(kw),
+                r'\bas\s+(she|he|they)\s+didn\'?t\s+want\s+[^.]*' + re.escape(kw),
+                # "would not like to be" patterns
+                r'\bwould\s+not\s+like\s+to\s+[^.]*' + re.escape(kw),
+                r'\bwouldn\'?t\s+like\s+to\s+[^.]*' + re.escape(kw),
+                # "refused/declined seclusion"
+                r'\brefused\s+[^.]*' + re.escape(kw),
+                r'\bdeclined\s+[^.]*' + re.escape(kw),
                 # "didn't display any signs of aggression"
                 r'\bdidn\'?t\s+display\s+(any\s+)?(signs?\s+of\s+)?' + re.escape(kw),
                 r'\bdid\s+not\s+display\s+(any\s+)?(signs?\s+of\s+)?' + re.escape(kw),

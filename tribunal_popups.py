@@ -129,7 +129,7 @@ class TribunalPopupBase(QWidget):
                 border: 1px solid rgba(0,0,0,0.1);
             }
             QLabel {
-                font-size: 22px;
+                font-size: 17px;
                 font-weight: 600;
                 color: #374151;
                 background: transparent;
@@ -138,14 +138,14 @@ class TribunalPopupBase(QWidget):
             QRadioButton {
                 background: transparent;
                 border: none;
-                font-size: 22px;
+                font-size: 17px;
             }
-            QLineEdit, QDateEdit, QTextEdit {
+            QLineEdit, QDateEdit, QTextEdit, QComboBox {
                 background: white;
                 border: 1px solid #d1d5db;
                 border-radius: 6px;
                 padding: 8px;
-                font-size: 22px;
+                font-size: 17px;
             }
             QLineEdit:focus, QDateEdit:focus, QTextEdit:focus {
                 border-color: #8b5cf6;
@@ -509,7 +509,7 @@ class FactorsHearingPopup(TribunalPopupBase):
         # Question label
         q_lbl = QLabel("Are there any factors that may affect the patient's understanding or ability to cope with a hearing?")
         q_lbl.setWordWrap(True)
-        q_lbl.setStyleSheet("font-size: 18px; font-weight: 600; color: #374151;")
+        q_lbl.setStyleSheet("font-size: 17px; font-weight: 600; color: #374151;")
         self.layout.addWidget(q_lbl)
 
         # Yes/No radio buttons
@@ -707,7 +707,7 @@ class AdjustmentsPopup(TribunalPopupBase):
         # Question label
         q_lbl = QLabel("Are there any adjustments that the tribunal may consider in order to deal with the case fairly and justly?")
         q_lbl.setWordWrap(True)
-        q_lbl.setStyleSheet("font-size: 18px; font-weight: 600; color: #374151;")
+        q_lbl.setStyleSheet("font-size: 17px; font-weight: 600; color: #374151;")
         self.layout.addWidget(q_lbl)
 
         # Yes/No radio buttons
@@ -1135,7 +1135,7 @@ class TreatmentPopup(TribunalPopupBase):
         """)
         self.imported_section.title_label.setStyleSheet("""
             QLabel {
-                font-size: 13px;
+                font-size: 21px;
                 font-weight: 600;
                 color: #806000;
                 background: transparent;
@@ -1169,8 +1169,8 @@ class TreatmentPopup(TribunalPopupBase):
         self.layout.addWidget(scroll, 1)
 
     def set_imported_data(self, content: str, card_text: str = ""):
-        """Set imported data with checkboxes. card_text is current card content for checking."""
-        from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QFrame
+        """Set imported data as single block with one include checkbox in header."""
+        from PySide6.QtWidgets import QCheckBox
 
         self._imported_data_content = content
         self._imported_data_checkboxes = []
@@ -1188,48 +1188,25 @@ class TreatmentPopup(TribunalPopupBase):
             self.imported_section.setVisible(False)
             return
 
-        # Split content into paragraphs
-        if '\n\n' in content:
-            paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
-        else:
-            paragraphs = [p.strip() for p in content.split('\n') if p.strip()]
+        # Add include checkbox to the header (right side) if not already added
+        if not hasattr(self, '_imported_include_cb'):
+            include_cb = QCheckBox()
+            include_cb.setToolTip("Include imported data on card")
+            include_cb.setStyleSheet("""
+                QCheckBox { background: transparent; border: none; }
+                QCheckBox::indicator { width: 20px; height: 20px; }
+            """)
+            include_cb.toggled.connect(self._on_imported_checkbox_toggled)
+            self.imported_section.header.layout().addWidget(include_cb)
+            self._imported_include_cb = include_cb
 
-        card_text_lower = card_text.lower() if card_text else ""
-
-        for para in paragraphs:
-            # Create container for checkbox + label
-            item_container = QFrame()
-            item_container.setStyleSheet("QFrame { background: transparent; border: none; }")
-            item_layout = QHBoxLayout(item_container)
-            item_layout.setContentsMargins(0, 4, 0, 4)
-            item_layout.setSpacing(8)
-            item_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-            # Small checkbox (no text)
-            cb = QCheckBox()
-            cb.setFixedSize(20, 20)
-            cb.setStyleSheet("QCheckBox::indicator { width: 16px; height: 16px; }")
-            cb.setProperty("full_text", para)
-
-            # Check if this paragraph is already in the card
-            para_lower = para.lower()
-            significant_words = [w for w in para_lower.split()[:6] if len(w) > 3]
-            is_in_card = any(word in card_text_lower for word in significant_words) if significant_words else False
-            cb.setChecked(is_in_card)
-
-            cb.toggled.connect(self._on_imported_checkbox_toggled)
-            item_layout.addWidget(cb, 0, Qt.AlignmentFlag.AlignTop)
-
-            # Word-wrapped label for the text
-            text_label = QLabel(para)
-            text_label.setWordWrap(True)
-            text_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-            text_label.setStyleSheet("font-size: 13px; color: #4a4a4a; background: transparent; padding: 0;")
-            text_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            item_layout.addWidget(text_label, 1)
-
-            self._imported_data_checkboxes.append(cb)
-            self.imported_layout.addWidget(item_container)
+        # Single text block
+        content_label = QLabel(content)
+        content_label.setWordWrap(True)
+        content_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        content_label.setStyleSheet("font-size: 13px; color: #4a4a4a; background: transparent; border: none;")
+        content_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.imported_layout.addWidget(content_label)
 
         self.imported_section.setVisible(True)
         # Expand the section to show imported data
@@ -1238,8 +1215,7 @@ class TreatmentPopup(TribunalPopupBase):
 
     def _on_imported_checkbox_toggled(self, checked):
         """When an imported data checkbox is toggled, update the card."""
-        if checked:
-            self._send_to_card()
+        self._send_to_card()
 
     def update_checkbox_states(self, card_text: str):
         """Update checkbox states based on current card content."""
@@ -1257,35 +1233,87 @@ class TreatmentPopup(TribunalPopupBase):
         from PySide6.QtWidgets import QComboBox
         from CANONICAL_MEDS import MEDICATIONS
 
-        entry_widget = QFrame()
-        entry_widget.setStyleSheet("QFrame { background: #f3f4f6; border-radius: 6px; }")
-        entry_layout = QVBoxLayout(entry_widget)
-        entry_layout.setContentsMargins(8, 6, 8, 6)
-        entry_layout.setSpacing(4)
+        combo_style = """
+            QComboBox {
+                background: white;
+                border: 1px solid #6b7280;
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-size: 17px;
+                min-height: 20px;
+            }
+            QComboBox:hover {
+                border-color: #7c3aed;
+            }
+        """
 
+        entry_widget = QFrame()
+        entry_widget.setStyleSheet("""
+            QFrame {
+                background: #e5e7eb;
+                border: 1px solid #9ca3af;
+                border-radius: 6px;
+            }
+            QLabel {
+                font-weight: 600;
+                color: #374151;
+            }
+        """)
+        entry_layout = QVBoxLayout(entry_widget)
+        entry_layout.setContentsMargins(10, 8, 10, 8)
+        entry_layout.setSpacing(6)
+
+        # Medication name row
         name_row = QHBoxLayout()
         name_combo = QComboBox()
         name_combo.setEditable(True)
         name_combo.addItem("")
         name_combo.addItems(sorted(MEDICATIONS.keys()))
-        name_combo.setMinimumWidth(150)
+        name_combo.setMinimumWidth(180)
+        name_combo.setFixedHeight(32)
+        name_combo.setStyleSheet(combo_style)
         name_row.addWidget(QLabel("Med:"))
         name_row.addWidget(name_combo)
         name_row.addStretch()
+
+        # Remove button
+        remove_btn = QPushButton("X")
+        remove_btn.setFixedSize(24, 24)
+        remove_btn.setStyleSheet("""
+            QPushButton {
+                background: #ef4444;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 17px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: #dc2626;
+            }
+        """)
+        name_row.addWidget(remove_btn)
         entry_layout.addLayout(name_row)
 
+        # Dose row
         dose_row = QHBoxLayout()
         dose_combo = QComboBox()
         dose_combo.setEditable(True)
-        dose_combo.setMinimumWidth(80)
+        dose_combo.setMinimumWidth(100)
+        dose_combo.setFixedHeight(32)
+        dose_combo.setStyleSheet(combo_style)
         dose_row.addWidget(QLabel("Dose:"))
         dose_row.addWidget(dose_combo)
         dose_row.addStretch()
         entry_layout.addLayout(dose_row)
 
+        # Frequency row
         freq_row = QHBoxLayout()
         freq_combo = QComboBox()
         freq_combo.addItems(FREQUENCY_OPTIONS)
+        freq_combo.setMinimumWidth(100)
+        freq_combo.setFixedHeight(32)
+        freq_combo.setStyleSheet(combo_style)
         freq_row.addWidget(QLabel("Freq:"))
         freq_row.addWidget(freq_combo)
         freq_row.addStretch()
@@ -1312,9 +1340,16 @@ class TreatmentPopup(TribunalPopupBase):
                 bnf_label.setText("")
             self._send_to_card()
 
+        def remove_entry():
+            if len(self._medications) > 1:
+                self._medications.remove(entry_data)
+                entry_widget.deleteLater()
+                self._send_to_card()
+
         name_combo.currentTextChanged.connect(on_med_change)
         dose_combo.currentTextChanged.connect(self._send_to_card)
         freq_combo.currentIndexChanged.connect(self._send_to_card)
+        remove_btn.clicked.connect(remove_entry)
 
         self.med_entries_layout.addWidget(entry_widget)
 
@@ -1410,12 +1445,10 @@ class TreatmentPopup(TribunalPopupBase):
             elif pathway == "outpatient - independent":
                 parts.append(f"Care Pathway: {p['subj']} will be aiming to move to independent living in a flat of {p['pos']} own.")
 
-        # Imported data - add checked items
-        for cb in self._imported_data_checkboxes:
-            if cb.isChecked():
-                full_text = cb.property("full_text") or ""
-                if full_text and full_text not in "\n".join(parts):
-                    parts.append(full_text)
+        # Imported data - add if include checkbox is ticked
+        if hasattr(self, '_imported_include_cb') and self._imported_include_cb.isChecked():
+            if self._imported_data_content and self._imported_data_content not in "\n".join(parts):
+                parts.append(self._imported_data_content)
 
         return "\n\n".join(parts)
 
@@ -1726,7 +1759,7 @@ class DiagnosisPopup(TribunalPopupBase):
         self.input_section = CollapsibleSection("Mental Disorder & Diagnosis", start_collapsed=False)
         self.input_section.set_content_height(280)
         self.input_section._min_height = 120
-        self.input_section._max_height = 400
+        self.input_section._max_height = 2000
         self.input_section.set_header_style("""
             QFrame {
                 background: rgba(147, 51, 234, 0.15);
@@ -1994,6 +2027,9 @@ class PatientDetailsPopup(TribunalPopupBase):
         self.dob_field.setMinimumDate(QDate.currentDate().addYears(-115))
         self.dob_field.dateChanged.connect(self._send_to_card)
         self._style_calendar(self.dob_field)
+        # Disable scroll wheel changing the date — only click/type
+        self.dob_field.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.dob_field.installEventFilter(self)
         self.layout.addWidget(dob_lbl)
         self.layout.addWidget(self.dob_field)
 
@@ -2016,6 +2052,13 @@ class PatientDetailsPopup(TribunalPopupBase):
         self.layout.addWidget(self.residence_field)
 
         self.layout.addStretch()
+
+    def eventFilter(self, obj, event):
+        """Block scroll wheel on DOB field to prevent accidental date changes."""
+        from PySide6.QtCore import QEvent
+        if obj is self.dob_field and event.type() == QEvent.Type.Wheel:
+            return True  # Consume the event
+        return super().eventFilter(obj, event)
 
     def _send_to_card(self):
         """Send generated text to card."""
@@ -2169,7 +2212,7 @@ class StrengthsPopup(TribunalPopupBase):
         self.input_section = CollapsibleSection("Strengths or Positive Factors", start_collapsed=False)
         self.input_section.set_content_height(350)
         self.input_section._min_height = 150
-        self.input_section._max_height = 500
+        self.input_section._max_height = 2000
         self.input_section.set_header_style("""
             QFrame {
                 background: rgba(34, 197, 94, 0.15);
@@ -2421,7 +2464,7 @@ class CompliancePopup(TribunalPopupBase):
         self.input_section = CollapsibleSection("Understanding & Compliance", start_collapsed=False)
         self.input_section.set_content_height(280)
         self.input_section._min_height = 150
-        self.input_section._max_height = 400
+        self.input_section._max_height = 2000
         self.input_section.set_header_style("""
             QFrame {
                 background: rgba(59, 130, 246, 0.15);
@@ -3271,7 +3314,7 @@ class CommunityManagementPopup(TribunalPopupBase):
         self.input_section = CollapsibleSection("Community Risk Management", start_collapsed=False)
         self.input_section.set_content_height(400)
         self.input_section._min_height = 200
-        self.input_section._max_height = 600
+        self.input_section._max_height = 2000
         self.input_section.set_header_style("""
             QFrame {
                 background: rgba(59, 130, 246, 0.15);
@@ -4295,7 +4338,7 @@ class TribunalPsychHistoryPopup(QWidget):
         self.detected_section = CollapsibleSection("Detected Admissions", start_collapsed=True)
         self.detected_section.set_content_height(180)
         self.detected_section._min_height = 80
-        self.detected_section._max_height = 400
+        self.detected_section._max_height = 2000
         self.detected_section.set_header_style("""
             QFrame {
                 background: rgba(37, 99, 235, 0.15);
@@ -4391,7 +4434,7 @@ class TribunalPsychHistoryPopup(QWidget):
         self.clerking_section = CollapsibleSection("Admission Clerking Notes", start_collapsed=True)
         self.clerking_section.set_content_height(250)
         self.clerking_section._min_height = 100
-        self.clerking_section._max_height = 500
+        self.clerking_section._max_height = 2000
         self.clerking_section.set_header_style("""
             QFrame {
                 background: rgba(37, 99, 235, 0.15);
@@ -4439,7 +4482,6 @@ class TribunalPsychHistoryPopup(QWidget):
         self.clerking_entries_layout = QVBoxLayout(self.clerking_container)
         self.clerking_entries_layout.setContentsMargins(2, 2, 2, 2)
         self.clerking_entries_layout.setSpacing(8)
-        self.clerking_entries_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         clerking_scroll.setWidget(self.clerking_container)
         clerking_content_layout.addWidget(clerking_scroll)
@@ -4457,7 +4499,7 @@ class TribunalPsychHistoryPopup(QWidget):
         self.extracted_section = CollapsibleSection("Imported Data", start_collapsed=True)
         self.extracted_section.set_content_height(150)
         self.extracted_section._min_height = 60
-        self.extracted_section._max_height = 400
+        self.extracted_section._max_height = 2000
         self.extracted_section.set_header_style("""
             QFrame {
                 background: rgba(255, 248, 220, 0.95);
@@ -4515,7 +4557,6 @@ class TribunalPsychHistoryPopup(QWidget):
         self.extracted_checkboxes_layout = QVBoxLayout(self.extracted_container)
         self.extracted_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.extracted_checkboxes_layout.setSpacing(12)
-        self.extracted_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         extracted_scroll.setWidget(self.extracted_container)
         extracted_layout.addWidget(extracted_scroll)
@@ -4524,8 +4565,9 @@ class TribunalPsychHistoryPopup(QWidget):
         self.extracted_section.setVisible(False)
         self._imported_report_text = ""
         self.main_layout.addWidget(self.extracted_section)
-
+        # Push all content to top (absorb extra space from widgetResizable scroll)
         self.main_layout.addStretch()
+
         main_scroll.setWidget(main_container)
         root.addWidget(main_scroll)
 
@@ -4623,7 +4665,7 @@ class TribunalPsychHistoryPopup(QWidget):
 
                 entry_frame = QFrame()
                 entry_frame.setObjectName("entryFrame")
-                entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+                entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
                 entry_frame.setStyleSheet("""
                     QFrame#entryFrame {
                         background: rgba(255, 255, 255, 0.95);
@@ -4686,7 +4728,7 @@ class TribunalPsychHistoryPopup(QWidget):
                 body_text.setPlainText(text)
                 body_text.setReadOnly(True)
                 body_text.setFrameShape(QFrame.Shape.NoFrame)
-                body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
                 body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                 body_text.setStyleSheet("""
                     QTextEdit {
@@ -4698,16 +4740,54 @@ class TribunalPsychHistoryPopup(QWidget):
                         border-radius: 6px;
                     }
                 """)
-                body_text.document().setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 350)
-                doc_height = body_text.document().size().height() + 20
-                body_text.setFixedHeight(int(max(doc_height, 60)))
+                body_text.setMinimumHeight(60)
+                body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
                 body_text.setVisible(False)
                 entry_layout.addWidget(body_text)
 
-                def make_toggle(btn, body, frame, popup_self):
+                drag_bar = QFrame()
+                drag_bar.setFixedHeight(8)
+                drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+                drag_bar.setStyleSheet("""
+                    QFrame {
+                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                        border-radius: 2px; margin: 2px 40px;
+                    }
+                    QFrame:hover {
+                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                    }
+                """)
+                drag_bar.setVisible(False)
+                drag_bar._drag_y = None
+                drag_bar._init_h = None
+                def _make_drag_handlers(handle, text_widget):
+                    def press(ev):
+                        handle._drag_y = ev.globalPosition().y()
+                        handle._init_h = text_widget.height()
+                    def move(ev):
+                        if handle._drag_y is not None:
+                            delta = int(ev.globalPosition().y() - handle._drag_y)
+                            new_h = max(60, handle._init_h + delta)
+                            text_widget.setMinimumHeight(new_h)
+                            text_widget.setMaximumHeight(new_h)
+                    def release(ev):
+                        if handle._drag_y is not None:
+                            text_widget.setMaximumHeight(16777215)
+                            handle._drag_y = None
+                    return press, move, release
+                dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+                drag_bar.mousePressEvent = dp
+                drag_bar.mouseMoveEvent = dm
+                drag_bar.mouseReleaseEvent = dr
+                entry_layout.addWidget(drag_bar)
+
+                def make_toggle(btn, body, frame, popup_self, bar):
                     def toggle():
                         is_visible = body.isVisible()
                         body.setVisible(not is_visible)
+                        bar.setVisible(not is_visible)
                         btn.setText("▾" if not is_visible else "▸")
                         frame.updateGeometry()
                         if hasattr(popup_self, 'extracted_container'):
@@ -4715,13 +4795,14 @@ class TribunalPsychHistoryPopup(QWidget):
                             popup_self.extracted_container.update()
                     return toggle
 
-                toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self)
+                toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self, drag_bar)
                 toggle_btn.clicked.connect(toggle_fn)
                 date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
                 self.extracted_checkboxes_layout.addWidget(entry_frame)
                 self._extracted_checkboxes.append(cb)
 
+            self.extracted_checkboxes_layout.addStretch()
             self.extracted_section.setVisible(True)
             # Keep collapsed on open - user can expand manually
         else:
@@ -4912,7 +4993,7 @@ class TribunalPsychHistoryPopup(QWidget):
             # Create entry frame (blue style)
             entry_frame = QFrame()
             entry_frame.setObjectName("clerkingEntryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#clerkingEntryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -4996,7 +5077,7 @@ class TribunalPsychHistoryPopup(QWidget):
             body_text.setPlainText(text)
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -5008,9 +5089,8 @@ class TribunalPsychHistoryPopup(QWidget):
                     border-radius: 6px;
                 }
             """)
-            body_text.document().setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 350)
-            doc_height = body_text.document().size().height() + 20
-            body_text.setFixedHeight(int(max(doc_height, 60)))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             body_text.setVisible(False)
             entry_layout.addWidget(body_text)
 
@@ -5094,7 +5174,7 @@ class TribunalCircumstancesPopup(QWidget):
         self.admissions_section = CollapsibleSection("Admissions", start_collapsed=False)
         self.admissions_section.set_content_height(150)
         self.admissions_section._min_height = 80
-        self.admissions_section._max_height = 300
+        self.admissions_section._max_height = 2000
         self.admissions_section.set_header_style("""
             QFrame {
                 background: rgba(255, 237, 213, 0.95);
@@ -5161,7 +5241,7 @@ class TribunalCircumstancesPopup(QWidget):
         self.narrative_section = CollapsibleSection("Current Admission Narrative", start_collapsed=False)
         self.narrative_section.set_content_height(300)
         self.narrative_section._min_height = 150
-        self.narrative_section._max_height = 600
+        self.narrative_section._max_height = 2000
         self.narrative_section.set_header_style("""
             QFrame {
                 background: rgba(255, 237, 213, 0.95);
@@ -5253,7 +5333,7 @@ class TribunalCircumstancesPopup(QWidget):
         self.extracted_section = CollapsibleSection("Source Notes", start_collapsed=True)
         self.extracted_section.set_content_height(300)
         self.extracted_section._min_height = 100
-        self.extracted_section._max_height = 500
+        self.extracted_section._max_height = 2000
         self.extracted_section.set_header_style("""
             QFrame {
                 background: rgba(255, 248, 220, 0.95);
@@ -5311,7 +5391,6 @@ class TribunalCircumstancesPopup(QWidget):
         self.extracted_checkboxes_layout = QVBoxLayout(self.extracted_container)
         self.extracted_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.extracted_checkboxes_layout.setSpacing(12)
-        self.extracted_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         extracted_scroll.setWidget(self.extracted_container)
         extracted_layout.addWidget(extracted_scroll)
@@ -5319,8 +5398,8 @@ class TribunalCircumstancesPopup(QWidget):
         self.extracted_section.set_content(extracted_content)
         self.extracted_section.setVisible(False)
         self.main_layout.addWidget(self.extracted_section)
-
         self.main_layout.addStretch()
+
         main_scroll.setWidget(main_container)
         root.addWidget(main_scroll)
 
@@ -5484,6 +5563,9 @@ class TribunalCircumstancesPopup(QWidget):
             for entry_data in entries_to_show:
                 self._create_source_note_frame(entry_data['item'], entry_data['keyword'], entry_data['snippet'])
 
+            # Push entries to top so they don't spread out in the container
+            self.extracted_checkboxes_layout.addStretch()
+
         except Exception as ex:
             print(f"[TribunalCircumstancesPopup] Link click error: {ex}")
             import traceback
@@ -5492,6 +5574,7 @@ class TribunalCircumstancesPopup(QWidget):
     def _find_matching_item(self, source_date, keyword, content_snippet):
         """Find a matching item in _all_items by date/content/keyword."""
         import re
+        from datetime import datetime as dt_type
 
         # Keyword variants - maps keywords to related terms that might appear in actual text
         keyword_variants = {
@@ -5515,11 +5598,9 @@ class TribunalCircumstancesPopup(QWidget):
 
         def variant_in_text(variant, text):
             """Check if variant appears as a STANDALONE word (not as part of another word like unsettled)."""
-            # Use strict word boundary - \bsettled\b won't match "unsettled"
             pattern = re.compile(r'\b' + re.escape(variant) + r'\b', re.IGNORECASE)
             return pattern.search(text) is not None
 
-        # Helper to check if note contains the keyword or related terms
         def note_has_keyword(item_text, kw):
             """Check if note actually contains the keyword - REQUIRED for all matches."""
             if not kw:
@@ -5530,7 +5611,37 @@ class TribunalCircumstancesPopup(QWidget):
                     return True
             return False
 
-        # PRIORITY 1: Match by content snippet AND verify keyword is present
+        def dates_match(d1, d2):
+            """Check if two dates refer to the same day."""
+            if d1 is None or d2 is None:
+                return False
+            d1_date = d1.date() if isinstance(d1, dt_type) else d1
+            d2_date = d2.date() if isinstance(d2, dt_type) else d2
+            try:
+                return d1_date == d2_date
+            except:
+                return str(d1)[:10] == str(d2)[:10]
+
+        def date_distance(ref_date, item_date):
+            """Return absolute day distance between two dates, or 999999 if either is None."""
+            if ref_date is None or item_date is None:
+                return 999999
+            rd = ref_date.date() if isinstance(ref_date, dt_type) else ref_date
+            id_ = item_date.date() if isinstance(item_date, dt_type) else item_date
+            try:
+                return abs((rd - id_).days)
+            except:
+                return 999999
+
+        def closest_by_date(candidates, ref_date):
+            """Return the candidate closest to ref_date."""
+            if not candidates:
+                return None
+            if not ref_date:
+                return candidates[0]
+            return min(candidates, key=lambda item: date_distance(ref_date, item.get('date')))
+
+        # PRIORITY 1: Match by content snippet + keyword + SAME DATE
         if content_snippet and len(content_snippet) > 20:
             for chunk_size in [150, 100, 80, 60, 40]:
                 if len(content_snippet) >= chunk_size:
@@ -5538,31 +5649,62 @@ class TribunalCircumstancesPopup(QWidget):
                     for item in self._all_items:
                         item_text = item.get('text', item.get('content', ''))
                         if snippet_chunk in item_text:
-                            # VERIFY keyword is in the note - don't return wrong notes
                             if note_has_keyword(item_text, keyword):
-                                print(f"[_find_matching_item] Matched by snippet + keyword verified")
-                                return item
+                                if not source_date or dates_match(source_date, item.get('date')):
+                                    print(f"[_find_matching_item] Matched by snippet + keyword + date")
+                                    return item
 
-        # PRIORITY 2: Match by keyword variants ONLY - note MUST contain the keyword
+        # PRIORITY 2: Match by content snippet + keyword (any date) - prefer closest date
+        if content_snippet and len(content_snippet) > 20:
+            p2_candidates = []
+            for chunk_size in [150, 100, 80, 60, 40]:
+                if len(content_snippet) >= chunk_size:
+                    snippet_chunk = content_snippet[:chunk_size]
+                    for item in self._all_items:
+                        item_text = item.get('text', item.get('content', ''))
+                        if snippet_chunk in item_text and note_has_keyword(item_text, keyword):
+                            if item not in p2_candidates:
+                                p2_candidates.append(item)
+            if p2_candidates:
+                best = closest_by_date(p2_candidates, source_date)
+                print(f"[_find_matching_item] Matched by snippet + keyword (closest date, {len(p2_candidates)} candidates)")
+                return best
+
+        # PRIORITY 3: Match by keyword + SAME DATE
+        if keyword and source_date:
+            variants = get_variants(keyword)
+            for item in self._all_items:
+                if not dates_match(source_date, item.get('date')):
+                    continue
+                item_text = item.get('text', item.get('content', ''))
+                for variant in variants:
+                    if variant_in_text(variant, item_text):
+                        print(f"[_find_matching_item] Matched by keyword '{variant}' + same date")
+                        return item
+
+        # PRIORITY 4: Match by keyword only (any date) - prefer closest date
         if keyword:
+            p4_candidates = []
             variants = get_variants(keyword)
             for item in self._all_items:
                 item_text = item.get('text', item.get('content', ''))
                 for variant in variants:
                     if variant_in_text(variant, item_text):
-                        print(f"[_find_matching_item] Matched by variant '{variant}'")
-                        return item
+                        if item not in p4_candidates:
+                            p4_candidates.append(item)
+                        break
+            if p4_candidates:
+                best = closest_by_date(p4_candidates, source_date)
+                best_date = best.get('date')
+                print(f"[_find_matching_item] Matched by keyword (closest date: {best_date}, {len(p4_candidates)} candidates)")
+                return best
 
-        # PRIORITY 3: Date match only if NO keyword specified
+        # PRIORITY 5: Date match only if NO keyword specified
         if source_date and not keyword:
             for item in self._all_items:
                 item_date = item.get('date')
-                if item_date:
-                    if hasattr(source_date, 'date') and hasattr(item_date, 'date'):
-                        if source_date.date() == item_date.date():
-                            return item
-                    elif source_date == item_date:
-                        return item
+                if dates_match(source_date, item_date):
+                    return item
 
         print(f"[_find_matching_item] No match found for keyword='{keyword}', snippet='{content_snippet[:50] if content_snippet else ''}'...")
         return None
@@ -5579,7 +5721,7 @@ class TribunalCircumstancesPopup(QWidget):
         # Create entry frame
         entry_frame = QFrame()
         entry_frame.setObjectName("entryFrame")
-        entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         entry_frame.setStyleSheet("""
             QFrame#entryFrame {
                 background: rgba(255, 255, 255, 0.95);
@@ -5811,11 +5953,8 @@ class TribunalCircumstancesPopup(QWidget):
                     body_text.ensureCursorVisible()
             QTimer.singleShot(100, scroll_to_highlight)
 
-        # Set height based on content
-        doc = body_text.document()
-        doc.setTextWidth(400)
-        content_height = int(doc.size().height()) + 20
-        body_text.setFixedHeight(min(content_height, 200))
+        body_text.setMinimumHeight(60)
+        body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         entry_layout.addWidget(body_text)
         self.extracted_checkboxes_layout.addWidget(entry_frame)
@@ -5914,8 +6053,12 @@ class TribunalCircumstancesPopup(QWidget):
                     start = ep['start']
                     end = ep['end']
 
+                    # Normalize to date for consistent arithmetic
+                    start_d = start.date() if isinstance(start, datetime) else start
+                    end_d = end.date() if isinstance(end, datetime) else end
+
                     # Calculate duration
-                    days = (end - start).days
+                    days = (end_d - start_d).days
                     if days < 7:
                         duration_str = f"{days} day{'s' if days != 1 else ''}"
                     elif days < 30:
@@ -5930,7 +6073,7 @@ class TribunalCircumstancesPopup(QWidget):
                         duration_str = f"{years}y {rem_months}m" if rem_months else f"{years} year{'s' if years != 1 else ''}"
 
                     # Check if ongoing (end date is recent)
-                    is_ongoing = (datetime.now() - end).days < 2
+                    is_ongoing = (datetime.now().date() - end_d).days < 2
 
                     self.admissions_table.setItem(i, 0, QTableWidgetItem(start.strftime("%d %b %Y")))
                     self.admissions_table.setItem(i, 1, QTableWidgetItem("Ongoing" if is_ongoing else end.strftime("%d %b %Y")))
@@ -5939,17 +6082,24 @@ class TribunalCircumstancesPopup(QWidget):
                 # Get most recent admission for narrative filtering
                 last_admission = inpatient_episodes[-1]
                 admission_start = last_admission['start']
-                two_weeks_post = admission_start + timedelta(days=14)
+                admission_end = last_admission['end']
 
-                # Filter items to admission period
-                filtered_items = [
-                    e for e in items
-                    if e.get('date') and admission_start <= e['date'] <= two_weeks_post
-                ]
+                # Normalize to date for consistent comparison
+                start_cmp = admission_start.date() if isinstance(admission_start, datetime) else admission_start
+                end_cmp = admission_end.date() if isinstance(admission_end, datetime) else admission_end
+
+                # Filter items to actual admission period from timeline
+                filtered_items = []
+                for e in items:
+                    ed = e.get('date')
+                    if ed:
+                        ed_cmp = ed.date() if isinstance(ed, datetime) else ed
+                        if start_cmp <= ed_cmp <= end_cmp:
+                            filtered_items.append(e)
 
                 # Update date range label
                 self.date_range_label.setText(
-                    f"Showing notes from {admission_start.strftime('%d %b %Y')} to {two_weeks_post.strftime('%d %b %Y')} "
+                    f"Showing notes from {admission_start.strftime('%d %b %Y')} to {admission_end.strftime('%d %b %Y')} "
                     f"({len(filtered_items)} entries)"
                 )
 
@@ -6181,7 +6331,7 @@ class TribunalProgressPopup(QWidget):
         self.narrative_section = CollapsibleSection("Narrative Summary", start_collapsed=True)
         self.narrative_section.set_content_height(250)
         self.narrative_section._min_height = 100
-        self.narrative_section._max_height = 500
+        self.narrative_section._max_height = 2000
         self.narrative_section.set_header_style("""
             QFrame {
                 background: rgba(220, 252, 231, 0.95);
@@ -6265,7 +6415,7 @@ class TribunalProgressPopup(QWidget):
         self.extracted_section = CollapsibleSection("Imported Data", start_collapsed=True)
         self.extracted_section.set_content_height(300)
         self.extracted_section._min_height = 100
-        self.extracted_section._max_height = 500
+        self.extracted_section._max_height = 2000
         self.extracted_section.set_header_style("""
             QFrame {
                 background: rgba(255, 248, 220, 0.95);
@@ -6323,7 +6473,6 @@ class TribunalProgressPopup(QWidget):
         self.extracted_checkboxes_layout = QVBoxLayout(self.extracted_container)
         self.extracted_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.extracted_checkboxes_layout.setSpacing(12)
-        self.extracted_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Filter bar will be created dynamically when needed
         self._filter_bar = None
@@ -6334,8 +6483,8 @@ class TribunalProgressPopup(QWidget):
         self.extracted_section.set_content(extracted_content)
         self.extracted_section.setVisible(False)
         self.main_layout.addWidget(self.extracted_section)
-
         self.main_layout.addStretch()
+
         main_scroll.setWidget(main_container)
         root.addWidget(main_scroll)
 
@@ -6385,8 +6534,7 @@ class TribunalProgressPopup(QWidget):
                 parts.append(cb.property("full_text"))
 
         combined = "\n\n".join(parts) if parts else ""
-        if combined:
-            self.sent.emit(combined)
+        self.sent.emit(combined)
 
     def _generate_narrative_summary(self, entries):
         """Generate comprehensive clinical narrative for tribunal section 14.
@@ -7435,7 +7583,7 @@ class TribunalProgressPopup(QWidget):
             count = len(actual_violence)
             incidents = [{'entry': {'date': e.get('date'), 'content': e.get('content', '')}, 'keyword': 'aggression'} for e in actual_violence]
             link = make_multi_link(f"{count} occasion(s)", incidents, 'aggression')
-            theme_sentences.append(f"There were incidents involving aggression or challenging behaviour documented on {link}.")
+            theme_sentences.append(f"There were concerns involving aggression or challenging behaviour documented on {link}.")
         elif absent_violence:
             # Only "no aggression" type entries - this is a POSITIVE finding
             count = len(absent_violence)
@@ -9584,9 +9732,9 @@ class TribunalProgressPopup(QWidget):
                                 inc_parts.append(inc_link)
 
                     if inc_parts:
-                        year_text += f" Incidents: {'; '.join(inc_parts)}."
+                        year_text += f" Concerns: {'; '.join(inc_parts)}."
                 else:
-                    year_text += " No significant incidents documented."
+                    year_text += " No significant concerns documented."
 
                 narrative_parts.append(year_text)
                 narrative_parts.append("")
@@ -9741,7 +9889,7 @@ class TribunalProgressPopup(QWidget):
 
             entry_frame = QFrame()
             entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#entryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -9804,7 +9952,7 @@ class TribunalProgressPopup(QWidget):
             body_text.setPlainText(text)
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -9818,26 +9966,63 @@ class TribunalProgressPopup(QWidget):
             """)
             body_text.setVisible(False)
 
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            def make_toggle(btn, body):
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px; margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+
+            def make_toggle(btn, body, bar):
                 def toggle():
                     if body.isVisible():
                         body.setVisible(False)
+                        bar.setVisible(False)
                         btn.setText("▸")
                     else:
                         body.setVisible(True)
+                        bar.setVisible(True)
                         btn.setText("▾")
                 return toggle
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
             date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
 
             entry_layout.addWidget(body_text)
+            entry_layout.addWidget(drag_bar)
             self._extracted_checkboxes.append(cb)
             self.extracted_checkboxes_layout.addWidget(entry_frame)
 
@@ -9859,6 +10044,8 @@ class TribunalProgressPopup(QWidget):
                 # Also store by date for backwards compatibility (will be last entry with this date)
                 self._entry_frames[date_key] = entry_frame
                 self._entry_body_texts[date_key] = (body_text, toggle_btn, text)
+
+        self.extracted_checkboxes_layout.addStretch()
 
     def _on_narrative_link_clicked(self, url: QUrl):
         """Handle clicks on narrative reference links - find and open the SPECIFIC entry that generated the narrative."""
@@ -9882,13 +10069,15 @@ class TribunalProgressPopup(QWidget):
         content_snippet = ref_data.get("content_snippet", "")  # Used to identify specific entry
         ref_date = ref_data.get("date")  # Used for month filtering
 
-        # Extract month/year from reference date for filtering
+        # Extract exact date and month/year from reference date for filtering
         ref_month = None
         ref_year = None
+        ref_day = None
         if ref_date:
             if hasattr(ref_date, 'month'):
                 ref_month = ref_date.month
                 ref_year = ref_date.year
+                ref_day = ref_date.day if hasattr(ref_date, 'day') else None
             elif isinstance(ref_date, str):
                 # Try to parse date string
                 try:
@@ -9896,6 +10085,7 @@ class TribunalProgressPopup(QWidget):
                     parsed = datetime.strptime(ref_date[:10], '%Y-%m-%d')
                     ref_month = parsed.month
                     ref_year = parsed.year
+                    ref_day = parsed.day
                 except:
                     pass
 
@@ -9948,10 +10138,10 @@ class TribunalProgressPopup(QWidget):
         print(f"[FILTER-DEBUG] Searching for keywords: {keywords_to_search}")
         print(f"[FILTER-DEBUG] Content snippet: '{content_snippet[:50] if content_snippet else ''}'...")
         print(f"[FILTER-DEBUG] ref_date={ref_date}, ref_month={ref_month}, ref_year={ref_year}")
-        if ref_month and ref_year:
-            print(f"[FILTER-DEBUG] Month filter ACTIVE: {ref_month}/{ref_year}")
+        if ref_day and ref_month and ref_year:
+            print(f"[FILTER-DEBUG] Date filter ACTIVE: {ref_day}/{ref_month}/{ref_year}")
         else:
-            print(f"[FILTER-DEBUG] Month filter INACTIVE - showing ALL entries")
+            print(f"[FILTER-DEBUG] Date filter INACTIVE - showing ALL entries")
 
         # Expand the Imported Data section if collapsed
         if hasattr(self, 'extracted_section'):
@@ -9978,22 +10168,16 @@ class TribunalProgressPopup(QWidget):
             if '_' not in key:
                 continue
 
-            # Filter by month if reference date is available
-            if ref_month and ref_year:
+            # Filter by exact date if reference date is available
+            if ref_day and ref_month and ref_year:
                 # Entry keys have format "17/12/2024_0" (dd/mm/YYYY_idx)
                 date_part = key.rsplit('_', 1)[0]  # Get "17/12/2024"
-                print(f"[FILTER-DEBUG] Key '{key}' -> date_part '{date_part}'")
                 try:
                     from datetime import datetime
                     entry_date = datetime.strptime(date_part, '%d/%m/%Y')
-                    print(f"[FILTER-DEBUG] Parsed date: {entry_date.month}/{entry_date.year}, checking against {ref_month}/{ref_year}")
-                    if entry_date.month != ref_month or entry_date.year != ref_year:
-                        print(f"[FILTER-DEBUG] SKIPPING entry {key} - month mismatch")
-                        continue  # Skip entries not in the same month
-                    else:
-                        print(f"[FILTER-DEBUG] KEEPING entry {key} - month matches")
+                    if entry_date.day != ref_day or entry_date.month != ref_month or entry_date.year != ref_year:
+                        continue  # Skip entries not on the exact date
                 except Exception as e:
-                    print(f"[FILTER-DEBUG] Could not parse date from key '{key}': {e}")
                     pass  # If parsing fails, include the entry
 
             if len(body_info) >= 3:
@@ -10084,9 +10268,9 @@ class TribunalProgressPopup(QWidget):
 
         print(f"[FILTER-DEBUG] Found {len(exact_matches)} exact matches, {len(keyword_matches)} keyword matches")
 
-        # FALLBACK: If month filtering found 0 entries, retry without month filter
-        if len(all_matching) == 0 and ref_month and ref_year:
-            print(f"[FILTER-DEBUG] No entries found with month filter - retrying without month filter")
+        # FALLBACK: If exact date filtering found 0 entries, retry without date filter
+        if len(all_matching) == 0 and ref_day and ref_month and ref_year:
+            print(f"[FILTER-DEBUG] No entries found with exact date filter - retrying without date filter")
             # Re-scan ALL entries without month filtering
             exact_matches = []
             keyword_matches = []
@@ -10188,11 +10372,11 @@ class TribunalProgressPopup(QWidget):
                 filter_bar_layout.setContentsMargins(8, 4, 8, 4)
                 filter_bar_layout.setSpacing(8)
 
-                # Build filter label with month info if applicable
-                if ref_month and ref_year:
+                # Build filter label with date info if applicable
+                if ref_day and ref_month and ref_year:
                     from calendar import month_name
-                    month_str = f"{month_name[ref_month]} {ref_year}"
-                    filter_label = QLabel(f"Filtered: {len(matching_entries)} entries for '{keyword}' in {month_str}")
+                    date_str = f"{ref_day} {month_name[ref_month]} {ref_year}"
+                    filter_label = QLabel(f"Filtered: {len(matching_entries)} entries for '{keyword}' on {date_str}")
                 else:
                     filter_label = QLabel(f"Filtered: showing {len(matching_entries)} matching entries for '{keyword}'")
                 filter_label.setStyleSheet("color: #664D03; font-size: 11px;")
@@ -10353,7 +10537,7 @@ class TribunalRiskHarmPopup(QWidget):
         self.selfharm_section = CollapsibleSection("Self-Harm Incidents", start_collapsed=True)
         self.selfharm_section.set_content_height(250)
         self.selfharm_section._min_height = 100
-        self.selfharm_section._max_height = 500
+        self.selfharm_section._max_height = 2000
         self.selfharm_section.set_header_style("""
             QFrame {
                 background: rgba(255, 200, 180, 0.95);
@@ -10429,7 +10613,6 @@ class TribunalRiskHarmPopup(QWidget):
         self.selfharm_checkboxes_layout = QVBoxLayout(self.selfharm_container)
         self.selfharm_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.selfharm_checkboxes_layout.setSpacing(12)
-        self.selfharm_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         selfharm_scroll.setWidget(self.selfharm_container)
         selfharm_layout.addWidget(selfharm_scroll)
@@ -10444,7 +10627,7 @@ class TribunalRiskHarmPopup(QWidget):
         self.physical_section = CollapsibleSection("Harm to Others - Physical Aggression", start_collapsed=True)
         self.physical_section.set_content_height(250)
         self.physical_section._min_height = 100
-        self.physical_section._max_height = 500
+        self.physical_section._max_height = 2000
         self.physical_section.set_header_style("""
             QFrame {
                 background: rgba(255, 180, 180, 0.95);
@@ -10520,7 +10703,6 @@ class TribunalRiskHarmPopup(QWidget):
         self.physical_checkboxes_layout = QVBoxLayout(self.physical_container)
         self.physical_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.physical_checkboxes_layout.setSpacing(12)
-        self.physical_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         physical_scroll.setWidget(self.physical_container)
         physical_layout.addWidget(physical_scroll)
@@ -10535,7 +10717,7 @@ class TribunalRiskHarmPopup(QWidget):
         self.verbal_section = CollapsibleSection("Verbal Aggression", start_collapsed=True)
         self.verbal_section.set_content_height(250)
         self.verbal_section._min_height = 100
-        self.verbal_section._max_height = 500
+        self.verbal_section._max_height = 2000
         self.verbal_section.set_header_style("""
             QFrame {
                 background: rgba(220, 220, 220, 0.95);
@@ -10611,7 +10793,6 @@ class TribunalRiskHarmPopup(QWidget):
         self.verbal_checkboxes_layout = QVBoxLayout(self.verbal_container)
         self.verbal_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.verbal_checkboxes_layout.setSpacing(12)
-        self.verbal_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         verbal_scroll.setWidget(self.verbal_container)
         verbal_layout.addWidget(verbal_scroll)
@@ -10620,7 +10801,9 @@ class TribunalRiskHarmPopup(QWidget):
         self.verbal_section.setVisible(False)
         self.main_layout.addWidget(self.verbal_section)
 
+        # Push categories to top
         self.main_layout.addStretch()
+
         main_scroll.setWidget(main_container)
         root.addWidget(main_scroll)
 
@@ -10807,7 +10990,7 @@ class TribunalRiskHarmPopup(QWidget):
 
             entry_frame = QFrame()
             entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#entryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -10915,7 +11098,7 @@ class TribunalRiskHarmPopup(QWidget):
             body_text = QTextEdit()
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -10946,26 +11129,65 @@ class TribunalRiskHarmPopup(QWidget):
             else:
                 body_text.setPlainText(text)
 
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            def make_toggle(btn, body):
+            # Drag bar to resize this entry's body text
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px;
+                    margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+
+            def make_toggle(btn, body, bar):
                 def toggle():
                     if body.isVisible():
                         body.setVisible(False)
+                        bar.setVisible(False)
                         btn.setText("▸")
                     else:
                         body.setVisible(True)
+                        bar.setVisible(True)
                         btn.setText("▾")
                 return toggle
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
             date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
 
             entry_layout.addWidget(body_text)
+            entry_layout.addWidget(drag_bar)
             self._extracted_checkboxes.append(cb)
             layout.addWidget(entry_frame)
 
@@ -11051,7 +11273,7 @@ class TribunalRiskPropertyPopup(QWidget):
         self.property_section = CollapsibleSection("Property Damage", start_collapsed=True)
         self.property_section.set_content_height(350)
         self.property_section._min_height = 100
-        self.property_section._max_height = 600
+        self.property_section._max_height = 2000
         self.property_section.set_header_style("""
             QFrame {
                 background: rgba(229, 57, 53, 0.2);
@@ -11127,7 +11349,6 @@ class TribunalRiskPropertyPopup(QWidget):
         self.property_checkboxes_layout = QVBoxLayout(self.property_container)
         self.property_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.property_checkboxes_layout.setSpacing(12)
-        self.property_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         property_scroll.setWidget(self.property_container)
         property_layout.addWidget(property_scroll)
@@ -11136,7 +11357,9 @@ class TribunalRiskPropertyPopup(QWidget):
         self.property_section.setVisible(False)
         self.main_layout.addWidget(self.property_section)
 
+        # Push content to top
         self.main_layout.addStretch()
+
         main_scroll.setWidget(main_container)
         root.addWidget(main_scroll)
 
@@ -11311,7 +11534,7 @@ class TribunalRiskPropertyPopup(QWidget):
 
             entry_frame = QFrame()
             entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#entryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -11419,7 +11642,7 @@ class TribunalRiskPropertyPopup(QWidget):
             body_text = QTextEdit()
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -11449,26 +11672,65 @@ class TribunalRiskPropertyPopup(QWidget):
             else:
                 body_text.setPlainText(text)
 
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            def make_toggle(btn, body):
+            # Drag bar to resize this entry's body text
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px;
+                    margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+
+            def make_toggle(btn, body, bar):
                 def toggle():
                     if body.isVisible():
                         body.setVisible(False)
+                        bar.setVisible(False)
                         btn.setText("▸")
                     else:
                         body.setVisible(True)
+                        bar.setVisible(True)
                         btn.setText("▾")
                 return toggle
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
             date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
 
             entry_layout.addWidget(body_text)
+            entry_layout.addWidget(drag_bar)
             self._extracted_checkboxes.append(cb)
             layout.addWidget(entry_frame)
 
@@ -11572,7 +11834,7 @@ class TribunalAWOLPopup(QWidget):
         self.awol_section = CollapsibleSection("AWOL / Failed Return Concerns", start_collapsed=True)
         self.awol_section.set_content_height(350)
         self.awol_section._min_height = 100
-        self.awol_section._max_height = 600
+        self.awol_section._max_height = 2000
         self.awol_section.set_header_style("""
             QFrame {
                 background: rgba(255, 152, 0, 0.2);
@@ -11648,7 +11910,6 @@ class TribunalAWOLPopup(QWidget):
         self.awol_checkboxes_layout = QVBoxLayout(self.awol_container)
         self.awol_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.awol_checkboxes_layout.setSpacing(12)
-        self.awol_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         awol_scroll.setWidget(self.awol_container)
         awol_layout.addWidget(awol_scroll)
@@ -11883,7 +12144,7 @@ class TribunalAWOLPopup(QWidget):
 
             entry_frame = QFrame()
             entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#entryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -11992,7 +12253,7 @@ class TribunalAWOLPopup(QWidget):
             body_text = QTextEdit()
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -12022,26 +12283,65 @@ class TribunalAWOLPopup(QWidget):
             else:
                 body_text.setPlainText(text)
 
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            def make_toggle(btn, body):
+            # Drag bar to resize this entry's body text
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px;
+                    margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+
+            def make_toggle(btn, body, bar):
                 def toggle():
                     if body.isVisible():
                         body.setVisible(False)
+                        bar.setVisible(False)
                         btn.setText("▸")
                     else:
                         body.setVisible(True)
+                        bar.setVisible(True)
                         btn.setText("▾")
                 return toggle
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
             date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
 
             entry_layout.addWidget(body_text)
+            entry_layout.addWidget(drag_bar)
             self._extracted_checkboxes.append(cb)
             layout.addWidget(entry_frame)
 
@@ -12165,40 +12465,21 @@ class TribunalCompliancePopup(QWidget):
         # ====================================================
         # SECTION 1: INPUT GRID (Understanding & Compliance)
         # ====================================================
-        input_section = CollapsibleSection("Understanding & Compliance", start_collapsed=True)
-        input_section.set_content_height(220)
-        input_section._min_height = 100
-        input_section._max_height = 400
-        input_section.set_header_style("""
+        input_card = QFrame()
+        input_card.setStyleSheet("""
             QFrame {
-                background: rgba(200, 220, 255, 0.95);
-                border: 1px solid rgba(100, 150, 200, 0.4);
-                border-radius: 6px 6px 0 0;
-            }
-        """)
-        input_section.set_title_style("""
-            QLabel {
-                font-size: 18px;
-                font-weight: 600;
-                color: #1565c0;
-                background: transparent;
-                border: none;
-            }
-        """)
-
-        input_content = QWidget()
-        input_content.setStyleSheet("""
-            QWidget {
                 background: rgba(255, 255, 255, 0.95);
                 border: 1px solid rgba(100, 150, 200, 0.4);
-                border-top: none;
-                border-radius: 0 0 12px 12px;
+                border-radius: 8px;
             }
         """)
+        input_card_layout = QVBoxLayout(input_card)
+        input_card_layout.setContentsMargins(12, 10, 12, 10)
+        input_card_layout.setSpacing(8)
 
-        input_layout = QVBoxLayout(input_content)
-        input_layout.setContentsMargins(12, 10, 12, 10)
-        input_layout.setSpacing(8)
+        input_title = QLabel("Understanding & Compliance")
+        input_title.setStyleSheet("font-size: 18px; font-weight: 600; color: #1565c0; background: transparent; border: none;")
+        input_card_layout.addWidget(input_title)
 
         # Grid for treatments
         grid = QGridLayout()
@@ -12260,9 +12541,9 @@ class TribunalCompliancePopup(QWidget):
                 "compliance": compliance
             }
 
-        input_layout.addLayout(grid)
-        input_section.set_content(input_content)
-        self.main_layout.addWidget(input_section)
+        input_card_layout.addLayout(grid)
+        input_card.setFixedHeight(260)
+        self.main_layout.addWidget(input_card)
 
         # ====================================================
         # SECTION 3: NON-COMPLIANCE CONCERNS (collapsible)
@@ -12270,7 +12551,7 @@ class TribunalCompliancePopup(QWidget):
         self.compliance_section = CollapsibleSection("Non-Compliance Concerns", start_collapsed=True)
         self.compliance_section.set_content_height(300)
         self.compliance_section._min_height = 100
-        self.compliance_section._max_height = 500
+        self.compliance_section._max_height = 2000
         self.compliance_section.set_header_style("""
             QFrame {
                 background: rgba(156, 39, 176, 0.2);
@@ -12346,7 +12627,6 @@ class TribunalCompliancePopup(QWidget):
         self.compliance_checkboxes_layout = QVBoxLayout(self.compliance_container)
         self.compliance_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.compliance_checkboxes_layout.setSpacing(12)
-        self.compliance_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         compliance_scroll.setWidget(self.compliance_container)
         compliance_layout.addWidget(compliance_scroll)
@@ -12678,7 +12958,7 @@ class TribunalCompliancePopup(QWidget):
 
             entry_frame = QFrame()
             entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#entryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -12785,7 +13065,7 @@ class TribunalCompliancePopup(QWidget):
             body_text = QTextEdit()
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -12815,26 +13095,65 @@ class TribunalCompliancePopup(QWidget):
             else:
                 body_text.setPlainText(text)
 
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            def make_toggle(btn, body):
+            # Drag bar to resize this entry's body text
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px;
+                    margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+
+            def make_toggle(btn, body, bar):
                 def toggle():
                     if body.isVisible():
                         body.setVisible(False)
+                        bar.setVisible(False)
                         btn.setText("▸")
                     else:
                         body.setVisible(True)
+                        bar.setVisible(True)
                         btn.setText("▾")
                 return toggle
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
             date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
 
             entry_layout.addWidget(body_text)
+            entry_layout.addWidget(drag_bar)
             self._extracted_checkboxes.append(cb)
             layout.addWidget(entry_frame)
 
@@ -12941,7 +13260,7 @@ class TribunalSeclusionPopup(QWidget):
         self.seclusion_section = CollapsibleSection("Seclusion / Restraint Concerns", start_collapsed=True)
         self.seclusion_section.set_content_height(350)
         self.seclusion_section._min_height = 100
-        self.seclusion_section._max_height = 600
+        self.seclusion_section._max_height = 2000
         self.seclusion_section.set_header_style("""
             QFrame {
                 background: rgba(128, 0, 128, 0.2);
@@ -13017,7 +13336,6 @@ class TribunalSeclusionPopup(QWidget):
         self.seclusion_checkboxes_layout = QVBoxLayout(self.seclusion_container)
         self.seclusion_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
         self.seclusion_checkboxes_layout.setSpacing(12)
-        self.seclusion_checkboxes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         seclusion_scroll.setWidget(self.seclusion_container)
         seclusion_layout.addWidget(seclusion_scroll)
@@ -13250,7 +13568,7 @@ class TribunalSeclusionPopup(QWidget):
 
             entry_frame = QFrame()
             entry_frame.setObjectName("entryFrame")
-            entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             entry_frame.setStyleSheet("""
                 QFrame#entryFrame {
                     background: rgba(255, 255, 255, 0.95);
@@ -13359,7 +13677,7 @@ class TribunalSeclusionPopup(QWidget):
             body_text = QTextEdit()
             body_text.setReadOnly(True)
             body_text.setFrameShape(QFrame.Shape.NoFrame)
-            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             body_text.setStyleSheet("""
                 QTextEdit {
@@ -13389,26 +13707,65 @@ class TribunalSeclusionPopup(QWidget):
             else:
                 body_text.setPlainText(text)
 
-            # Calculate height based on content
-            doc = body_text.document()
-            doc.setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 400)
-            content_height = int(doc.size().height()) + 20
-            body_text.setFixedHeight(min(content_height, 200))
+            body_text.setMinimumHeight(60)
+            body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            def make_toggle(btn, body):
+            # Drag bar to resize this entry's body text
+            drag_bar = QFrame()
+            drag_bar.setFixedHeight(8)
+            drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+            drag_bar.setStyleSheet("""
+                QFrame {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                    border-radius: 2px;
+                    margin: 2px 40px;
+                }
+                QFrame:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                }
+            """)
+            drag_bar.setVisible(False)
+            drag_bar._drag_y = None
+            drag_bar._init_h = None
+            def _make_drag_handlers(handle, text_widget):
+                def press(ev):
+                    handle._drag_y = ev.globalPosition().y()
+                    handle._init_h = text_widget.height()
+                def move(ev):
+                    if handle._drag_y is not None:
+                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                        new_h = max(60, handle._init_h + delta)
+                        text_widget.setMinimumHeight(new_h)
+                        text_widget.setMaximumHeight(new_h)
+                def release(ev):
+                    if handle._drag_y is not None:
+                        text_widget.setMaximumHeight(16777215)
+                        handle._drag_y = None
+                return press, move, release
+            dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+            drag_bar.mousePressEvent = dp
+            drag_bar.mouseMoveEvent = dm
+            drag_bar.mouseReleaseEvent = dr
+
+            def make_toggle(btn, body, bar):
                 def toggle():
                     if body.isVisible():
                         body.setVisible(False)
+                        bar.setVisible(False)
                         btn.setText("▸")
                     else:
                         body.setVisible(True)
+                        bar.setVisible(True)
                         btn.setText("▾")
                 return toggle
 
-            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text))
+            toggle_btn.clicked.connect(make_toggle(toggle_btn, body_text, drag_bar))
             date_label.mousePressEvent = lambda e, btn=toggle_btn: btn.click()
 
             entry_layout.addWidget(body_text)
+            entry_layout.addWidget(drag_bar)
             self._extracted_checkboxes.append(cb)
             layout.addWidget(entry_frame)
 

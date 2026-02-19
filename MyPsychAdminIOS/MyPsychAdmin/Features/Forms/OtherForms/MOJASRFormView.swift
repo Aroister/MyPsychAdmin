@@ -38,6 +38,8 @@ struct MOJASRFormView: View {
     @State private var isImporting = false
     @State private var importStatusMessage: String?
     @State private var hasPopulatedFromSharedData = false
+    @State private var isProcessingNotes = false
+    @State private var processingProgress: String = ""
 
     // 17 Sections matching desktop MOJ ASR Form
     enum ASRSection: String, CaseIterable, Identifiable {
@@ -114,6 +116,26 @@ struct MOJASRFormView: View {
                     FormValidationErrorView(errors: validationErrors)
                         .padding(.horizontal)
 
+                    // Processing indicator
+                    if isProcessingNotes {
+                        VStack(spacing: 8) {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .scaleEffect(1.2)
+                            Text(processingProgress.isEmpty ? "Processing notes..." : processingProgress)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Text("Please wait")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                        .background(Color(red: 153/255, green: 27/255, blue: 27/255))
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    }
+
                     // All section cards
                     ForEach(ASRSection.allCases) { section in
                         ASREditableCard(
@@ -172,14 +194,27 @@ struct MOJASRFormView: View {
             initializeCardTexts()
             // Populate from SharedDataStore notes if available
             if !hasPopulatedFromSharedData && !sharedData.notes.isEmpty {
-                populateFromClinicalNotes(sharedData.notes)
+                populateFromClinicalNotesAsync(sharedData.notes)
                 hasPopulatedFromSharedData = true
             }
         }
         .onReceive(sharedData.notesDidChange) { notes in
             // Auto-populate when notes are updated in SharedDataStore
             if !notes.isEmpty {
-                populateFromClinicalNotes(notes)
+                populateFromClinicalNotesAsync(notes)
+            }
+        }
+        .onChange(of: sharedData.notes.count) {
+            // Fallback: also detect notes changes via @Observable tracking
+            if sharedData.notes.count > 0 {
+                populateFromClinicalNotesAsync(sharedData.notes)
+            }
+        }
+        .onReceive(sharedData.patientInfoDidChange) { patientInfo in
+            if !patientInfo.fullName.isEmpty {
+                formData.patientName = patientInfo.fullName
+                formData.patientDOB = patientInfo.dateOfBirth
+                formData.patientGender = patientInfo.gender
             }
         }
         .sheet(item: $activePopup) { section in
@@ -345,14 +380,22 @@ struct MOJASRFormView: View {
                     // Use DocumentProcessor to parse the file (like desktop)
                     let extractedDoc = try await DocumentProcessor.shared.processDocument(at: tempURL)
 
+                    // Diagnostic logging
+                    print("[MOJ-ASR iOS] Document processed: notes=\(extractedDoc.notes.count), text=\(extractedDoc.text.count) chars, patientName='\(extractedDoc.patientInfo.fullName)', extractedData=\(extractedDoc.extractedData.count) categories")
+                    if !extractedDoc.text.isEmpty {
+                        let preview = String(extractedDoc.text.prefix(300))
+                        print("[MOJ-ASR iOS] Text preview: \(preview)")
+                    }
+
                     await MainActor.run {
                         // Store notes in SharedDataStore (so other forms can use them too)
                         if !extractedDoc.notes.isEmpty {
                             sharedData.setNotes(extractedDoc.notes, source: "moj_asr_import")
                         }
 
-                        // Update patient info if extracted
+                        // Update patient info if extracted and share with other views
                         if !extractedDoc.patientInfo.fullName.isEmpty {
+                            sharedData.setPatientInfo(extractedDoc.patientInfo, source: "moj_asr_import")
                             formData.patientName = extractedDoc.patientInfo.fullName
                             if let dob = extractedDoc.patientInfo.dateOfBirth {
                                 formData.patientDOB = dob
@@ -360,12 +403,27 @@ struct MOJASRFormView: View {
                             formData.patientGender = extractedDoc.patientInfo.gender
                         }
 
-                        // Populate imported entries from notes
-                        populateFromClinicalNotes(extractedDoc.notes)
+                        // Share extractedData with other forms via SharedDataStore
+                        if !extractedDoc.extractedData.isEmpty {
+                            var extData = ExtractedData()
+                            extData.categories = extractedDoc.extractedData
+                            sharedData.setExtractedData(extData, source: "moj_asr_import")
+                        }
 
                         isImporting = false
-                        let noteCount = extractedDoc.notes.count
-                        importStatusMessage = "Imported \(noteCount) notes"
+
+                        // Detect report vs notes and process accordingly (matching desktop)
+                        if Self.isReport(extractedDoc) {
+                            // Report path: parse raw text and map to ASR sections
+                            processReportData(extractedDoc)
+                            let rawSections = Self.parseReportSections(from: extractedDoc.text)
+                            let sectionCount = rawSections.count
+                            importStatusMessage = "Imported report (\(sectionCount) sections)"
+                        } else {
+                            // Notes path: keyword categorization (existing async flow)
+                            populateFromClinicalNotesAsync(extractedDoc.notes)
+                            importStatusMessage = "Imported \(extractedDoc.notes.count) notes"
+                        }
 
                         // Clear message after delay
                         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -391,7 +449,671 @@ struct MOJASRFormView: View {
 
     // MARK: - Populate from Clinical Notes (SharedDataStore or Import)
 
-    /// Populate all section imported entries from ClinicalNote array
+    /// Async wrapper that moves heavy categorization to a background thread
+    private func populateFromClinicalNotesAsync(_ notes: [ClinicalNote]) {
+        guard !notes.isEmpty, !isProcessingNotes else { return }
+        isProcessingNotes = true
+        processingProgress = "Processing \(notes.count) notes..."
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let results = Self.categorizeNotes(notes)
+            DispatchQueue.main.async {
+                self.applyCategorizedResults(results, notes: notes)
+            }
+        }
+    }
+
+    /// Apply categorization results to formData on the main thread
+    private func applyCategorizedResults(_ results: CategorizedResults, notes: [ClinicalNote]) {
+        formData.behaviourImportedEntries = results.behaviour
+        formData.patientAttitudeImportedEntries = results.attitude
+        formData.capacityImportedEntries = results.capacity
+        formData.progressImportedEntries = results.progress
+        formData.riskImportedEntries = results.risk
+        formData.riskAddressedImportedEntries = results.riskAddressed
+        formData.abscondImportedEntries = results.abscond
+        formData.mappaImportedEntries = results.mappa
+        formData.victimsImportedEntries = results.victims
+        formData.leaveReportImportedEntries = results.leave
+
+        extractAndFillDiagnoses(notes)
+
+        isProcessingNotes = false
+        processingProgress = ""
+    }
+
+    // MARK: - Report Detection & Processing (matching desktop report path)
+
+    /// Detect if the imported document is a structured report (vs clinical notes)
+    /// Desktop checks `_detected_document_type` and `_panel_data_by_dtype`
+    /// iOS: Parse raw text for section headers — DocumentProcessor's extractedData is
+    /// unreliable for reports because parseGenericFormat fragments text at date boundaries
+    private static func isReport(_ document: ExtractedDocument) -> Bool {
+        let reportCategories: [ClinicalCategory] = [
+            .historyOfPresentingComplaint, .mentalStateExamination,
+            .forensicHistory, .risk, .pastPsychiatricHistory,
+            .diagnosis, .plan, .capacityAssessment
+        ]
+
+        print("[MOJ-ASR iOS] isReport check: notes=\(document.notes.count), text=\(document.text.count) chars, extractedData keys=\(document.extractedData.keys.map { $0.rawValue })")
+
+        // Check 1: extractedData has 2+ meaningful report categories
+        let matchedFromExtracted = reportCategories.filter {
+            guard let items = document.extractedData[$0] else { return false }
+            return !items.isEmpty
+        }
+        if matchedFromExtracted.count >= 2 {
+            print("[MOJ-ASR iOS] isReport=true (extractedData has \(matchedFromExtracted.count) categories)")
+            return true
+        }
+
+        // Check 2: Single long note (report parsed as one block)
+        if document.notes.count == 1 && document.notes[0].body.count > 2000 {
+            print("[MOJ-ASR iOS] isReport=true (single long note)")
+            return true
+        }
+
+        // Check 3: Substantial raw text — scan for section headers directly
+        // This handles cases where parseGenericFormat fragmented or failed to create notes
+        if document.text.count > 500 {
+            let rawSections = parseReportSections(from: document.text)
+            print("[MOJ-ASR iOS] Raw text scan found \(rawSections.count) sections: \(rawSections.keys.map { $0.rawValue })")
+            let matchedRaw = reportCategories.filter { rawSections[$0] != nil }
+            if matchedRaw.count >= 2 {
+                print("[MOJ-ASR iOS] isReport=true (raw text has \(matchedRaw.count) report categories)")
+                return true
+            }
+        }
+
+        // Check 4: No notes but substantial text — parser couldn't create notes from this document
+        // Common with structured reports where format detection misfires
+        if document.notes.isEmpty && document.text.count > 500 {
+            print("[MOJ-ASR iOS] isReport=true (no notes but \(document.text.count) chars of text)")
+            return true
+        }
+
+        print("[MOJ-ASR iOS] isReport=false")
+        return false
+    }
+
+    /// Specific multi-word section header patterns safe to search in continuous text
+    /// Short/generic keywords (e.g. "risk", "mood") are excluded — they'd match body text
+    private static let reportHeaderPatterns: [(pattern: String, category: ClinicalCategory)] = [
+        // HPC / Presenting complaint
+        ("history of presenting complaint", .historyOfPresentingComplaint),
+        ("history of presenting illness", .historyOfPresentingComplaint),
+        ("presenting complaint", .historyOfPresentingComplaint),
+        ("clinical history", .historyOfPresentingComplaint),
+        ("background history", .historyOfPresentingComplaint),
+        ("background to admission", .historyOfPresentingComplaint),
+        // Mental State Examination
+        ("mental state examination", .mentalStateExamination),
+        ("mental state exam", .mentalStateExamination),
+        ("current mental state", .mentalStateExamination),
+        // Risk
+        ("risk assessment", .risk),
+        ("risk management", .risk),
+        ("risk to self", .risk),
+        ("risk to others", .risk),
+        // Forensic
+        ("forensic history", .forensicHistory),
+        ("offending history", .forensicHistory),
+        ("index offence", .forensicHistory),
+        ("criminal history", .forensicHistory),
+        // Past Psychiatric History
+        ("past psychiatric history", .pastPsychiatricHistory),
+        ("previous psychiatric history", .pastPsychiatricHistory),
+        ("psychiatric history", .pastPsychiatricHistory),
+        // Past Medical History
+        ("past medical history", .pastMedicalHistory),
+        ("medical history", .pastMedicalHistory),
+        ("physical health", .pastMedicalHistory),
+        // Medication
+        ("medication history", .medicationHistory),
+        ("current medication", .medicationHistory),
+        // Drug & Alcohol
+        ("drug and alcohol", .drugAndAlcoholHistory),
+        ("substance misuse", .drugAndAlcoholHistory),
+        ("substance use", .drugAndAlcoholHistory),
+        // Personal / Social
+        ("personal history", .personalHistory),
+        ("social history", .personalHistory),
+        ("social circumstances", .personalHistory),
+        ("family history", .personalHistory),
+        // Capacity
+        ("capacity assessment", .capacityAssessment),
+        ("capacity to consent", .capacityAssessment),
+        ("mental capacity", .capacityAssessment),
+        // Diagnosis
+        ("diagnosis", .diagnosis),
+        ("diagnoses", .diagnosis),
+        // Impression / Formulation
+        ("impression", .impression),
+        ("clinical impression", .impression),
+        ("formulation", .impression),
+        // Plan
+        ("management plan", .plan),
+        ("treatment plan", .plan),
+        ("care plan", .plan),
+        ("recommendations", .plan),
+        // Summary
+        ("summary", .summary),
+        ("opinion", .summary),
+        ("conclusion", .summary),
+        // Medical Tribunal Report numbered sections
+        // Section 14: "Give a summary of the patient's current progress, behaviour, capacity and insight"
+        // → maps to .summary which feeds ASR Section 4 (Attitude & Behaviour)
+        ("current progress, behaviour, capacity and insight", .summary),
+        ("summary of the patient's current progress", .summary),
+        ("patient's current progress, behaviour", .summary),
+        ("give a summary of the patient", .summary),
+    ]
+
+    /// Parse raw document text into clinical category sections
+    /// Handles BOTH line-separated text AND continuous blobs (PDF extraction without newlines)
+    private static func parseReportSections(from text: String) -> [ClinicalCategory: [String]] {
+        // Check if text has proper line breaks
+        let nonEmptyLines = text.components(separatedBy: .newlines)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+
+        if nonEmptyLines.count > 20 {
+            // Has proper line breaks — use line-by-line detection
+            let result = parseReportSectionsFromLines(nonEmptyLines)
+            if !result.isEmpty { return result }
+        }
+
+        // Text is one blob or line-by-line found nothing — search for headers in continuous text
+        return parseReportSectionsFromContinuousText(text)
+    }
+
+    /// Line-by-line section detection (for text with proper newlines)
+    private static func parseReportSectionsFromLines(_ lines: [String]) -> [ClinicalCategory: [String]] {
+        var sections: [ClinicalCategory: [String]] = [:]
+        var currentCategory: ClinicalCategory? = nil
+        var currentLines: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+
+            // Only check short lines as potential headers
+            if trimmed.count < 80, let category = detectLineHeader(trimmed) {
+                // Save previous section
+                if let cat = currentCategory, !currentLines.isEmpty {
+                    let content = currentLines.joined(separator: "\n")
+                    if sections[cat] != nil {
+                        sections[cat]?.append(content)
+                    } else {
+                        sections[cat] = [content]
+                    }
+                }
+                currentCategory = category
+                currentLines = []
+            } else {
+                currentLines.append(trimmed)
+            }
+        }
+
+        // Save last section
+        if let cat = currentCategory, !currentLines.isEmpty {
+            let content = currentLines.joined(separator: "\n")
+            if sections[cat] != nil {
+                sections[cat]?.append(content)
+            } else {
+                sections[cat] = [content]
+            }
+        }
+
+        return sections
+    }
+
+    /// Detect a section header in a single short line
+    private static func detectLineHeader(_ line: String) -> ClinicalCategory? {
+        let lower = line.lowercased()
+        for (pattern, category) in reportHeaderPatterns {
+            if lower.contains(pattern) { return category }
+        }
+        // Also check ClinicalCategory detection keywords for short lines
+        for category in ClinicalCategory.allCases {
+            for keyword in category.detectionKeywords {
+                if lower.hasPrefix(keyword) { return category }
+            }
+        }
+        return nil
+    }
+
+    /// Search for section header keywords in continuous text (no newlines)
+    /// Finds header positions, then extracts text between them
+    private static func parseReportSectionsFromContinuousText(_ text: String) -> [ClinicalCategory: [String]] {
+        let lower = text.lowercased()
+
+        // Find all header keyword positions in the text
+        struct HeaderMatch: Comparable {
+            let position: Int
+            let length: Int
+            let category: ClinicalCategory
+            static func < (lhs: HeaderMatch, rhs: HeaderMatch) -> Bool {
+                if lhs.position != rhs.position { return lhs.position < rhs.position }
+                return lhs.length > rhs.length // prefer longer match at same position
+            }
+        }
+
+        var matches: [HeaderMatch] = []
+
+        for (pattern, category) in reportHeaderPatterns {
+            var searchStart = lower.startIndex
+            while let range = lower.range(of: pattern, range: searchStart..<lower.endIndex) {
+                let pos = lower.distance(from: lower.startIndex, to: range.lowerBound)
+                let len = lower.distance(from: range.lowerBound, to: range.upperBound)
+                matches.append(HeaderMatch(position: pos, length: len, category: category))
+                searchStart = range.upperBound
+            }
+        }
+
+        guard !matches.isEmpty else { return [:] }
+
+        // Sort by position, de-duplicate overlapping matches (keep first/longest at each position)
+        matches.sort()
+        var filtered: [HeaderMatch] = []
+        for match in matches {
+            if let last = filtered.last, match.position < last.position + last.length + 5 {
+                continue // skip overlapping matches
+            }
+            filtered.append(match)
+        }
+
+        print("[MOJ-ASR iOS] Found \(filtered.count) section headers in continuous text: \(filtered.map { "\($0.category.rawValue)@\($0.position)" })")
+
+        // Extract text between headers
+        var sections: [ClinicalCategory: [String]] = [:]
+
+        for i in 0..<filtered.count {
+            let headerEnd = filtered[i].position + filtered[i].length
+            let nextStart = i + 1 < filtered.count ? filtered[i + 1].position : text.count
+
+            guard headerEnd < text.count && headerEnd < nextStart else { continue }
+
+            let startIdx = text.index(text.startIndex, offsetBy: headerEnd)
+            let endIdx = text.index(text.startIndex, offsetBy: min(nextStart, text.count))
+
+            let rawContent = String(text[startIdx..<endIdx])
+            // Clean up: skip leading colons, whitespace
+            let content = rawContent
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "^[:\\s]+", with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !content.isEmpty && content.count > 10 else { continue }
+
+            let cat = filtered[i].category
+            if sections[cat] != nil {
+                sections[cat]?.append(content)
+            } else {
+                sections[cat] = [content]
+            }
+        }
+
+        return sections
+    }
+
+    /// Process a structured report by mapping categories to ASR sections
+    /// Parses raw document text directly to avoid parseGenericFormat fragmentation
+    private func processReportData(_ document: ExtractedDocument) {
+        print("[MOJ-ASR iOS] Processing as REPORT (structured document)")
+
+        // Try PTR (Psychiatric Tribunal Report) section parsing first
+        let ptrSections = Self.parsePTRSections(from: document.text)
+        if !ptrSections.isEmpty {
+            print("[MOJ-ASR iOS] Detected PTR with sections: \(ptrSections.keys.sorted())")
+            applyPTRDataToSections(ptrSections, document: document)
+            return
+        }
+
+        // Fallback: generic report parsing using clinical category headers
+        let data = Self.parseReportSections(from: document.text)
+        print("[MOJ-ASR iOS] Generic report categories found: \(data.keys.map { $0.rawValue })")
+        applyGenericReportToSections(data, document: document)
+    }
+
+    // MARK: - PTR (Psychiatric Tribunal Report) Section Parsing
+
+    /// Distinctive phrases from each PTR numbered question used to find section boundaries
+    private static let ptrSectionMarkers: [(section: Int, phrases: [String])] = [
+        (14, [
+            "current progress, behaviour, capacity and insight",
+            "summary of the patient's current progress",
+            "give a summary of the patient"
+        ]),
+        (15, [
+            "understanding of, compliance with",
+            "willingness to accept any prescribed medication",
+            "comply with any appropriate medical treatment"
+        ]),
+        (16, [
+            "eligible compliant patient who lacks capacity",
+            "deprivation of liberty under the mental capacity act",
+            "lacks capacity to agree or object to their detention",
+            "whether or not deprivation of liberty"
+        ]),
+        (17, [
+            "harmed themselves or others, or threatened to harm",
+            "where the patient has harmed themselves or others",
+            "threatened to harm themselves or others",
+            "incidents where the patient has harmed"
+        ]),
+        (18, [
+            "damaged property",
+            "threatened to damage property",
+            "incidents of property damage"
+        ]),
+        (19, [
+            "in section 2 cases",
+            "section 2 cases"
+        ]),
+        (20, [
+            "in all other cases",
+            "all other cases"
+        ]),
+        (21, [
+            "likely to act in a manner dangerous",
+            "discharged from hospital"
+        ]),
+        (22, [
+            "managed effectively in the community",
+            "risks managed in the community"
+        ]),
+        (23, [
+            "recommendations to tribunal",
+            "do you have any recommendations"
+        ]),
+        (24, [
+            "other relevant information",
+            "other information for the tribunal"
+        ])
+    ]
+
+    /// Parse PTR numbered sections from document text.
+    /// Returns [sectionNumber: sectionText] — clean text between section boundaries.
+    private static func parsePTRSections(from text: String) -> [Int: String] {
+        let lower = text.lowercased()
+
+        // Find position of each PTR section header in the text
+        struct SectionMatch: Comparable {
+            let section: Int
+            let position: Int     // where the header phrase starts
+            let phraseEnd: Int    // where the header phrase ends (content starts after)
+            static func < (lhs: SectionMatch, rhs: SectionMatch) -> Bool {
+                lhs.position < rhs.position
+            }
+        }
+
+        var matches: [SectionMatch] = []
+
+        for marker in ptrSectionMarkers {
+            for phrase in marker.phrases {
+                if let range = lower.range(of: phrase) {
+                    let pos = lower.distance(from: lower.startIndex, to: range.lowerBound)
+                    let end = lower.distance(from: lower.startIndex, to: range.upperBound)
+                    // Only take the first match for each section
+                    if !matches.contains(where: { $0.section == marker.section }) {
+                        matches.append(SectionMatch(section: marker.section, position: pos, phraseEnd: end))
+                    }
+                    break
+                }
+            }
+        }
+
+        guard matches.count >= 2 else { return [:] } // Need at least 2 sections to confirm it's a PTR
+
+        matches.sort()
+
+        // Extract text between section boundaries
+        var sections: [Int: String] = [:]
+        for i in 0..<matches.count {
+            // Content starts after the header phrase (skip trailing punctuation/whitespace like "? ")
+            var contentStart = matches[i].phraseEnd
+            // Skip past the rest of the question text (find the first sentence-ending punctuation after the phrase)
+            let searchFrom = text.index(text.startIndex, offsetBy: min(contentStart, text.count))
+            let searchEnd = text.index(text.startIndex, offsetBy: min(contentStart + 200, text.count))
+            if searchFrom < searchEnd {
+                let tail = String(text[searchFrom..<searchEnd])
+                // Find the end of the question (look for ? or the answer starting)
+                if let qMark = tail.firstIndex(of: "?") {
+                    contentStart += tail.distance(from: tail.startIndex, to: qMark) + 1
+                }
+            }
+
+            // Content ends at the start of the next section header
+            let contentEnd = i + 1 < matches.count ? matches[i + 1].position : text.count
+
+            guard contentStart < contentEnd && contentStart < text.count else { continue }
+
+            let startIdx = text.index(text.startIndex, offsetBy: contentStart)
+            let endIdx = text.index(text.startIndex, offsetBy: min(contentEnd, text.count))
+            let content = String(text[startIdx..<endIdx])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !content.isEmpty && content.count > 10 else { continue }
+            sections[matches[i].section] = content
+        }
+
+        return sections
+    }
+
+    /// Apply PTR sections directly to ASR sections — 1 entry per ASR section, no keyword processing
+    private func applyPTRDataToSections(_ ptr: [Int: String], document: ExtractedDocument) {
+        func makeEntry(_ text: String) -> ASRImportedEntry {
+            let snippet = text.count > 200 ? String(text.prefix(200)) + "..." : text
+            return ASRImportedEntry(date: nil, text: text, categories: ["Report"], snippet: snippet)
+        }
+
+        // PTR 14 → ASR 4 (Attitude & Behaviour)
+        if let s14 = ptr[14] {
+            formData.behaviourImportedEntries = [makeEntry(s14)]
+        }
+        // PTR 15 → ASR 6 (Patient's Attitude to medication)
+        if let s15 = ptr[15] {
+            formData.patientAttitudeImportedEntries = [makeEntry(s15)]
+        }
+        // PTR 16 → ASR 7 (Capacity)
+        if let s16 = ptr[16] {
+            formData.capacityImportedEntries = [makeEntry(s16)]
+        }
+        // PTR 14 → ASR 8 (Progress) — same content
+        if let s14 = ptr[14] {
+            formData.progressImportedEntries = [makeEntry(s14)]
+        }
+        // PTR 17 → ASR 9 (Managing Risk)
+        if let s17 = ptr[17] {
+            formData.riskImportedEntries = [makeEntry(s17)]
+        }
+        // PTR 18 → ASR 10 (How Risks Addressed)
+        if let s18 = ptr[18] {
+            formData.riskAddressedImportedEntries = [makeEntry(s18)]
+        }
+
+        // Auto-fill card text
+        if let s14 = ptr[14], (generatedTexts[.attitudeBehaviour] ?? "").isEmpty {
+            generatedTexts[.attitudeBehaviour] = s14
+        }
+        if let s15 = ptr[15], (generatedTexts[.patientAttitude] ?? "").isEmpty {
+            generatedTexts[.patientAttitude] = s15
+        }
+        if let s16 = ptr[16], (generatedTexts[.capacity] ?? "").isEmpty {
+            generatedTexts[.capacity] = s16
+        }
+        if let s14 = ptr[14], (generatedTexts[.progress] ?? "").isEmpty {
+            generatedTexts[.progress] = s14
+        }
+        if let s17 = ptr[17], (generatedTexts[.managingRisk] ?? "").isEmpty {
+            generatedTexts[.managingRisk] = s17
+        }
+        if let s18 = ptr[18], (generatedTexts[.riskAddressed] ?? "").isEmpty {
+            generatedTexts[.riskAddressed] = s18
+        }
+
+        // Extract diagnoses from full text
+        if !document.text.isEmpty {
+            extractAndFillDiagnosesFromText(document.text)
+        }
+
+        print("[MOJ-ASR iOS] PTR mapped: sec4=\(ptr[14] != nil), sec6=\(ptr[15] != nil), sec7=\(ptr[16] != nil), sec8=\(ptr[14] != nil), sec9=\(ptr[17] != nil), sec10=\(ptr[18] != nil)")
+    }
+
+    // MARK: - Generic Report Fallback (non-PTR reports)
+
+    /// Fallback for non-tribunal reports — uses clinical category header detection
+    private func applyGenericReportToSections(_ data: [ClinicalCategory: [String]], document: ExtractedDocument) {
+        func getCategoryItems(_ categories: [ClinicalCategory]) -> [String] {
+            categories.flatMap { data[$0] ?? [] }
+        }
+
+        func makeEntry(_ text: String) -> ASRImportedEntry {
+            let snippet = text.count > 200 ? String(text.prefix(200)) + "..." : text
+            return ASRImportedEntry(date: nil, text: text, categories: ["Report"], snippet: snippet)
+        }
+
+        func joinedEntry(_ texts: [String]) -> [ASRImportedEntry] {
+            let joined = texts.joined(separator: "\n\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !joined.isEmpty else { return [] }
+            return [makeEntry(joined)]
+        }
+
+        let hpc = getCategoryItems([.historyOfPresentingComplaint])
+        let risk = getCategoryItems([.risk, .summary])
+        let mse = getCategoryItems([.mentalStateExamination])
+        let forensic = getCategoryItems([.forensicHistory])
+        let pastPsych = getCategoryItems([.pastPsychiatricHistory])
+        let plan = getCategoryItems([.plan])
+
+        formData.behaviourImportedEntries = joinedEntry(hpc + risk + pastPsych)
+        formData.patientAttitudeImportedEntries = joinedEntry(pastPsych.isEmpty ? hpc : pastPsych)
+        formData.capacityImportedEntries = joinedEntry(mse)
+        formData.progressImportedEntries = joinedEntry(hpc + plan)
+        formData.riskAddressedImportedEntries = joinedEntry(forensic + risk)
+
+        func entriesToText(_ entries: [ASRImportedEntry]) -> String {
+            entries.map { $0.text }.joined(separator: "\n\n")
+        }
+
+        if !formData.behaviourImportedEntries.isEmpty && (generatedTexts[.attitudeBehaviour] ?? "").isEmpty {
+            generatedTexts[.attitudeBehaviour] = entriesToText(formData.behaviourImportedEntries)
+        }
+        if !formData.patientAttitudeImportedEntries.isEmpty && (generatedTexts[.patientAttitude] ?? "").isEmpty {
+            generatedTexts[.patientAttitude] = entriesToText(formData.patientAttitudeImportedEntries)
+        }
+        if !formData.capacityImportedEntries.isEmpty && (generatedTexts[.capacity] ?? "").isEmpty {
+            generatedTexts[.capacity] = entriesToText(formData.capacityImportedEntries)
+        }
+        if !formData.progressImportedEntries.isEmpty && (generatedTexts[.progress] ?? "").isEmpty {
+            generatedTexts[.progress] = entriesToText(formData.progressImportedEntries)
+        }
+        if !formData.riskAddressedImportedEntries.isEmpty && (generatedTexts[.riskAddressed] ?? "").isEmpty {
+            generatedTexts[.riskAddressed] = entriesToText(formData.riskAddressedImportedEntries)
+        }
+
+        if !document.notes.isEmpty {
+            extractAndFillDiagnoses(document.notes)
+        } else if !document.text.isEmpty {
+            extractAndFillDiagnosesFromText(document.text)
+        }
+
+        print("[MOJ-ASR iOS] Generic report populated: sec4=\(formData.behaviourImportedEntries.count), sec6=\(formData.patientAttitudeImportedEntries.count), sec7=\(formData.capacityImportedEntries.count), sec8=\(formData.progressImportedEntries.count), sec10=\(formData.riskAddressedImportedEntries.count)")
+    }
+
+    /// Pure function: categorize notes off the main thread
+    private struct CategorizedResults: Sendable {
+        var behaviour: [ASRImportedEntry] = []
+        var attitude: [ASRImportedEntry] = []
+        var capacity: [ASRImportedEntry] = []
+        var progress: [ASRImportedEntry] = []
+        var risk: [ASRImportedEntry] = []
+        var riskAddressed: [ASRImportedEntry] = []
+        var abscond: [ASRImportedEntry] = []
+        var mappa: [ASRImportedEntry] = []
+        var victims: [ASRImportedEntry] = []
+        var leave: [ASRImportedEntry] = []
+    }
+
+    private static func categorizeNotes(_ notes: [ClinicalNote]) -> CategorizedResults {
+        var results = CategorizedResults()
+
+        let latestNoteDate = notes.map { $0.date }.max() ?? Date()
+        let twelveMoCutoff = Calendar.current.date(byAdding: .year, value: -1, to: latestNoteDate) ?? Date.distantPast
+
+        for note in notes {
+            let text = note.body
+            let date = note.date
+            let snippet = text.count > 150 ? String(text.prefix(150)) + "..." : text
+            let inWindow = date >= twelveMoCutoff
+
+            let behaviourCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.behaviour, useFalsePositiveFiltering: true)
+            if !behaviourCats.isEmpty && inWindow {
+                results.behaviour.append(ASRImportedEntry(date: date, text: text, categories: behaviourCats, snippet: snippet))
+            }
+
+            let attitudeCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.patientAttitude)
+            if !attitudeCats.isEmpty && inWindow {
+                results.attitude.append(ASRImportedEntry(date: date, text: text, categories: attitudeCats, snippet: snippet))
+            }
+
+            let capacityCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.capacity)
+            if !capacityCats.isEmpty && inWindow {
+                results.capacity.append(ASRImportedEntry(date: date, text: text, categories: capacityCats, snippet: snippet))
+            }
+
+            let progressCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.progress)
+            if !progressCats.isEmpty && inWindow {
+                results.progress.append(ASRImportedEntry(date: date, text: text, categories: progressCats, snippet: snippet))
+            }
+
+            let riskCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.managingRisk)
+            if !riskCats.isEmpty {
+                results.risk.append(ASRImportedEntry(date: date, text: text, categories: riskCats, snippet: snippet))
+            }
+
+            let riskAddressedCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.riskAddressed)
+            if !riskAddressedCats.isEmpty && inWindow {
+                results.riskAddressed.append(ASRImportedEntry(date: date, text: text, categories: riskAddressedCats, snippet: snippet))
+            }
+
+            let abscondCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.abscond)
+            if !abscondCats.isEmpty && inWindow {
+                results.abscond.append(ASRImportedEntry(date: date, text: text, categories: abscondCats, snippet: snippet))
+            }
+
+            let mappaCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.mappa)
+            if !mappaCats.isEmpty && inWindow {
+                results.mappa.append(ASRImportedEntry(date: date, text: text, categories: mappaCats, snippet: snippet))
+            }
+
+            let victimsCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.victims)
+            if !victimsCats.isEmpty {
+                results.victims.append(ASRImportedEntry(date: date, text: text, categories: victimsCats, snippet: snippet))
+            }
+
+            let leaveCats = ASRCategoryKeywords.categorize(text, using: ASRCategoryKeywords.leaveReport)
+            if !leaveCats.isEmpty && inWindow {
+                results.leave.append(ASRImportedEntry(date: date, text: text, categories: leaveCats, snippet: snippet))
+            }
+        }
+
+        // Sort each array by date (most recent first)
+        results.behaviour.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.attitude.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.capacity.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.progress.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.risk.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.riskAddressed.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.abscond.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.mappa.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.victims.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        results.leave.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+
+        return results
+    }
+
+    /// Populate all section imported entries from ClinicalNote array (synchronous, legacy)
     /// Matches desktop's populate_popup_*_imports behavior
     private func populateFromClinicalNotes(_ notes: [ClinicalNote]) {
         guard !notes.isEmpty else { return }
@@ -522,77 +1244,94 @@ struct MOJASRFormView: View {
 
     // MARK: - Extract and Auto-fill ICD-10 Diagnoses (matching Desktop/Leave form logic)
     private func extractAndFillDiagnoses(_ notes: [ClinicalNote]) {
-        // Combine all note text for diagnosis extraction
         var documentText = ""
         for note in notes.prefix(500) {
             documentText += note.body + "\n"
         }
+        extractAndFillDiagnosesFromText(documentText)
+    }
 
+    /// Extract diagnoses from raw text (used for reports where notes may be empty)
+    /// Priority 1-4 system: if a priority 4 diagnosis is found, only 1 diagnosis is kept
+    private func extractAndFillDiagnosesFromText(_ documentText: String) {
         let docLower = documentText.lowercased()
-        var extractedDiagnoses: [ICD10Diagnosis] = []
-        var matchedCategories = Set<String>()
 
-        // Diagnosis patterns with direct ICD10Diagnosis enum mapping (matching Desktop DIAGNOSIS_PATTERNS)
-        let diagnosisPatterns: [(pattern: String, diagnosis: ICD10Diagnosis, category: String)] = [
-            // Schizophrenia variants
-            ("paranoid schizophrenia", .f200, "schizophrenia"),
-            ("catatonic schizophrenia", .f202, "schizophrenia"),
-            ("hebephrenic schizophrenia", .f201, "schizophrenia"),
-            ("residual schizophrenia", .f205, "schizophrenia"),
-            ("simple schizophrenia", .f206, "schizophrenia"),
-            ("undifferentiated schizophrenia", .f203, "schizophrenia"),
-            ("schizoaffective", .f259, "schizoaffective"),
-            ("schizophrenia", .f209, "schizophrenia"),
-            // Mood disorders
-            ("bipolar affective disorder", .f319, "bipolar"),
-            ("bipolar disorder", .f319, "bipolar"),
-            ("manic depressi", .f319, "bipolar"),
-            ("recurrent depressi", .f339, "depression"),
-            ("major depressi", .f329, "depression"),
-            ("depressi", .f329, "depression"),
-            // Personality disorders
-            ("emotionally unstable personality", .f603, "personality"),
-            ("borderline personality", .f603, "personality"),
-            ("antisocial personality", .f602, "personality"),
-            ("dissocial personality", .f602, "personality"),
-            ("paranoid personality", .f600, "personality"),
-            ("personality disorder", .f609, "personality"),
-            // Anxiety
-            ("generalised anxiety", .f411, "anxiety"),
-            ("generalized anxiety", .f411, "anxiety"),
-            ("ptsd", .f431, "ptsd"),
-            ("post-traumatic stress", .f431, "ptsd"),
-            ("post traumatic stress", .f431, "ptsd"),
-            // Psychosis
-            ("acute psycho", .f23, "psychosis"),
-            // Learning disability
-            ("learning disabilit", .f79, "learning"),
-            ("intellectual disabilit", .f79, "learning"),
-            // Substance
-            ("alcohol dependence", .f10, "alcohol"),
-            ("opioid dependence", .f11, "drugs"),
+        // Diagnosis patterns with priority levels (matching ICD10_DICT.txt):
+        // Priority 4: Major psychotic/mood disorders (schizophrenia, bipolar, psychosis)
+        // Priority 3: Secondary disorders (personality, anxiety, PTSD, depression)
+        // Priority 2: Minor mood disorders
+        // Priority 1: Childhood/developmental disorders
+        // Rule: If a priority 4 diagnosis is found, only keep that 1 diagnosis
+        let diagnosisPatterns: [(pattern: String, diagnosis: ICD10Diagnosis, category: String, priority: Int)] = [
+            // Priority 4: Schizophrenia variants
+            ("paranoid schizophrenia", .f200, "schizophrenia", 4),
+            ("catatonic schizophrenia", .f202, "schizophrenia", 4),
+            ("hebephrenic schizophrenia", .f201, "schizophrenia", 4),
+            ("residual schizophrenia", .f205, "schizophrenia", 4),
+            ("simple schizophrenia", .f206, "schizophrenia", 4),
+            ("undifferentiated schizophrenia", .f203, "schizophrenia", 4),
+            ("schizoaffective", .f259, "schizoaffective", 4),
+            ("schizophrenia", .f209, "schizophrenia", 4),
+            // Priority 4: Bipolar
+            ("bipolar affective disorder", .f319, "bipolar", 4),
+            ("bipolar disorder", .f319, "bipolar", 4),
+            ("manic depressi", .f319, "bipolar", 4),
+            // Priority 4: Acute psychosis
+            ("acute psycho", .f23, "psychosis", 4),
+            // Priority 3: Depression
+            ("recurrent depressi", .f339, "depression", 3),
+            ("major depressi", .f329, "depression", 3),
+            ("depressi", .f329, "depression", 3),
+            // Priority 3: Personality disorders
+            ("emotionally unstable personality", .f603, "personality", 3),
+            ("borderline personality", .f603, "personality", 3),
+            ("antisocial personality", .f602, "personality", 3),
+            ("dissocial personality", .f602, "personality", 3),
+            ("paranoid personality", .f600, "personality", 3),
+            ("personality disorder", .f609, "personality", 3),
+            // Priority 3: Anxiety / PTSD
+            ("generalised anxiety", .f411, "anxiety", 3),
+            ("generalized anxiety", .f411, "anxiety", 3),
+            ("ptsd", .f431, "ptsd", 3),
+            ("post-traumatic stress", .f431, "ptsd", 3),
+            ("post traumatic stress", .f431, "ptsd", 3),
+            // Priority 1: Learning disability
+            ("learning disabilit", .f79, "learning", 1),
+            ("intellectual disabilit", .f79, "learning", 1),
+            // Priority 2: Substance
+            ("alcohol dependence", .f10, "alcohol", 2),
+            ("opioid dependence", .f11, "drugs", 2),
         ]
 
-        // Search for diagnosis patterns
-        for (pattern, diagnosis, category) in diagnosisPatterns {
-            // Skip if we've already matched this category
-            if matchedCategories.contains(category) {
-                continue
-            }
+        // First pass: find all matching diagnoses with their priorities
+        var allMatches: [(diagnosis: ICD10Diagnosis, category: String, priority: Int, pattern: String)] = []
+        var matchedCategories = Set<String>()
+
+        for (pattern, diagnosis, category, priority) in diagnosisPatterns {
+            if matchedCategories.contains(category) { continue }
 
             if docLower.contains(pattern) {
-                extractedDiagnoses.append(diagnosis)
+                allMatches.append((diagnosis, category, priority, pattern))
                 matchedCategories.insert(category)
-                print("[MOJ-ASR] Matched diagnosis: '\(pattern)' -> '\(diagnosis.rawValue)'")
-
-                // Limit to 3 diagnoses
-                if extractedDiagnoses.count >= 3 {
-                    break
-                }
+                print("[MOJ-ASR] Matched diagnosis: '\(pattern)' -> '\(diagnosis.rawValue)' (priority \(priority))")
             }
         }
 
-        print("[MOJ-ASR] Extracted \(extractedDiagnoses.count) diagnoses for ICD-10 auto-fill")
+        // Sort by priority descending (highest priority first)
+        allMatches.sort { $0.priority > $1.priority }
+
+        // Apply priority rule: if highest match is priority 4, only keep 1 diagnosis
+        let maxDiagnoses: Int
+        if let topMatch = allMatches.first, topMatch.priority >= 4 {
+            maxDiagnoses = 1
+            print("[MOJ-ASR] Priority 4 diagnosis found (\(topMatch.diagnosis.rawValue)) — limiting to 1 diagnosis")
+        } else {
+            maxDiagnoses = 3
+        }
+
+        let extractedDiagnoses = Array(allMatches.prefix(maxDiagnoses).map { $0.diagnosis })
+
+        print("[MOJ-ASR] Final diagnoses (\(extractedDiagnoses.count)/\(allMatches.count) matched, max \(maxDiagnoses)): \(extractedDiagnoses.map { $0.rawValue })")
 
         // Auto-fill the ICD-10 pickers if they're .none (not set)
         if extractedDiagnoses.count > 0 && formData.diagnosis1ICD10 == .none {
@@ -924,7 +1663,10 @@ struct ASRPopupView: View {
     private var patientDetailsPopup: some View {
         VStack(alignment: .leading, spacing: 12) {
             FormTextField(label: "Patient Name", text: $formData.patientName, isRequired: true)
-            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB, maxDate: Date())
+            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB,
+                                   maxDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()),
+                                   minDate: Calendar.current.date(byAdding: .year, value: -100, to: Date()),
+                                   defaultDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()))
 
             HStack {
                 Text("Gender").font(.subheadline).foregroundColor(.secondary)

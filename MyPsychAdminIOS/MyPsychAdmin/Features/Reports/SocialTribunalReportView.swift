@@ -137,7 +137,39 @@ struct SocialTribunalReportView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            // Transparent header bar
+            HStack {
+                Button("Cancel") { dismiss() }
+                Spacer()
+                Text("Social Tribunal")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+                HStack(spacing: 16) {
+                    if let message = importStatusMessage {
+                        Text(message).font(.caption).foregroundColor(.green)
+                    }
+                    if isImporting {
+                        ProgressView().progressViewStyle(.circular)
+                    } else {
+                        Button { showingImportPicker = true } label: {
+                            Image(systemName: "square.and.arrow.down")
+                        }
+                    }
+                    if isExporting {
+                        ProgressView()
+                    } else {
+                        Button { exportDOCX() } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+
             ScrollView {
                 LazyVStack(spacing: 16) {
                     if let error = exportError {
@@ -157,7 +189,7 @@ struct SocialTribunalReportView: View {
                             TribunalEditableCard(
                                 title: section.rawValue,
                                 icon: section.icon,
-                                color: "F59E0B", // Amber theme for social
+                                color: "F59E0B",
                                 text: binding(for: section),
                                 defaultHeight: section.defaultHeight,
                                 onHeaderTap: { activePopup = section }
@@ -167,35 +199,9 @@ struct SocialTribunalReportView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Social Tribunal")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        if let message = importStatusMessage {
-                            Text(message).font(.caption).foregroundColor(.green)
-                        }
-                        if isImporting {
-                            ProgressView().progressViewStyle(.circular)
-                        } else {
-                            Button { showingImportPicker = true } label: {
-                                Image(systemName: "square.and.arrow.down")
-                            }
-                        }
-                        if isExporting {
-                            ProgressView()
-                        } else {
-                            Button { exportDOCX() } label: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                        }
-                    }
-                }
-            }
+        }
+        .background {
+            Rectangle().fill(.thickMaterial).ignoresSafeArea()
         }
         .onAppear {
             loadFromSharedDataStore()
@@ -1694,7 +1700,10 @@ struct STRPopupView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 200)
             }
-            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB, maxDate: Date())
+            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB,
+                                   maxDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()),
+                                   minDate: Calendar.current.date(byAdding: .year, value: -100, to: Date()),
+                                   defaultDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()))
             FormTextField(label: "Hospital Number", text: $formData.hospitalNumber)
             FormTextField(label: "NHS Number", text: $formData.nhsNumber)
             FormTextField(label: "Current Location", text: $formData.currentLocation)

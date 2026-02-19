@@ -3341,7 +3341,7 @@ OVERVIEW:
             narrative += f"The records begin in {start_date} when {name} was in the community"
             first_year_incidents = incidents_by_year.get(first_year, [])
             if not first_year_incidents:
-                narrative += f" and {pronoun} presented as stable with no significant incidents documented. "
+                narrative += f" and {pronoun} presented as stable with no significant concerns documented. "
             else:
                 narrative += ". "
 
@@ -3425,10 +3425,10 @@ OVERVIEW:
                 if len(all_incident_descs) <= 4:
                     incidents_text = ", ".join(all_incident_descs)
                 else:
-                    incidents_text = ", ".join(all_incident_descs[:4]) + f" and {len(all_incident_descs) - 4} further incidents"
+                    incidents_text = ", ".join(all_incident_descs[:4]) + f" and {len(all_incident_descs) - 4} further concerns"
 
                 stable_phrase = get_phrase("remained_stable", pronoun=pronoun, pronoun_poss=pronoun_poss)
-                narrative += f"{stable_phrase} through {year_desc} with isolated incidents: {incidents_text}. "
+                narrative += f"{stable_phrase} through {year_desc} with isolated concerns: {incidents_text}. "
                 last_mentioned_state = "stable"
             continue
 
@@ -3835,15 +3835,15 @@ OVERVIEW:
 
                     # Qualitative description based on count
                     if incident_count <= 3:
-                        quantity_desc = "a small number of incidents"
+                        quantity_desc = "a small number of concerns"
                     elif incident_count <= 10:
-                        quantity_desc = "some incidents"
+                        quantity_desc = "some concerns"
                     elif incident_count <= 50:
-                        quantity_desc = "multiple incidents"
+                        quantity_desc = "multiple concerns"
                     elif incident_count <= 200:
-                        quantity_desc = "many incidents"
+                        quantity_desc = "many concerns"
                     else:
-                        quantity_desc = "frequent incidents"
+                        quantity_desc = "frequent concerns"
 
                     # Describe progression pattern qualitatively (duration-aware language)
                     if pattern == 'improving' and incident_count > 5:
@@ -3991,9 +3991,9 @@ OVERVIEW:
                                 if clean_r:
                                     narrative += f"On {date_str}, {clean_r} resulted in {pronoun_obj} requiring {inc_type}. "
                                 else:
-                                    narrative += f"On {date_str}, there was an incident requiring {inc_type}. "
+                                    narrative += f"On {date_str}, there was a concern requiring {inc_type}. "
                             else:
-                                narrative += f"On {date_str}, there was an incident requiring {inc_type}. "
+                                narrative += f"On {date_str}, there was a concern requiring {inc_type}. "
 
                         else:
                             # Multiple incidents - check if they're consecutive (within 3 days)
@@ -4026,9 +4026,9 @@ OVERVIEW:
                                 if clean_r:
                                     narrative += f"On {first_date_str}, {clean_r} resulted in {pronoun_obj} requiring {first_type}. "
                                 else:
-                                    narrative += f"On {first_date_str}, there was an incident requiring {first_type}. "
+                                    narrative += f"On {first_date_str}, there was a concern requiring {first_type}. "
                             else:
-                                narrative += f"On {first_date_str}, there was an incident requiring {first_type}. "
+                                narrative += f"On {first_date_str}, there was a concern requiring {first_type}. "
 
                             # Check for escalation pattern
                             escalated_to_seclusion = any(n['type'] == 'seclusion' for n in notable[1:])
@@ -4049,15 +4049,15 @@ OVERVIEW:
                                         narrative += f"The situation escalated, resulting in {pronoun_obj} requiring {seclusion_link} on {last_date_str}. "
                                     else:
                                         mid_incidents = len(notable) - 2
-                                        narrative += f"Difficulties continued over the following days with {mid_incidents} further incident{'s' if mid_incidents > 1 else ''}, "
+                                        narrative += f"Difficulties continued over the following days with {mid_incidents} further concern{'s' if mid_incidents > 1 else ''}, "
                                         narrative += f"ultimately requiring {seclusion_link} on {last_date_str}. "
                                 else:
                                     # Continuation narrative
                                     days_span = (last['date'] - first_date).days
                                     if days_span <= 1:
-                                        narrative += f"Further incidents continued the next day. "
+                                        narrative += f"Further concerns continued the next day. "
                                     else:
-                                        narrative += f"Incidents continued over the following {days_span} days, with {last_type} on {last_date_str}. "
+                                        narrative += f"Concerns continued over the following {days_span} days, with {last_type} on {last_date_str}. "
                             else:
                                 # Non-consecutive - mention most significant other incident
                                 most_severe = None
@@ -4073,7 +4073,7 @@ OVERVIEW:
                                     sev_reason = most_severe.get('reason', '')
                                     sev_type = linked_incident_type(most_severe['type'], most_severe['date'], most_severe.get('matched', ''), most_severe.get('content_snippet', ''))
                                     if sev_reason and sev_reason in reason_text_map:
-                                        narrative += f"A further incident on {sev_date} involving {reason_text_map[sev_reason]} required {sev_type}. "
+                                        narrative += f"A further concern on {sev_date} involving {reason_text_map[sev_reason]} required {sev_type}. "
                                     else:
                                         narrative += f"There was also {sev_type} required on {sev_date}. "
 
@@ -4546,11 +4546,11 @@ OVERVIEW:
 SUMMARY:
 """
     if total_incidents == 0:
-        narrative += f"{name} demonstrated a stable presentation throughout the review period with no significant risk incidents documented.\n"
+        narrative += f"{name} demonstrated a stable presentation throughout the review period with no significant risk concerns documented.\n"
     elif total_violence == 0 and total_verbal > 0:
-        narrative += f"While {total_verbal} verbal aggression incident{'s were' if total_verbal > 1 else ' was'} recorded, there were no episodes of physical violence during the review period.\n"
+        narrative += f"While {total_verbal} verbal aggression concern{'s were' if total_verbal > 1 else ' was'} recorded, there were no episodes of physical violence during the review period.\n"
     elif total_violence > 0:
-        narrative += f"The review period included {total_violence} physical aggression incident{'s' if total_violence > 1 else ''} and {total_verbal} verbal aggression incident{'s' if total_verbal > 1 else ''}.\n"
+        narrative += f"The review period included {total_violence} physical aggression concern{'s' if total_violence > 1 else ''} and {total_verbal} verbal aggression concern{'s' if total_verbal > 1 else ''}.\n"
 
     if len(inpatient_episodes) > 0:
         narrative += f"{pronoun_cap} had {len(inpatient_episodes)} admission{'s' if len(inpatient_episodes) > 1 else ''} totalling {total_inpatient_days} inpatient days.\n"

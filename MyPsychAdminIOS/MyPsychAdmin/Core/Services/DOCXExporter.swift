@@ -3636,6 +3636,12 @@ class TemplateDOCXExporter {
                             if let pStart = cellContent.range(of: "</w:p>") {
                                 let newRun = "<w:r><w:t xml:space=\"preserve\">\(textWithBreaks)</w:t></w:r>"
                                 cellContent.insert(contentsOf: newRun, at: pStart.lowerBound)
+                            } else if let selfClosingP = cellContent.range(of: #"<w:p [^>]*/>"#, options: .regularExpression) {
+                                // Handle self-closing <w:p .../> by expanding
+                                let pTag = String(cellContent[selfClosingP])
+                                let openTag = String(pTag.dropLast(2)) + ">"
+                                let expanded = openTag + "<w:r><w:t xml:space=\"preserve\">\(textWithBreaks)</w:t></w:r></w:p>"
+                                cellContent.replaceSubrange(selfClosingP, with: expanded)
                             }
                         }
 
@@ -3660,6 +3666,53 @@ class TemplateDOCXExporter {
                 }
             }
 
+            currentRow += 1
+            rowSearch = rowEnd.upperBound
+        }
+    }
+
+    /// Remove negative indent from a table cell's paragraph properties.
+    /// Fixes char-box cells in T133 where the first cell has a large negative indent
+    /// that pushes text out of the visible area.
+    func stripCellIndent(tableIndex: Int, row: Int, col: Int) {
+        let tables = getTables()
+        guard tableIndex < tables.count else { return }
+        let table = tables[tableIndex]
+        var tableContent = table.content
+
+        var rowSearch = tableContent.startIndex
+        var currentRow = 0
+        while rowSearch < tableContent.endIndex && currentRow <= row {
+            guard let rowStart = tableContent.range(of: "<w:tr>", range: rowSearch..<tableContent.endIndex) ??
+                  tableContent.range(of: "<w:tr ", range: rowSearch..<tableContent.endIndex) else { return }
+            guard let rowEnd = tableContent.range(of: "</w:tr>", range: rowStart.upperBound..<tableContent.endIndex) else { return }
+            if currentRow == row {
+                let rowContent = String(tableContent[rowStart.lowerBound..<rowEnd.upperBound])
+                var cellSearch = rowContent.startIndex
+                var currentCol = 0
+                while cellSearch < rowContent.endIndex && currentCol <= col {
+                    guard let cellStart = rowContent.range(of: "<w:tc>", range: cellSearch..<rowContent.endIndex) ??
+                          rowContent.range(of: "<w:tc ", range: cellSearch..<rowContent.endIndex) else { return }
+                    guard let cellEnd = rowContent.range(of: "</w:tc>", range: cellStart.upperBound..<rowContent.endIndex) else { return }
+                    if currentCol == col {
+                        var cellContent = String(rowContent[cellStart.lowerBound..<cellEnd.upperBound])
+                        // Remove <w:ind .../> from paragraph properties
+                        if let indRange = cellContent.range(of: #"<w:ind [^/]*/>"#, options: .regularExpression) {
+                            cellContent.removeSubrange(indRange)
+                            let cellStartOffset = rowContent.distance(from: rowContent.startIndex, to: cellStart.lowerBound)
+                            let cellEndOffset = rowContent.distance(from: rowContent.startIndex, to: cellEnd.upperBound)
+                            let rowStartOffset = tableContent.distance(from: tableContent.startIndex, to: rowStart.lowerBound)
+                            let cellStartInTable = tableContent.index(tableContent.startIndex, offsetBy: rowStartOffset + cellStartOffset)
+                            let cellEndInTable = tableContent.index(tableContent.startIndex, offsetBy: rowStartOffset + cellEndOffset)
+                            tableContent.replaceSubrange(cellStartInTable..<cellEndInTable, with: cellContent)
+                            documentXML.replaceSubrange(table.range, with: tableContent)
+                        }
+                        return
+                    }
+                    currentCol += 1
+                    cellSearch = cellEnd.upperBound
+                }
+            }
             currentRow += 1
             rowSearch = rowEnd.upperBound
         }
@@ -3784,6 +3837,12 @@ class TemplateDOCXExporter {
                         } else if let pEnd = cellContent.range(of: "</w:p>") {
                             let newRun = "<w:r><w:t xml:space=\"preserve\">\(escapedText)</w:t></w:r>"
                             cellContent.insert(contentsOf: newRun, at: pEnd.lowerBound)
+                        } else if let selfClosingP = cellContent.range(of: #"<w:p [^>]*/>"#, options: .regularExpression) {
+                            // Handle self-closing <w:p .../> by expanding to <w:p ...><w:r><w:t>text</w:t></w:r></w:p>
+                            let pTag = String(cellContent[selfClosingP])
+                            let openTag = String(pTag.dropLast(2)) + ">"  // Remove /> and add >
+                            let expanded = openTag + "<w:r><w:t xml:space=\"preserve\">\(escapedText)</w:t></w:r></w:p>"
+                            cellContent.replaceSubrange(selfClosingP, with: expanded)
                         }
 
                         // Replace the cell in the full document
@@ -8245,9 +8304,9 @@ class SCTDOCXExporter {
         exporter.setNestedTableCellText(outerTableIndex: 0, nestedRow: 6, nestedCol: 0, text: signatureDate)
 
         // ============================================================
-        // TABLE 1: Patient full name (row 0, col 1)
+        // TABLE 1: Patient full name (row 0, col 0)
         // ============================================================
-        exporter.setTableCellText(tableIndex: 1, row: 0, col: 1, text: patientName)
+        exporter.setTableCellText(tableIndex: 1, row: 0, col: 0, text: patientName)
 
         // ============================================================
         // TABLE 2: DOB character boxes (8 cols, ddMMyyyy)
@@ -8259,6 +8318,8 @@ class SCTDOCXExporter {
             for (i, char) in dobStr.prefix(8).enumerated() {
                 exporter.setTableCellText(tableIndex: 2, row: 0, col: i, text: String(char))
             }
+            // Fix negative indent on first cell that hides the digit
+            exporter.stripCellIndent(tableIndex: 2, row: 0, col: 0)
         }
 
         // ============================================================
@@ -8322,6 +8383,8 @@ class SCTDOCXExporter {
         for (i, char) in dateClean.prefix(8).enumerated() {
             exporter.setTableCellText(tableIndex: 33, row: 0, col: i, text: String(char))
         }
+        // Fix negative indent on first cell that hides the digit
+        exporter.stripCellIndent(tableIndex: 33, row: 0, col: 0)
 
         return exporter.generateDOCX()
     }

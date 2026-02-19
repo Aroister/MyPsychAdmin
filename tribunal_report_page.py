@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from datetime import datetime, timedelta
 from html import unescape
 
@@ -16,7 +17,7 @@ from PySide6.QtWidgets import (
     QScrollArea, QSplitter, QStackedWidget, QTextEdit,
     QSizePolicy, QPushButton, QToolButton, QComboBox, QColorDialog
 )
-from letter_rich_text_editor import MyPsychAdminRichTextEditor
+from mypsy_richtext_editor import MyPsychAdminRichTextEditor
 from utils.resource_path import resource_path
 from spell_check_textedit import enable_spell_check_on_textedit
 
@@ -122,7 +123,7 @@ class TribunalToolbar(QWidget):
     insert_section_break = Signal()
 
     export_docx = Signal()
-    import_file = Signal()
+    check_spelling = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -212,11 +213,15 @@ class TribunalToolbar(QWidget):
         layout.addWidget(export_btn)
 
         # ---------------------------------------------------------
-        # IMPORT FILE BUTTON
+        # UPLOADED DOCS BUTTON (dropdown menu)
         # ---------------------------------------------------------
+        from PySide6.QtWidgets import QMenu
         import_btn = QToolButton()
-        import_btn.setText("Import File")
-        import_btn.setFixedSize(150, 42)
+        import_btn.setText("Uploaded Docs")
+        import_btn.setFixedSize(170, 42)
+        import_btn.setPopupMode(QToolButton.InstantPopup)
+        self.upload_menu = QMenu()
+        import_btn.setMenu(self.upload_menu)
         import_btn.setStyleSheet("""
             QToolButton {
                 background: #10b981;
@@ -233,8 +238,8 @@ class TribunalToolbar(QWidget):
             QToolButton:pressed {
                 background: #047857;
             }
+            QToolButton::menu-indicator { image: none; }
         """)
-        import_btn.clicked.connect(self.import_file.emit)
         layout.addWidget(import_btn)
 
         # ---------------------------------------------------------
@@ -244,7 +249,10 @@ class TribunalToolbar(QWidget):
         self.font_combo.setFixedWidth(180)
 
         families = QFontDatabase.families()
-        preferred = ["Avenir Next", "Avenir", "SF Pro Text", "Helvetica Neue", "Helvetica"]
+        if sys.platform == "win32":
+            preferred = ["Segoe UI", "Calibri", "Cambria", "Arial", "Times New Roman"]
+        else:
+            preferred = ["Avenir Next", "Avenir", "SF Pro Text", "Helvetica Neue", "Helvetica"]
 
         added = set()
         for f in preferred:
@@ -316,6 +324,29 @@ class TribunalToolbar(QWidget):
         # ---------------------------------------------------------
         layout.addWidget(btn("Date", self.insert_date.emit))
         layout.addWidget(btn("Break", self.insert_section_break.emit))
+
+        # ---------------------------------------------------------
+        # SPELL CHECK
+        # ---------------------------------------------------------
+        spell_btn = QToolButton()
+        spell_btn.setText("Spell Check")
+        spell_btn.setFixedSize(120, 38)
+        spell_btn.setStyleSheet("""
+            QToolButton {
+                background: #f59e0b;
+                color: white;
+                font-size: 15px;
+                font-weight: 600;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 12px;
+            }
+            QToolButton:hover { background: #d97706; }
+            QToolButton:pressed { background: #b45309; }
+        """)
+        spell_btn.setToolTip("Jump to next spelling error")
+        spell_btn.clicked.connect(self.check_spelling.emit)
+        layout.addWidget(spell_btn)
 
         # Finalize scroll area
         scroll.setWidget(container)
@@ -2534,13 +2565,13 @@ class TribunalReportPage(QWidget):
                 print(f"[TRIBUNAL] Found existing patient info in SharedDataStore")
                 self._fill_patient_details(patient_info)
 
-            # Check for existing notes
+            # Check for existing notes (skip if report data present)
             notes = shared_store.notes
-            if notes:
+            if notes and not self._has_report_data():
                 print(f"[TRIBUNAL] Found {len(notes)} existing notes in SharedDataStore")
                 self._extracted_raw_notes = notes
 
-            # Check for existing extracted data
+            # Check for existing extracted data (goes through guarded handler)
             extracted_data = shared_store.extracted_data
             if extracted_data:
                 print(f"[TRIBUNAL] Found existing extracted data in SharedDataStore")
@@ -2554,9 +2585,28 @@ class TribunalReportPage(QWidget):
             print(f"[TRIBUNAL] Received patient info from SharedDataStore: {list(k for k,v in patient_info.items() if v)}")
             self._fill_patient_details(patient_info)
 
+    def _has_report_data(self):
+        """Check if report data has been imported (local or via SharedDataStore)."""
+        if hasattr(self, '_imported_report_data') and self._imported_report_data:
+            return True
+        # Also check SharedDataStore for report sections from another form
+        try:
+            from shared_data_store import get_shared_store
+            shared_store = get_shared_store()
+            source = shared_store.get_report_source()
+            if source and source != "tribunal" and shared_store.report_sections:
+                return True
+        except Exception:
+            pass
+        return False
+
     def _on_notes_changed(self, notes: list):
         """Handle notes updates from SharedDataStore."""
         if notes:
+            # Skip if report data exists (report takes priority)
+            if self._has_report_data():
+                print(f"[TRIBUNAL] Skipping notes from SharedDataStore - report data already imported")
+                return
             print(f"[TRIBUNAL] Received {len(notes)} notes from SharedDataStore")
             self._extracted_raw_notes = notes
             # Refresh popups that use notes
@@ -2565,6 +2615,11 @@ class TribunalReportPage(QWidget):
     def _on_extracted_data_changed(self, data: dict):
         """Handle extracted data updates from SharedDataStore - full popup population."""
         if not data:
+            return
+
+        # Skip if report data exists (report takes priority over notes)
+        if self._has_report_data():
+            print(f"[TRIBUNAL] Skipping extracted data from SharedDataStore - report data already imported")
             return
 
         print(f"[TRIBUNAL] Received extracted data from SharedDataStore: {list(data.keys())}")
@@ -2615,28 +2670,18 @@ class TribunalReportPage(QWidget):
         if not hasattr(self, '_imported_report_data'):
             self._imported_report_data = {}
 
-        # Populate matching sections
-        loaded_count = 0
+        # Store imported data for popups — do NOT auto-fill cards
         for key, content in sections.items():
             if key in self.cards and content:
-                card = self.cards[key]
-                if hasattr(card, 'editor'):
-                    # Only fill if currently empty
-                    current = card.editor.toPlainText().strip()
-                    if not current:
-                        card.editor.setPlainText(content)
-                        loaded_count += 1
-                        print(f"[TRIBUNAL] Cross-talk filled: {key}")
+                # Store the imported data for the popup's imported data section
+                self._imported_report_data[key] = content
+                print(f"[TRIBUNAL] Cross-talk stored: {key}")
 
-                    # Store the imported data for the popup's imported data section
-                    self._imported_report_data[key] = content
+                # If popup already exists, populate it
+                if key in self.popups:
+                    self._populate_single_popup(self.popups[key], key, content)
 
-                    # If popup already exists, populate it
-                    if key in self.popups:
-                        self._populate_single_popup(self.popups[key], key, content)
-
-        if loaded_count > 0:
-            print(f"[TRIBUNAL] Cross-talk populated {loaded_count} sections from {source_form}")
+        print(f"[TRIBUNAL] Cross-talk stored {len(sections)} sections from {source_form} (cards not auto-filled)")
 
     def set_notes(self, notes: list):
         """
@@ -2644,6 +2689,11 @@ class TribunalReportPage(QWidget):
         Called by MainWindow when notes are available from another section.
         """
         if not notes:
+            return
+
+        # Skip if report data exists (report takes priority over notes)
+        if self._has_report_data():
+            print(f"[Tribunal] Skipping set_notes - report data already imported")
             return
 
         # Skip if these exact notes were already processed
@@ -2735,7 +2785,11 @@ class TribunalReportPage(QWidget):
         # Toolbar
         self.toolbar = TribunalToolbar()
         self.toolbar.export_docx.connect(self._export_docx)
-        self.toolbar.import_file.connect(self._import_file)
+        # Connect uploaded docs menu to SharedDataStore
+        from shared_data_store import get_shared_store
+        self._shared_store = get_shared_store()
+        self._shared_store.uploaded_documents_changed.connect(self._refresh_upload_menu)
+        self._refresh_upload_menu(self._shared_store.get_uploaded_documents())
         # Track last active editor (persists when toolbar clicked)
         self._active_editor = None
 
@@ -2775,6 +2829,19 @@ class TribunalReportPage(QWidget):
         self.toolbar.redo.connect(lambda: safe("redo"))
         self.toolbar.insert_date.connect(lambda: safe("insert_date"))
         self.toolbar.insert_section_break.connect(lambda: safe("insert_section_break"))
+
+        def check_spelling():
+            editor = cur()
+            if editor and hasattr(editor, 'jump_to_next_error'):
+                if not editor.jump_to_next_error():
+                    from PySide6.QtWidgets import QMessageBox
+                    QMessageBox.information(
+                        self,
+                        "Spell Check",
+                        "No spelling errors found."
+                    )
+
+        self.toolbar.check_spelling.connect(check_spelling)
 
         main_layout.addWidget(self.toolbar)
 
@@ -3071,28 +3138,34 @@ class TribunalReportPage(QWidget):
 
                 # Populate fixed panels with stored data when created (notes pipeline only)
                 if key in ("previous_mh_dates", "previous_admission_reasons", "current_admission", "progress"):
-                    if self._extracted_raw_notes and not (hasattr(self, '_imported_report_data') and key in self._imported_report_data):
+                    if self._extracted_raw_notes and not self._has_report_data():
                         print(f"[TRIBUNAL] Populating newly created popup '{key}' with stored data")
                         self._populate_fixed_panels()
 
                 # For incident panels (17 & 18), populate directly with incident data
                 if key in ("risk_harm", "risk_property"):
-                    if self._extracted_raw_notes and hasattr(self, '_incident_data') and self._incident_data:
+                    if self._extracted_raw_notes and not self._has_report_data() and hasattr(self, '_incident_data') and self._incident_data:
                         print(f"[TRIBUNAL] Directly populating incident popup '{key}' with {len(self._incident_data)} incidents")
                         popup.set_entries(self._incident_data, f"{len(self._incident_data)} incidents")
-                    elif self._extracted_raw_notes:
+                    elif self._extracted_raw_notes and not self._has_report_data():
                         print(f"[TRIBUNAL] Populating '{key}' via _populate_fixed_panels")
                         self._populate_fixed_panels()
 
                 # For discharge_risk (section 21), use GPRRiskPopup with notes for risk analysis
                 if key == "discharge_risk":
-                    if self._extracted_raw_notes:
+                    if self._extracted_raw_notes and not self._has_report_data():
                         print(f"[TRIBUNAL] Populating discharge_risk with {len(self._extracted_raw_notes)} notes for risk analysis")
                         popup.set_notes_for_risk_analysis(self._extracted_raw_notes)
 
+                # For compliance (section 15), populate with all raw notes for non-compliance search
+                if key == "compliance" and self._extracted_raw_notes and not self._has_report_data():
+                    if hasattr(popup, 'set_notes'):
+                        popup.set_notes(self._extracted_raw_notes)
+                        print(f"[TRIBUNAL] Compliance popup searching {len(self._extracted_raw_notes)} notes")
+
                 # For forensic popup - populate forensic history panel with notes analysis + extracted data
                 # Skip if report data is imported (notes-based forensic data not needed)
-                if key == "forensic" and not (hasattr(self, '_imported_report_data') and 'forensic' in self._imported_report_data):
+                if key == "forensic" and not self._has_report_data():
                     if hasattr(self, '_pending_forensic_data'):
                         forensic_entries = self._pending_forensic_data.get('forensic', [])
                         forensic_notes = self._pending_forensic_data.get('forensic_notes', [])
@@ -3109,24 +3182,6 @@ class TribunalReportPage(QWidget):
                         content = self._imported_report_data[key]
                         self._populate_single_popup(popup, key, content)
 
-                # Special handling for compliance - ensure imported data section exists
-                if key == "compliance" and hasattr(self, '_imported_report_data') and self._imported_report_data:
-                    if not getattr(popup, '_imported_data_added', False):
-                        # Try to find compliance content or combine relevant sections
-                        if key in self._imported_report_data and self._imported_report_data[key]:
-                            content = self._imported_report_data[key]
-                        else:
-                            # Combine relevant sections for compliance
-                            relevant_sections = ['compliance', 'treatment', 'progress', 'recommendations']
-                            combined_content = []
-                            for sec in relevant_sections:
-                                if sec in self._imported_report_data and self._imported_report_data[sec]:
-                                    combined_content.append(f"**{sec.replace('_', ' ').title()}:**\n{self._imported_report_data[sec]}")
-                            content = "\n\n".join(combined_content) if combined_content else ""
-                        if content:
-                            self._add_imported_data_to_popup(popup, key, content)
-                            print(f"[TRIBUNAL] Added imported data section for compliance")
-
                 # Special handling for discharge_risk - ensure imported data section exists
                 if key == "discharge_risk" and hasattr(self, '_imported_report_data') and self._imported_report_data:
                     if not getattr(popup, '_imported_data_added', False):
@@ -3138,6 +3193,12 @@ class TribunalReportPage(QWidget):
         if key in self.popups:
             self.popup_stack.setCurrentWidget(self.popups[key])
             self._set_current_popup(self.popups[key])
+
+            # Send popup form content to card (imported data checkbox is unchecked so only form data flows)
+            popup = self.popups[key]
+            if hasattr(self, '_imported_report_data') and key in self._imported_report_data:
+                if hasattr(popup, '_send_to_card'):
+                    popup._send_to_card()
 
             # Legacy check for pre-extracted data (keeping for backward compatibility)
             if key in ("previous_admission_reasons", "current_admission", "progress", "risk_harm", "risk_property"):
@@ -4124,8 +4185,8 @@ class TribunalReportPage(QWidget):
             from tribunal_popups import StrengthsPopup
             return StrengthsPopup(parent=self, gender=self._current_gender)
         elif key == "compliance":
-            from tribunal_popups import CompliancePopup
-            return CompliancePopup(parent=self, gender=self._current_gender)
+            from tribunal_popups import TribunalCompliancePopup
+            return TribunalCompliancePopup(parent=self, gender=self._current_gender)
         elif key == "mca_dol":
             from tribunal_popups import DoLsPopup
             return DoLsPopup(parent=self)
@@ -4159,9 +4220,23 @@ class TribunalReportPage(QWidget):
             from tribunal_popups import CommunityManagementPopup
             return CommunityManagementPopup(parent=self, gender=self._current_gender)
         elif key == "recommendations":
-            # Use GPRLegalCriteriaPopup identical to GPR section 12
-            from general_psychiatric_report_page import GPRLegalCriteriaPopup
-            return GPRLegalCriteriaPopup(parent=self)
+            try:
+                from general_psychiatric_report_page import GPRLegalCriteriaPopup
+                from icd10_dict import ICD10_DICT
+                print(f"[TRIBUNAL] Creating GPRLegalCriteriaPopup: ICD10_DICT={len(ICD10_DICT)} entries, gender={self._current_gender}")
+                popup = GPRLegalCriteriaPopup(parent=self, gender=self._current_gender, icd10_dict=ICD10_DICT)
+                print(f"[TRIBUNAL] GPRLegalCriteriaPopup created successfully")
+                return popup
+            except Exception as e:
+                print(f"[TRIBUNAL] ERROR creating recommendations popup: {e}")
+                import traceback
+                traceback.print_exc()
+                # Fallback: show error label
+                from PySide6.QtWidgets import QLabel
+                err = QLabel(f"ERROR loading recommendations popup:\n{e}")
+                err.setStyleSheet("color: red; font-size: 16px; padding: 20px;")
+                err.setWordWrap(True)
+                return err
         elif key == "signature":
             from tribunal_popups import SignaturePopup
             return SignaturePopup(parent=self, my_details=self._my_details)
@@ -4177,9 +4252,6 @@ class TribunalReportPage(QWidget):
             return
 
         new_text = text.strip() if text else ""
-        if not new_text:
-            print(f"[TRIBUNAL] WARNING: empty text for '{key}'")
-            return
 
         # Prose sections should just replace the text (not use smart update)
         # Smart update is for structured "Field: Value" format only
@@ -4329,6 +4401,8 @@ class TribunalReportPage(QWidget):
                 if idx >= 0:
                     popup.gender_field.setCurrentIndex(idx)
                 popup.gender_field.blockSignals(False)
+                # Propagate gender since signals were blocked
+                self._on_gender_changed(gender_value)
 
             # Handle Residence field
             residence_value = fields.get('Usual Place of Residence') or fields.get('Residence') or fields.get('Address') or ''
@@ -4755,7 +4829,7 @@ class TribunalReportPage(QWidget):
         print(f"[TRIBUNAL] Prepared {len(prepared_notes)} notes with parsed dates")
 
         # Step 2: Use build_timeline to find inpatient episodes (same as data extractor)
-        admission_dates = []
+        inpatient_episodes = []
         try:
             episodes = build_timeline(prepared_notes)
             print(f"[TRIBUNAL] build_timeline returned {len(episodes)} episodes")
@@ -4763,22 +4837,24 @@ class TribunalReportPage(QWidget):
             for ep in episodes:
                 ep_type = ep.get("type", "")
                 start = ep.get("start")
+                end = ep.get("end")
                 print(f"[TRIBUNAL]   Episode: type={ep_type}, start={start}")
 
                 if ep_type == "inpatient" and start:
-                    # Convert date to datetime if needed
-                    if isinstance(start, datetime):
-                        admission_dates.append(start)
-                    elif isinstance(start, date_type):
-                        admission_dates.append(datetime.combine(start, datetime.min.time()))
-                    print(f"[TRIBUNAL]   -> Inpatient admission: {start}")
+                    # Convert dates to datetime if needed
+                    if isinstance(start, date_type) and not isinstance(start, datetime):
+                        start = datetime.combine(start, datetime.min.time())
+                    if isinstance(end, date_type) and not isinstance(end, datetime):
+                        end = datetime.combine(end, datetime.min.time())
+                    inpatient_episodes.append({"start": start, "end": end})
+                    print(f"[TRIBUNAL]   -> Inpatient admission: {start} to {end}")
 
         except Exception as e:
             print(f"[TRIBUNAL] Timeline builder error: {e}")
             import traceback
             traceback.print_exc()
 
-        if not admission_dates:
+        if not inpatient_episodes:
             print(f"[TRIBUNAL] No inpatient admissions found from timeline")
             # Fallback: use the most recent note date
             all_dates = []
@@ -4788,17 +4864,20 @@ class TribunalReportPage(QWidget):
                     all_dates.append(note_date)
             if all_dates:
                 current_admission_date = max(all_dates)
+                window_end = current_admission_date + timedelta(days=days_after)
                 print(f"[TRIBUNAL] Fallback: using most recent note date: {current_admission_date.strftime('%d/%m/%Y')}")
             else:
                 return notes[:50], f"No dates found - showing first 50 notes"
         else:
-            # Get the MOST RECENT (LAST) admission date
-            current_admission_date = max(admission_dates)
-            print(f"[TRIBUNAL] Most recent admission: {current_admission_date.strftime('%d/%m/%Y')}")
+            # Get the MOST RECENT (LAST) admission by start date
+            most_recent = max(inpatient_episodes, key=lambda ep: ep["start"])
+            current_admission_date = most_recent["start"]
+            # Use actual admission end date from timeline, not a fixed offset
+            window_end = most_recent["end"] if most_recent["end"] else current_admission_date + timedelta(days=days_after)
+            print(f"[TRIBUNAL] Most recent admission: {current_admission_date.strftime('%d/%m/%Y')} to {window_end.strftime('%d/%m/%Y')}")
 
-        # Step 3: Define date window (2 days before, 2 weeks after)
+        # Step 3: Define date window
         window_start = current_admission_date - timedelta(days=days_before)
-        window_end = current_admission_date + timedelta(days=days_after)
         print(f"[TRIBUNAL] Window: {window_start.strftime('%d/%m/%Y')} to {window_end.strftime('%d/%m/%Y')}")
 
         # Step 4: Filter notes within the window
@@ -4819,22 +4898,24 @@ class TribunalReportPage(QWidget):
 
         return filtered_notes, date_info
 
-    def _import_file(self):
-        """Import file - auto-detect PDF tribunal forms vs other files."""
-        from PySide6.QtWidgets import QFileDialog, QMessageBox
-        import os
+    def _refresh_upload_menu(self, docs=None):
+        """Rebuild the Uploaded Docs dropdown menu from SharedDataStore."""
+        menu = self.toolbar.upload_menu
+        menu.clear()
+        if docs is None:
+            from shared_data_store import get_shared_store
+            docs = get_shared_store().get_uploaded_documents()
+        if not docs:
+            action = menu.addAction("No documents uploaded")
+            action.setEnabled(False)
+        else:
+            for doc in docs:
+                path = doc["path"]
+                action = menu.addAction(doc["filename"])
+                action.triggered.connect(lambda checked=False, p=path: self._import_from_upload(p))
 
-        # Open file dialog
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Import File",
-            "",
-            "All Supported Files (*.pdf *.docx *.doc *.txt *.rtf *.xls *.xlsx);;PDF Files (*.pdf);;Word Documents (*.docx *.doc);;Excel Files (*.xls *.xlsx);;All Files (*)"
-        )
-
-        if not file_path:
-            return
-
+    def _import_from_upload(self, file_path):
+        """Process an uploaded file - auto-detect PDF tribunal forms vs other files."""
         # Check if it's a PDF - try XFA extraction first
         if file_path.lower().endswith('.pdf'):
             try:
@@ -4882,6 +4963,7 @@ class TribunalReportPage(QWidget):
 
     def _send_to_data_extractor(self, file_path):
         """Send a file to the data extractor for processing."""
+        self._data_extractor_source_file = file_path
         # Open the data extractor overlay
         self._open_data_extractor_overlay()
 
@@ -4893,6 +4975,54 @@ class TribunalReportPage(QWidget):
                 # Fallback - trigger upload dialog (user will need to select again)
                 self._data_extractor_overlay.upload_and_extract()
             print(f"[TRIBUNAL] Sent to Data Extractor: {file_path}")
+
+    def _ask_import_action(self, source_filename: str, import_type: str = "report") -> str:
+        """Ask user whether to add to existing imported data or replace it.
+
+        Returns: 'add', 'replace', or 'cancel'
+        """
+        from PySide6.QtWidgets import QMessageBox
+
+        if import_type == "report":
+            has_existing = hasattr(self, '_imported_report_data') and any(self._imported_report_data.values())
+        else:
+            has_existing = hasattr(self, '_extracted_raw_notes') and bool(self._extracted_raw_notes)
+
+        if not has_existing:
+            return "replace"
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Import Data")
+        if import_type == "report":
+            msg.setText(
+                f"Report data has already been imported.\n\n"
+                f"New file: {source_filename}\n\n"
+                f"Would you like to add this data to the existing import, or replace it?"
+            )
+        else:
+            msg.setText(
+                f"Clinical notes have already been loaded.\n\n"
+                f"Would you like to add these notes to the existing set, or replace them?"
+            )
+        add_btn = msg.addButton("Add to Existing", QMessageBox.AcceptRole)
+        replace_btn = msg.addButton("Replace All", QMessageBox.DestructiveRole)
+        cancel_btn = msg.addButton("Cancel", QMessageBox.RejectRole)
+        msg.setDefaultButton(add_btn)
+        msg.exec()
+
+        clicked = msg.clickedButton()
+        if clicked == cancel_btn:
+            return "cancel"
+        elif clicked == replace_btn:
+            return "replace"
+        return "add"
+
+    def _merge_report_section(self, key: str, new_content: str, source_filename: str) -> str:
+        """Merge new report content with existing section, adding source reference."""
+        existing = self._imported_report_data.get(key, "")
+        if not existing:
+            return new_content
+        return f"{existing}\n\n─── Source: {source_filename} ───\n\n{new_content}"
 
     def _populate_from_pdf(self, result, file_path):
         """Populate report sections from PDF extraction result."""
@@ -4934,6 +5064,13 @@ class TribunalReportPage(QWidget):
         if not hasattr(self, '_imported_report_data'):
             self._imported_report_data = {}
 
+        filename = os.path.basename(file_path)
+        action = self._ask_import_action(filename, "report")
+        if action == "cancel":
+            return
+        if action == "replace":
+            self._imported_report_data.clear()
+
         mapped_sections = {}
         for section_key, content in sections.items():
             card_key = section_to_card.get(section_key)
@@ -4941,6 +5078,8 @@ class TribunalReportPage(QWidget):
                 # Format radio button values before storing
                 if section_key in ['learning_disability', 'detention_required', 's2_detention', 'other_detention']:
                     content = format_radio_value(content)
+                if action == "add":
+                    content = self._merge_report_section(card_key, content, filename)
                 self._imported_report_data[card_key] = content
                 mapped_sections[card_key] = content
                 print(f"[PDF] Stored T131 section '{card_key}' (ready in popup)")
@@ -4953,12 +5092,12 @@ class TribunalReportPage(QWidget):
 
         # Show success message
         mapped_count = len(mapped_sections)
-        filename = os.path.basename(file_path)
+        action_word = "Added" if action == "add" else "Loaded"
         QMessageBox.information(
             self,
             "T131 Report Loaded",
-            f"Successfully loaded T131 report from:\n{filename}\n\n"
-            f"Mapped {mapped_count} sections to popups.\n\n"
+            f"Successfully {action_word.lower()} T131 report from:\n{filename}\n\n"
+            f"{action_word} {mapped_count} sections to popups.\n\n"
             f"Click each card to review and send the content."
         )
 
@@ -5434,33 +5573,44 @@ class TribunalReportPage(QWidget):
         if not hasattr(self, '_imported_report_data'):
             self._imported_report_data = {}
 
+        filename = os.path.basename(file_path)
+        action = self._ask_import_action(filename, "report")
+        if action == "cancel":
+            return
+        if action == "replace":
+            self._imported_report_data.clear()
+
         # Store imported data (cards are NOT auto-filled; user sends from popups)
+        merged_sections = {}
         for section_key, content in sections.items():
+            if action == "add":
+                content = self._merge_report_section(section_key, content, filename)
             self._imported_report_data[section_key] = content
+            merged_sections[section_key] = content
             print(f"[TRIBUNAL] Stored DOCX section '{section_key}' (ready in popup)")
 
         # Populate popups with imported data so user can review and send
-        self._populate_popups_from_import(sections)
+        self._populate_popups_from_import(merged_sections)
 
         # Push patient details to shared store
         self._push_patient_details_to_shared_store(sections)
 
         # Push sections to shared store for cross-talk with nursing form
         shared_store = get_shared_store()
-        shared_store.set_report_sections(sections, source_form="tribunal")
+        shared_store.set_report_sections(merged_sections, source_form="tribunal")
 
         # Show success message
-        mapped_count = len(sections)
-        filename = os.path.basename(file_path)
+        mapped_count = len(merged_sections)
+        action_word = "Added" if action == "add" else "Loaded"
         QMessageBox.information(
             self,
             "Report Loaded",
-            f"Successfully loaded report from:\n{filename}\n\n"
-            f"Mapped {mapped_count} sections to popups.\n\n"
+            f"Successfully {action_word.lower()} report from:\n{filename}\n\n"
+            f"{action_word} {mapped_count} sections to popups.\n\n"
             f"Click each card to review and send the content."
         )
 
-        print(f"[TRIBUNAL] Mapped {mapped_count} sections from DOCX to popups")
+        print(f"[TRIBUNAL] {action_word} {mapped_count} sections from DOCX to popups")
 
     def _populate_popups_from_import(self, sections: dict):
         """Populate popups with imported report data."""
@@ -5547,6 +5697,9 @@ class TribunalReportPage(QWidget):
             lower = text.lower().strip()
             if lower.startswith("yes") or "yes -" in lower or "yes," in lower:
                 return True
+            # If substantial text and not explicitly "no", assume yes
+            if len(text.strip()) > 30 and not lower.startswith("no"):
+                return True
             return False
 
         def extract_detail(text):
@@ -5555,6 +5708,53 @@ class TribunalReportPage(QWidget):
                 if text.startswith(prefix):
                     return text[len(prefix):].strip()
             return text
+
+        # ============================================================
+        # PATIENT DETAILS - parse text into fields directly
+        # ============================================================
+        if section_key == "patient_details":
+            from datetime import datetime
+            patient_info = {}
+
+            name_match = re.search(r"(?:Full\s*Name|Name|Patient)[:\s]+(.+)", content, re.IGNORECASE)
+            if name_match:
+                patient_info["name"] = name_match.group(1).strip()
+
+            dob_match = re.search(r"(?:Date of Birth|DOB|D\.O\.B)[:\s]+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})", content, re.IGNORECASE)
+            if dob_match:
+                dob_str = dob_match.group(1).strip()
+                for fmt in ["%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d/%m/%y", "%d-%m-%y"]:
+                    try:
+                        patient_info["dob"] = datetime.strptime(dob_str, fmt)
+                        break
+                    except ValueError:
+                        continue
+
+            if not patient_info.get("dob"):
+                text_dob = re.search(
+                    r"(?:Date of Birth|DOB|D\.O\.B)[:\s]+(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})",
+                    content, re.IGNORECASE
+                )
+                if text_dob:
+                    month_map = {'january':1,'jan':1,'february':2,'feb':2,'march':3,'mar':3,'april':4,'apr':4,'may':5,'june':6,'jun':6,'july':7,'jul':7,'august':8,'aug':8,'september':9,'sep':9,'october':10,'oct':10,'november':11,'nov':11,'december':12,'dec':12}
+                    try:
+                        patient_info["dob"] = datetime(int(text_dob.group(3)), month_map.get(text_dob.group(2).lower(), 1), int(text_dob.group(1)))
+                    except ValueError:
+                        pass
+
+            gender_match = re.search(r"(?:Gender|Sex)[:\s]*(Male|Female|M|F)\b", content, re.IGNORECASE)
+            if gender_match:
+                g = gender_match.group(1).upper()
+                patient_info["gender"] = "Male" if g in ("MALE", "M") else "Female"
+
+            address_match = re.search(r"(?:Usual Place of Residence|Address|Residence)[:\s]+(.+?)(?:\n|$)", content, re.IGNORECASE)
+            if address_match:
+                patient_info["address"] = address_match.group(1).strip()
+
+            if patient_info and hasattr(popup, 'fill_patient_info'):
+                popup.fill_patient_info(patient_info)
+                print(f"[TRIBUNAL] Filled patient_details fields: {list(patient_info.keys())}")
+            return
 
         # ============================================================
         # YES/NO POPUPS WITH STANDARD yes_btn/no_btn
@@ -5585,14 +5785,19 @@ class TribunalReportPage(QWidget):
                         popup.patience_rb.setChecked(True)
                         print(f"[TRIBUNAL] Set factors_hearing to Low frustration tolerance")
 
-                # Populate the additional_details_field with imported text
+                # Populate the details_field (inside the container) with imported text
                 detail = extract_detail(content)
                 if detail and detail.lower() not in ("yes", "no"):
-                    if hasattr(popup, 'additional_details_field'):
-                        popup.additional_details_field.setPlainText(detail)
-                        print(f"[TRIBUNAL] Set '{section_key}' additional details")
-                    elif hasattr(popup, 'details_field'):
+                    if hasattr(popup, 'details_field'):
                         popup.details_field.setPlainText(detail)
+                        print(f"[TRIBUNAL] Set '{section_key}' details field")
+                    elif hasattr(popup, 'additional_details_field'):
+                        popup.additional_details_field.setPlainText(detail)
+
+                # Hide the always-visible additional details (empty duplicate)
+                if section_key in ("factors_hearing", "adjustments"):
+                    if hasattr(popup, 'always_visible_details'):
+                        popup.always_visible_details.hide()
 
                 # Send updated text to card
                 if hasattr(popup, '_send_to_card'):
@@ -5678,14 +5883,8 @@ class TribunalReportPage(QWidget):
         # ============================================================
         # IMPORTED DATA SECTION - Add collapsible container for ALL popups
         # ============================================================
-        # For previous_mh_dates with multiple report sections, render separate inputs
-        if section_key == "previous_mh_dates" and hasattr(self, '_imported_report_sections'):
-            sections_list = self._imported_report_sections.get(section_key, [])
-            if sections_list and hasattr(popup, 'extracted_checkboxes_layout'):
-                self._populate_psych_history_imported(popup, sections_list)
-                return
-
         # Always add collapsible imported data section (if content is valid)
+        # previous_mh_dates (section 6) now uses the same generic path as section 14
         # This ensures consistent UX across all sections
         self._add_imported_data_to_popup(popup, section_key, content)
 
@@ -5741,96 +5940,19 @@ class TribunalReportPage(QWidget):
 
         # Sections that don't need imported data collapsibles
         # Sections 19 (s2_detention) and 20 (other_detention) are simple yes/no - no imported data
-        skip_imported_data_sections = {'author', 'factors_hearing', 'adjustments', 's2_detention', 'other_detention'}
+        skip_imported_data_sections = {'author', 'patient_details', 'factors_hearing', 'adjustments', 's2_detention', 'other_detention', 'signature'}
 
         # Special handling for forensic - populate its built-in extracted_section with full text
         if section_key == 'forensic':
             self._populate_forensic_extracted_section(popup, content)
             return
 
-        # current_admission - use CollapsibleSection directly added to main_layout
+        # current_admission (section 8) - hide notes-only sections, then use generic path
         if section_key == 'current_admission':
-            print(f"[TRIBUNAL] Section 8 (current_admission) - adding collapsible imported data")
-            from PySide6.QtWidgets import QLabel, QCheckBox
-            from background_history_popup import CollapsibleSection
-
-            # Hide the narrative section — it's only relevant for notes imports
             if hasattr(popup, 'narrative_section'):
                 popup.narrative_section.setVisible(False)
-                print(f"[TRIBUNAL] Hidden narrative section for report import")
-            # Also hide admissions section for report imports
             if hasattr(popup, 'admissions_section'):
                 popup.admissions_section.setVisible(False)
-
-            if hasattr(popup, 'main_layout') and popup.main_layout:
-                # Create CollapsibleSection
-                import_section = CollapsibleSection("Imported Data", start_collapsed=False)
-                import_section.set_content_height(150)
-                import_section._min_height = 80
-                import_section._max_height = 400
-                import_section.set_header_style("""
-                    QFrame {
-                        background: rgba(255, 248, 220, 0.95);
-                        border: 1px solid rgba(180, 150, 50, 0.5);
-                        border-radius: 6px 6px 0 0;
-                    }
-                """)
-                import_section.title_label.setStyleSheet("""
-                    QLabel {
-                        font-size: 21px;
-                        font-weight: 600;
-                        color: #806000;
-                        background: transparent;
-                        border: none;
-                    }
-                """)
-
-                # Include checkbox in the header (right side)
-                include_imported_cb = QCheckBox()
-                include_imported_cb.setToolTip("Include imported data in report")
-                include_imported_cb.setStyleSheet("""
-                    QCheckBox {
-                        background: transparent;
-                        border: none;
-                    }
-                    QCheckBox::indicator {
-                        width: 20px;
-                        height: 20px;
-                    }
-                """)
-                include_imported_cb.stateChanged.connect(popup._send_to_card)
-                import_section.header.layout().addWidget(include_imported_cb)
-                popup.include_imported_cb = include_imported_cb
-
-                # Store imported report text on popup
-                popup._imported_report_text = content
-
-                # Create content widget
-                content_widget = QWidget()
-                content_widget.setStyleSheet("""
-                    QWidget {
-                        background: rgba(255, 248, 220, 0.95);
-                        border: 1px solid rgba(180, 150, 50, 0.4);
-                        border-top: none;
-                        border-radius: 0 0 12px 12px;
-                    }
-                """)
-                content_layout = QVBoxLayout(content_widget)
-                content_layout.setContentsMargins(12, 10, 12, 10)
-
-                # Content label
-                content_label = QLabel(content)
-                content_label.setWordWrap(True)
-                content_label.setStyleSheet("font-size: 14px; color: #4a4a4a; background: transparent; border: none;")
-                content_layout.addWidget(content_label)
-
-                import_section.set_content(content_widget)
-
-                # Insert at position 0 (top of main_layout)
-                popup.main_layout.insertWidget(0, import_section)
-                popup._imported_data_added = True
-                print(f"[TRIBUNAL] Added collapsible imported data to current_admission with include checkbox")
-            return
 
         if section_key in specialized_sections:
             # These popups have their own data population - don't add duplicate section
@@ -5912,7 +6034,7 @@ class TribunalReportPage(QWidget):
             """)
             extracted_section.title_label.setStyleSheet("""
                 QLabel {
-                    font-size: 13px;
+                    font-size: 21px;
                     font-weight: 600;
                     color: #806000;
                     background: transparent;
@@ -5935,100 +6057,41 @@ class TribunalReportPage(QWidget):
             extracted_layout.setContentsMargins(12, 10, 12, 10)
             extracted_layout.setSpacing(4)
 
-            # Get current card content to check what's already there
-            card_text = ""
-            if section_key in self.cards:
-                card_text = self.cards[section_key].editor.toPlainText().lower()
+            # Single text block with one include checkbox in the header
+            from PySide6.QtWidgets import QCheckBox
 
-            # Split content into paragraphs and create checkbox + label pairs
-            from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QFrame
-            popup._imported_checkboxes = []
+            # Add include checkbox to the header (right side)
+            include_cb = QCheckBox()
+            include_cb.setToolTip("Include imported data on card")
+            include_cb.setStyleSheet("""
+                QCheckBox { background: transparent; border: none; }
+                QCheckBox::indicator { width: 20px; height: 20px; }
+            """)
+            include_cb.toggled.connect(lambda checked, sk=section_key, txt=content: self._on_imported_checkbox_toggled(sk, txt, checked))
+            extracted_section.header.layout().addWidget(include_cb)
+            popup._imported_include_cb = include_cb
+            popup._imported_report_text = content
 
-            # Sections where all content should be treated as ONE paragraph (no splitting)
-            single_paragraph_sections = {'recommendations'}
-
-            if section_key in single_paragraph_sections:
-                # Treat entire content as one paragraph (replace newlines with spaces)
-                cleaned = ' '.join(content.split())
-                paragraphs = [cleaned] if cleaned else []
-            elif '\n\n' in content:
-                # Split by double newlines for paragraphs
-                paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
-            else:
-                # Split by single newlines
-                paragraphs = [p.strip() for p in content.split('\n') if p.strip()]
-
-            if paragraphs:
-                for para in paragraphs:
-                    # Create container for checkbox + label
-                    item_container = QFrame()
-                    item_container.setStyleSheet("QFrame { background: transparent; border: none; }")
-                    item_layout = QHBoxLayout(item_container)
-                    item_layout.setContentsMargins(0, 4, 0, 4)
-                    item_layout.setSpacing(8)
-                    item_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-                    # Small checkbox (no text)
-                    cb = QCheckBox()
-                    cb.setFixedSize(20, 20)
-                    cb.setStyleSheet("""
-                        QCheckBox::indicator { width: 16px; height: 16px; }
-                    """)
-                    cb.setProperty("full_text", para)
-                    cb.setProperty("section_key", section_key)
-
-                    # Check if this paragraph is already in the card
-                    para_lower = para.lower()
-                    significant_words = [w for w in para_lower.split()[:6] if len(w) > 3]
-                    is_in_card = any(word in card_text for word in significant_words) if significant_words else False
-                    cb.setChecked(is_in_card)
-
-                    # Connect to handler
-                    cb.toggled.connect(lambda checked, sk=section_key, txt=para: self._on_imported_checkbox_toggled(sk, txt, checked))
-
-                    item_layout.addWidget(cb, 0, Qt.AlignmentFlag.AlignTop)
-
-                    # Word-wrapped label for the text
-                    text_label = QLabel(para)
-                    text_label.setWordWrap(True)
-                    text_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-                    text_label.setStyleSheet("font-size: 13px; color: #4a4a4a; background: transparent; padding: 0;")
-                    text_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-                    item_layout.addWidget(text_label, 1)
-
-                    popup._imported_checkboxes.append(cb)
-                    extracted_layout.addWidget(item_container)
-            else:
-                # Fallback: just add as selectable label if no paragraphs
-                content_label = QLabel(content)
-                content_label.setWordWrap(True)
-                content_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-                content_label.setStyleSheet("font-size: 13px; color: #4a4a4a; background: transparent;")
-                content_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-                extracted_layout.addWidget(content_label)
-                popup._imported_content_label = content_label
+            # Content label — single block of text
+            content_label = QLabel(content)
+            content_label.setWordWrap(True)
+            content_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            content_label.setStyleSheet("font-size: 15px; color: #4a4a4a; background: transparent; border: none;")
+            content_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            extracted_layout.addWidget(content_label)
+            popup._imported_content_label = content_label
 
             extracted_section.set_content(extracted_content)
             extracted_section.setVisible(True)
-            print(f"[TRIBUNAL] Collapsible content: '{content[:50]}...' ({len(content)} chars, {len(paragraphs)} checkboxes)")
+            print(f"[TRIBUNAL] Collapsible content: '{content[:50]}...' ({len(content)} chars)")
 
             popup.extracted_section = extracted_section
 
-            # Add to popup layout (target_layout already determined above)
-            # Sections where imported data should be at BOTTOM (after main content)
-            bottom_sections = {'strengths', 'progress', 'compliance', 'mca_dol', 'community', 'recommendations', 'risk_harm', 'risk_property', 'discharge_risk', 'diagnosis', 'current_admission'}
-
-            layout_count = target_layout.count()
-            print(f"[TRIBUNAL] Inserting collapsible into layout with {layout_count} items")
-            if section_key in bottom_sections:
-                # Insert before the last item (usually a stretch) so it appears at bottom but before stretch
-                insert_pos = max(0, layout_count - 1) if layout_count > 0 else 0
-                target_layout.insertWidget(insert_pos, extracted_section)
-                print(f"[TRIBUNAL] Added CollapsibleSection at BOTTOM of '{section_key}' (pos {insert_pos})")
-            else:
-                # Insert at TOP for other sections
-                target_layout.insertWidget(0, extracted_section)
-                print(f"[TRIBUNAL] Added CollapsibleSection at TOP of '{section_key}'")
+            # Add to popup layout - always at TOP so imported data is visible first
+            target_layout.insertWidget(0, extracted_section)
+            # Push content to top (absorb extra space from widgetResizable scroll area)
+            target_layout.addStretch()
+            print(f"[TRIBUNAL] Added CollapsibleSection at TOP of '{section_key}'")
 
             # Ensure proper parenting after insertion (safety measure)
             if extracted_section.parent() is None:
@@ -6216,6 +6279,14 @@ class TribunalReportPage(QWidget):
             (r'\bsubstance\s+use\s+disorder\b', "substance", "substance"),
         ]
 
+        # Diagnostic hierarchy: finding a higher-level diagnosis suppresses lower ones
+        # e.g. schizophrenia suppresses psychosis; schizoaffective suppresses psychosis
+        HIERARCHY_SUPPRESSES = {
+            "schizophrenia": {"psychosis"},
+            "schizoaffective": {"psychosis"},
+            "bipolar": {"depression"},
+        }
+
         diagnoses_to_set = []
         seen_categories = set()
 
@@ -6224,8 +6295,13 @@ class TribunalReportPage(QWidget):
                 continue
             if re.search(pattern, detail, re.IGNORECASE):
                 seen_categories.add(category)
+                # Also suppress lower-hierarchy categories
+                suppressed = HIERARCHY_SUPPRESSES.get(category, set())
+                seen_categories.update(suppressed)
                 diagnoses_to_set.append({"type": "name", "term": keyword, "category": category})
                 print(f"[TRIBUNAL] Diagnosis match: '{keyword}' (category={category})")
+                if suppressed:
+                    print(f"[TRIBUNAL] Suppressed categories: {suppressed}")
                 if len(diagnoses_to_set) >= 3:
                     break
 
@@ -6268,6 +6344,7 @@ class TribunalReportPage(QWidget):
             combo = popup.dx_boxes[combo_idx]
             search_term = dx_info["term"].lower()
             found = False
+            fallback_idx = -1
 
             # Search combo items for match
             for j in range(combo.count()):
@@ -6282,23 +6359,31 @@ class TribunalReportPage(QWidget):
                         print(f"[TRIBUNAL] Skipping negative match: {combo.itemText(j)}")
                         continue
 
-                    # Valid match - prefer items that START with the search term
-                    # This ensures "schizophrenia" matches "Schizophrenia..." not "...no symptoms of schizophrenia"
+                    # Prefer items that START with the search term
                     if item_text.startswith(search_term):
                         combo.setCurrentIndex(j)
-                        print(f"[TRIBUNAL] Set diagnosis {combo_idx+1} to: {combo.itemText(j)}")
+                        print(f"[TRIBUNAL] Set diagnosis {combo_idx+1} to: {combo.itemText(j)} (exact)")
                         found = True
                         combo_idx += 1
                         break
+                    elif fallback_idx < 0:
+                        fallback_idx = j  # First valid contains match as fallback
 
                 # Also check if ICD code is in item text (in parentheses)
                 if dx_info["type"] == "icd":
                     if f"({search_term})" in item_text or f"({search_term.lower()})" in item_text:
                         combo.setCurrentIndex(j)
-                        print(f"[TRIBUNAL] Set diagnosis {combo_idx+1} to: {combo.itemText(j)}")
+                        print(f"[TRIBUNAL] Set diagnosis {combo_idx+1} to: {combo.itemText(j)} (ICD)")
                         found = True
                         combo_idx += 1
                         break
+
+            # Fallback to contains match if no startswith match found
+            if not found and fallback_idx >= 0:
+                combo.setCurrentIndex(fallback_idx)
+                print(f"[TRIBUNAL] Set diagnosis {combo_idx+1} to: {combo.itemText(fallback_idx)} (contains)")
+                found = True
+                combo_idx += 1
 
             if not found:
                 print(f"[TRIBUNAL] Could not find match for: {dx_info['term']}")
@@ -6509,7 +6594,7 @@ class TribunalReportPage(QWidget):
                 content_edit.setMinimumHeight(120)  # Reduced by 20%
                 content_edit.setStyleSheet("""
                     QTextEdit {
-                        font-size: 14px;
+                        font-size: 16px;
                         color: #4a4a4a;
                         background: rgba(255, 248, 220, 0.95);
                         border: 1px solid rgba(180, 150, 50, 0.3);
@@ -6579,7 +6664,7 @@ class TribunalReportPage(QWidget):
                 content_edit.setMinimumHeight(120)  # Reduced by 20%
                 content_edit.setStyleSheet("""
                     QTextEdit {
-                        font-size: 13px;
+                        font-size: 15px;
                         color: #4a4a4a;
                         background: transparent;
                         border: none;
@@ -6605,7 +6690,8 @@ class TribunalReportPage(QWidget):
 
     def _populate_psych_history_imported(self, popup, sections_list: list):
         """Populate previous_mh_dates popup with separate text widgets per report category."""
-        from PySide6.QtWidgets import QTextEdit, QLabel
+        from PySide6.QtWidgets import QTextEdit, QLabel, QFrame
+        from PySide6.QtCore import QEvent
 
         layout = popup.extracted_checkboxes_layout
         # Clear existing
@@ -6616,6 +6702,7 @@ class TribunalReportPage(QWidget):
 
         # Store combined text for the include checkbox
         all_texts = []
+        text_edits = []
         for cat_name, text in sections_list:
             all_texts.append(text)
 
@@ -6623,7 +6710,7 @@ class TribunalReportPage(QWidget):
             label = QLabel(cat_name)
             label.setStyleSheet("""
                 QLabel {
-                    font-size: 15px;
+                    font-size: 17px;
                     font-weight: 600;
                     color: #806000;
                     background: transparent;
@@ -6641,7 +6728,7 @@ class TribunalReportPage(QWidget):
             text_edit.setMaximumHeight(250)
             text_edit.setStyleSheet("""
                 QTextEdit {
-                    font-size: 14px;
+                    font-size: 16px;
                     color: #4a4a4a;
                     background: rgba(255, 255, 255, 0.8);
                     border: 1px solid rgba(180, 150, 50, 0.3);
@@ -6650,11 +6737,65 @@ class TribunalReportPage(QWidget):
                 }
             """)
             layout.addWidget(text_edit)
+            text_edits.append(text_edit)
+
+        # Add drag handle INSIDE the content area (resizes text edits only)
+        drag_handle = QFrame()
+        drag_handle.setFixedHeight(10)
+        drag_handle.setCursor(Qt.CursorShape.SizeVerCursor)
+        drag_handle.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.35), stop:1 rgba(180,150,50,0.1));
+                border-radius: 2px;
+                margin: 2px 60px;
+            }
+            QFrame:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.6), stop:1 rgba(180,150,50,0.2));
+            }
+        """)
+        layout.addWidget(drag_handle)
+
+        # Drag handle state
+        drag_handle._drag_y = None
+        drag_handle._init_heights = None
+
+        def _on_press(ev, h=drag_handle, edits=text_edits):
+            h._drag_y = ev.globalPosition().y()
+            h._init_heights = [e.height() for e in edits]
+
+        def _on_move(ev, h=drag_handle, edits=text_edits):
+            if h._drag_y is not None:
+                delta = int(ev.globalPosition().y() - h._drag_y)
+                for i, e in enumerate(edits):
+                    new_h = max(80, h._init_heights[i] + delta)
+                    e.setMinimumHeight(new_h)
+                    e.setMaximumHeight(new_h)
+
+        def _on_release(ev, h=drag_handle, edits=text_edits):
+            if h._drag_y is not None:
+                for e in edits:
+                    e.setMaximumHeight(16777215)
+                h._drag_y = None
+
+        drag_handle.mousePressEvent = _on_press
+        drag_handle.mouseMoveEvent = _on_move
+        drag_handle.mouseReleaseEvent = _on_release
+
+        # Hide the built-in drag bar and remove fixed height so section sizes naturally
+        sec = popup.extracted_section
+        sec.drag_bar.setVisible(False)
+        sec.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sec.setMinimumHeight(0)
+        sec.setMaximumHeight(16777215)
 
         popup._imported_report_text = "\n\n".join(all_texts)
-        popup.extracted_section.setVisible(True)
-        if hasattr(popup.extracted_section, 'set_content_height'):
-            popup.extracted_section.set_content_height(300)
+        sec.setVisible(True)
+        # Don't use set_content_height (it calls setFixedHeight) — let content size naturally
+        sec._is_collapsed = False
+        sec.collapse_btn.setText("−")
+        sec.content_container.setVisible(True)
         popup._imported_data_added = True
         print(f"[TRIBUNAL] Populated previous_mh_dates with {len(sections_list)} separate imported sections")
 
@@ -6768,88 +6909,25 @@ class TribunalReportPage(QWidget):
             self._extracted_raw_notes = []
             self._extracted_categories = {}
             self._incident_data = []
+            if hasattr(self, '_imported_report_data'):
+                self._imported_report_data = {}
+            if hasattr(self, '_imported_report_sections'):
+                self._imported_report_sections = {}
 
-            # Clear all popups data
-            for key, popup in self.popups.items():
-                # Clear entries
-                if hasattr(popup, '_entries'):
-                    popup._entries = []
-                if hasattr(popup, 'notes'):
-                    popup.notes = []
-                # Clear content layout widgets
-                if hasattr(popup, 'content_layout'):
-                    while popup.content_layout.count():
-                        item = popup.content_layout.takeAt(0)
-                        if item.widget():
-                            item.widget().deleteLater()
-                # Clear summary text
-                if hasattr(popup, 'summary_text'):
-                    popup.summary_text.clear()
-                if hasattr(popup, 'summary_frame'):
-                    popup.summary_frame.hide()
-                # Update subtitle
-                if hasattr(popup, 'subtitle_label'):
-                    popup.subtitle_label.setText("No data loaded")
+            # Destroy all popups and remove from stack
+            for key, popup in list(self.popups.items()):
+                self.popup_stack.removeWidget(popup)
+                popup.deleteLater()
+            self.popups.clear()
 
-                # Clear medication entries in TreatmentPopup
-                if hasattr(popup, '_medications') and hasattr(popup, 'med_entries_layout'):
-                    # Remove all medication entry widgets except the first
-                    while len(popup._medications) > 1:
-                        entry = popup._medications.pop()
-                        if entry.get("widget"):
-                            entry["widget"].deleteLater()
-                    # Reset the first medication entry
-                    if popup._medications:
-                        first = popup._medications[0]
-                        if first.get("name"):
-                            first["name"].setCurrentIndex(0)
-                        if first.get("dose"):
-                            first["dose"].clear()
-                        if first.get("freq"):
-                            first["freq"].setCurrentIndex(0)
-                        if first.get("bnf"):
-                            first["bnf"].setText("")
-                    # Reset checkboxes and dropdowns
-                    if hasattr(popup, 'nursing_cb'):
-                        popup.nursing_cb.setChecked(False)
-                    if hasattr(popup, 'nursing_dropdown'):
-                        popup.nursing_dropdown.setCurrentIndex(0)
-                        popup.nursing_dropdown.setVisible(False)
-                    if hasattr(popup, 'psychology_cb'):
-                        popup.psychology_cb.setChecked(False)
-                    if hasattr(popup, 'psych_continue_rb'):
-                        popup.psych_continue_rb.setChecked(True)
-                    if hasattr(popup, 'psych_therapy_dropdown'):
-                        popup.psych_therapy_dropdown.setCurrentIndex(0)
-                    if hasattr(popup, 'ot_cb'):
-                        popup.ot_cb.setChecked(False)
-                    if hasattr(popup, 'ot_field'):
-                        popup.ot_field.clear()
-                    if hasattr(popup, 'social_cb'):
-                        popup.social_cb.setChecked(False)
-                    if hasattr(popup, 'social_dropdown'):
-                        popup.social_dropdown.setCurrentIndex(0)
-                    if hasattr(popup, 'pathway_cb'):
-                        popup.pathway_cb.setChecked(False)
-                    if hasattr(popup, 'pathway_dropdown'):
-                        popup.pathway_dropdown.setCurrentIndex(0)
-                    # Update preview
-                    if hasattr(popup, '_update_preview'):
-                        popup._update_preview()
-                    print(f"[TRIBUNAL] Cleared medications in popup: {key}")
-
-                print(f"[TRIBUNAL] Cleared popup: {key}")
-
-            # Clear data extractor by calling its clear_extraction method
+            # Clear data extractor
             if hasattr(self, '_data_extractor_overlay') and self._data_extractor_overlay:
                 if hasattr(self._data_extractor_overlay, 'clear_extraction'):
                     self._data_extractor_overlay.clear_extraction()
-                    print("[TRIBUNAL] Data extractor cleared via clear_extraction()")
 
-            # Restore my details fields in signature/author popups
-            for key, popup in self.popups.items():
-                if hasattr(popup, '_prefill_from_mydetails'):
-                    popup._prefill_from_mydetails()
+            # Recreate author/signature popups so mydetails get restored
+            for restore_key in ("author", "signature"):
+                self._on_card_clicked(restore_key)
 
             print("[TRIBUNAL] Report cleared - ready for new report")
 
@@ -6878,7 +6956,12 @@ class TribunalReportPage(QWidget):
 
     def _on_data_extracted(self, data: dict):
         """Handle extracted data from the data extractor and populate fixed panels."""
+        import os
         print(f"[TRIBUNAL] Data extracted: {list(data.keys())}")
+        cov = data.get("_coverage")
+        if cov and cov.get("uncategorised", 0) > 0:
+            print(f"[TRIBUNAL] Warning: {cov['uncategorised']} paragraphs uncategorised "
+                  f"({cov['categorised']}/{cov['total_paragraphs']} categorised)")
 
         # Check if this is filtered data to send to the current card
         filtered_category = data.get("filtered_category")
@@ -6910,9 +6993,14 @@ class TribunalReportPage(QWidget):
 
         if is_report and categories:
             # Report pipeline: map categories directly to card sections
-            self._populate_from_report_categories(categories)
+            source = os.path.basename(getattr(self, '_data_extractor_source_file', '') or '') or "Data Extractor"
+            self._populate_from_report_categories(categories, source_filename=source)
         else:
-            # Notes pipeline (existing behavior)
+            # Notes pipeline - skip if report data already imported (prevents cross-talk)
+            if self._has_report_data():
+                print(f"[TRIBUNAL] Skipping notes pipeline - report data already imported")
+                return
+
             raw_notes = []
             if hasattr(self, '_data_extractor_overlay') and self._data_extractor_overlay:
                 raw_notes = getattr(self._data_extractor_overlay, 'notes', [])
@@ -6929,6 +7017,23 @@ class TribunalReportPage(QWidget):
                     print(f"[TRIBUNAL] Error getting notes from SharedDataStore: {e}")
 
             print(f"[TRIBUNAL] Raw notes available: {len(raw_notes)}")
+
+            # Ask add/replace if existing notes
+            action = self._ask_import_action("", "notes")
+            if action == "cancel":
+                return
+            if action == "add":
+                existing_notes = getattr(self, '_extracted_raw_notes', []) or []
+                raw_notes = existing_notes + raw_notes
+                existing_cats = getattr(self, '_extracted_categories', {}) or {}
+                for cat_name, cat_data in categories.items():
+                    if cat_name in existing_cats and isinstance(existing_cats[cat_name], dict) and isinstance(cat_data, dict):
+                        existing_items = existing_cats[cat_name].get("items", [])
+                        new_items = cat_data.get("items", [])
+                        existing_cats[cat_name]["items"] = existing_items + new_items
+                    else:
+                        existing_cats[cat_name] = cat_data
+                categories = existing_cats
 
             # STORE at page level for popups created later
             self._extracted_raw_notes = raw_notes
@@ -6962,7 +7067,7 @@ class TribunalReportPage(QWidget):
         "Social History": "community",
     }
 
-    def _populate_from_report_categories(self, categories: dict):
+    def _populate_from_report_categories(self, categories: dict, source_filename: str = ""):
         """Populate report sections from data extractor categories (report mode).
 
         Maps extracted category names to tribunal card keys and populates
@@ -6974,14 +7079,29 @@ class TribunalReportPage(QWidget):
         if not hasattr(self, '_imported_report_data'):
             self._imported_report_data = {}
 
+        source_label = source_filename or "Data Extractor"
+        action = self._ask_import_action(source_label, "report")
+        if action == "cancel":
+            return
+        if action == "replace":
+            self._imported_report_data.clear()
+
         # Build card_key -> combined text from categories
         card_texts = {}
         # Also track individual category contributions per card for popups
         if not hasattr(self, '_imported_report_sections'):
             self._imported_report_sections = {}
 
+        # Build set of valid card keys for direct matching
+        valid_card_keys = {key for _, key in self.SECTIONS}
+
         for cat_name, cat_data in categories.items():
-            card_key = self.CATEGORY_TO_CARD.get(cat_name)
+            # Categories are now card keys directly (e.g. "forensic", "treatment")
+            if cat_name in valid_card_keys:
+                card_key = cat_name
+            else:
+                # Fallback to old category name mapping
+                card_key = self.CATEGORY_TO_CARD.get(cat_name)
             if not card_key:
                 print(f"[TRIBUNAL] No card mapping for category: {cat_name}")
                 continue
@@ -7017,6 +7137,8 @@ class TribunalReportPage(QWidget):
         # Store imported data (cards are NOT auto-filled; user sends from popups)
         sections_for_store = {}
         for card_key, content in card_texts.items():
+            if action == "add":
+                content = self._merge_report_section(card_key, content, source_label)
             self._imported_report_data[card_key] = content
             sections_for_store[card_key] = content
             print(f"[TRIBUNAL] Stored report category for section '{card_key}' (ready in popup)")
@@ -7033,15 +7155,16 @@ class TribunalReportPage(QWidget):
 
         # Show success message
         mapped_count = len(sections_for_store)
+        action_word = "Added" if action == "add" else "Loaded"
         QMessageBox.information(
             self,
             "Report Loaded",
-            f"Imported report data from PDF.\n\n"
-            f"Mapped {mapped_count} sections to popups.\n\n"
+            f"{action_word} report data from {source_label}.\n\n"
+            f"{action_word} {mapped_count} sections to popups.\n\n"
             f"Click each card to review and send the content."
         )
 
-        print(f"[TRIBUNAL] Mapped {mapped_count} sections from report categories to popups")
+        print(f"[TRIBUNAL] {action_word} {mapped_count} sections from report categories to popups")
 
     def _send_filtered_to_current_card(self, data: dict):
         """Send filtered data from data extractor to the currently selected card."""
@@ -7098,8 +7221,8 @@ class TribunalReportPage(QWidget):
                 return cat.get("items", [])
             return []
 
-        # Section 7: Previous admissions (same popup as section 6)
-        if "previous_admission_reasons" in self.popups:
+        # Section 7: Previous admissions (skip if report data imported)
+        if "previous_admission_reasons" in self.popups and not (hasattr(self, '_imported_report_data') and 'previous_admission_reasons' in self._imported_report_data):
             popup = self.popups["previous_admission_reasons"]
             if hasattr(popup, 'notes'):
                 popup.notes = raw_notes
@@ -7113,8 +7236,8 @@ class TribunalReportPage(QWidget):
                 popup.set_notes(raw_notes)
                 print(f"[TRIBUNAL] Ran timeline analysis for section 7")
 
-        # Section 6: Past psychiatric history
-        if "previous_mh_dates" in self.popups:
+        # Section 6: Past psychiatric history (skip if report data imported)
+        if "previous_mh_dates" in self.popups and not (hasattr(self, '_imported_report_data') and 'previous_mh_dates' in self._imported_report_data):
             popup = self.popups["previous_mh_dates"]
             if hasattr(popup, 'notes'):
                 popup.notes = raw_notes

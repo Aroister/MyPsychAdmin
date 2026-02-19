@@ -37,6 +37,8 @@ struct MOJLeaveFormView: View {
     @State private var showingLeaveTypeSheet = false
     @State private var selectedImportLeaveType: ImportLeaveType = .escortedDay
     @State private var isImporting = false
+    @State private var isProcessingNotes = false
+    @State private var processingProgress: String = ""
 
     // Leave type options for import (matching Desktop)
     enum ImportLeaveType: String, CaseIterable, Identifiable {
@@ -145,6 +147,26 @@ struct MOJLeaveFormView: View {
                     FormValidationErrorView(errors: validationErrors)
                         .padding(.horizontal)
 
+                    // Processing indicator
+                    if isProcessingNotes {
+                        VStack(spacing: 8) {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .scaleEffect(1.2)
+                            Text(processingProgress.isEmpty ? "Processing notes..." : processingProgress)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Text("Please wait")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                        .background(Color(red: 153/255, green: 27/255, blue: 27/255))
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    }
+
                     // All section cards
                     ForEach(LeaveSection.allCases) { section in
                         LeaveEditableCard(
@@ -213,6 +235,29 @@ struct MOJLeaveFormView: View {
         .onAppear {
             prefillFromSharedData()
             initializeCardTexts()
+            // Auto-populate from shared notes if available
+            if !sharedData.notes.isEmpty {
+                processExtractedNotesAsync(sharedData.notes)
+            }
+        }
+        .onReceive(sharedData.notesDidChange) { notes in
+            // Auto-populate when notes change in SharedDataStore
+            if !notes.isEmpty {
+                processExtractedNotesAsync(notes)
+            }
+        }
+        .onChange(of: sharedData.notes.count) {
+            // Fallback: detect notes changes via @Observable tracking
+            if sharedData.notes.count > 0 {
+                processExtractedNotesAsync(sharedData.notes)
+            }
+        }
+        .onReceive(sharedData.patientInfoDidChange) { patientInfo in
+            if !patientInfo.fullName.isEmpty {
+                formData.patientName = patientInfo.fullName
+                formData.patientDOB = patientInfo.dateOfBirth
+                formData.patientGender = patientInfo.gender
+            }
         }
         .sheet(item: $activePopup) { section in
             LeavePopupView(
@@ -383,13 +428,28 @@ struct MOJLeaveFormView: View {
                     print("[MOJ-LEAVE] Document processed: \(document.notes.count) notes extracted")
 
                     await MainActor.run {
-                        // Process notes for all file types
-                        processExtractedNotes(document.notes)
-                        print("[MOJ-LEAVE] Notes processed")
+                        // Share notes and patient info with other views
+                        if !document.notes.isEmpty {
+                            sharedData.setNotes(document.notes, source: "moj_leave_import")
+                        }
+                        if !document.patientInfo.fullName.isEmpty {
+                            sharedData.setPatientInfo(document.patientInfo, source: "moj_leave_import")
+                        }
 
                         // Extract patient data from DocumentProcessor (all file types)
                         processExtractedReportData(document)
                         print("[MOJ-LEAVE] Document patient info processed")
+
+                        // Detect PTR (Psychiatric Tribunal Report) vs notes
+                        let ptrSections = Self.parsePTRSections(from: document.text)
+                        if !ptrSections.isEmpty {
+                            // PTR detected — map PTR sections directly to Leave form sections
+                            print("[MOJ-LEAVE] PTR detected with sections: \(ptrSections.keys.sorted())")
+                            applyPTRDataToLeaveSections(ptrSections, document: document)
+                        } else {
+                            // Notes path — keyword categorization
+                            processExtractedNotesAsync(document.notes)
+                        }
 
                         // Extract patient details from note bodies (like Desktop does for any missing fields)
                         extractPatientDetailsFromNotes(document.notes)
@@ -408,7 +468,8 @@ struct MOJLeaveFormView: View {
                         isImporting = false
 
                         // Show success message
-                        importSuccess = "Import complete! \(document.notes.count) notes processed. Tap a section to see imported data."
+                        let sourceType = ptrSections.isEmpty ? "notes" : "PTR"
+                        importSuccess = "Import complete! \(sourceType == "PTR" ? "Tribunal report" : "\(document.notes.count) notes") processed. Tap a section to see imported data."
                     }
                 } catch {
                     print("[MOJ-LEAVE] Error processing file: \(error)")
@@ -425,11 +486,387 @@ struct MOJLeaveFormView: View {
         }
     }
 
+    // MARK: - Async Note Processing (background thread)
+
+    /// Async wrapper that moves heavy categorization to a background thread
+    private func processExtractedNotesAsync(_ notes: [ClinicalNote]) {
+        guard !notes.isEmpty, !isProcessingNotes else { return }
+        isProcessingNotes = true
+        processingProgress = "Processing \(notes.count) notes..."
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let results = Self.categorizeLeaveNotes(notes)
+            DispatchQueue.main.async {
+                self.applyLeaveCategorizationResults(results, notes: notes)
+            }
+        }
+    }
+
+    /// Apply categorization results to formData on the main thread
+    private func applyLeaveCategorizationResults(_ results: LeaveCategorizationResults, notes: [ClinicalNote]) {
+        formData.hospitalAdmissionsImportedEntries = results.hospitalAdmissions
+        formData.indexOffenceImportedEntries = results.indexOffence
+        formData.mentalDisorderImportedEntries = results.mentalDisorder
+        formData.attitudeBehaviourImportedEntries = results.attitudeBehaviour
+        formData.riskFactorsImportedEntries = results.riskFactors
+        formData.medicationImportedEntries = results.medication
+        formData.leaveReportImportedEntries = results.leaveReport
+        formData.mappaImportedEntries = results.mappa
+        formData.victimsImportedEntries = results.victims
+        formData.extremismImportedEntries = results.extremism
+        formData.abscondingImportedEntries = results.absconding
+        formData.prisonersImportedEntries = results.prisoners
+        formData.fitnessImportedEntries = results.fitness
+
+        // Fast operations on main thread
+        extractAndFillDiagnoses(notes)
+        prefillRiskFactorsFromNotes(notes)
+        prefillMedicationsFromNotes(notes)
+        prefillPsychologyFromRisks()
+        prefillExtremismFromEntries()
+        prefillAbscondingFromEntries()
+
+        isProcessingNotes = false
+        processingProgress = ""
+    }
+
+    /// Results struct for background categorization
+    private struct LeaveCategorizationResults: Sendable {
+        var hospitalAdmissions: [ASRImportedEntry] = []
+        var indexOffence: [ASRImportedEntry] = []
+        var mentalDisorder: [ASRImportedEntry] = []
+        var attitudeBehaviour: [ASRImportedEntry] = []
+        var riskFactors: [ASRImportedEntry] = []
+        var medication: [ASRImportedEntry] = []
+        var leaveReport: [ASRImportedEntry] = []
+        var mappa: [ASRImportedEntry] = []
+        var victims: [ASRImportedEntry] = []
+        var extremism: [ASRImportedEntry] = []
+        var absconding: [ASRImportedEntry] = []
+        var prisoners: [ASRImportedEntry] = []
+        var fitness: [ASRImportedEntry] = []
+    }
+
+    // MARK: - PTR (Psychiatric Tribunal Report) Detection & Mapping
+
+    /// PTR section markers — distinctive phrases from each numbered question
+    private static let ptrSectionMarkers: [(section: Int, phrases: [String])] = [
+        (5, [
+            "index offence",
+            "forensic history",
+            "relevant forensic"
+        ]),
+        (6, [
+            "previous involvement with mental health",
+            "dates of previous involvement"
+        ]),
+        (7, [
+            "reasons for previous admission",
+            "give reasons for previous"
+        ]),
+        (8, [
+            "circumstances of the current admission",
+            "current admission"
+        ]),
+        (9, [
+            "is the patient now suffering",
+            "nature and degree of mental disorder",
+            "mental disorder"
+        ]),
+        (10, [
+            "does the patient have a learning disability",
+            "patient have a learning disability",
+            "learning disability"
+        ]),
+        (11, [
+            "mental disorder present which requires the patient to be detained",
+            "is there any mental disorder present",
+            "requires the patient to be detained"
+        ]),
+        (12, [
+            "appropriate and available medical treatment",
+            "medical treatment has been prescribed",
+            "treatment prescribed, provided, offered",
+            "medical treatment prescribed"
+        ]),
+        (13, [
+            "strengths and positive factors",
+            "what are the strengths"
+        ]),
+        (14, [
+            "current progress, behaviour, capacity and insight",
+            "summary of the patient's current progress",
+            "give a summary of the patient"
+        ]),
+        (15, [
+            "understanding of, compliance with",
+            "willingness to accept any prescribed medication",
+            "comply with any appropriate medical treatment"
+        ]),
+        (16, [
+            "eligible compliant patient who lacks capacity",
+            "deprivation of liberty under the mental capacity act",
+            "lacks capacity to agree or object to their detention"
+        ]),
+        (17, [
+            "harmed themselves or others, or threatened to harm",
+            "where the patient has harmed themselves or others",
+            "threatened to harm themselves or others",
+            "incidents where the patient has harmed"
+        ]),
+        (18, [
+            "damaged property",
+            "threatened to damage property",
+            "incidents of property damage"
+        ]),
+        (19, [
+            "in section 2 cases"
+        ]),
+        (20, [
+            "in all other cases"
+        ]),
+        (21, [
+            "likely to act in a manner dangerous",
+            "discharged from hospital"
+        ]),
+        (22, [
+            "managed effectively in the community",
+            "risks managed in the community"
+        ]),
+        (23, [
+            "recommendations to tribunal",
+            "do you have any recommendations"
+        ]),
+        (24, [
+            "other relevant information",
+            "other information for the tribunal"
+        ])
+    ]
+
+    /// Parse PTR numbered sections from document text
+    private static func parsePTRSections(from text: String) -> [Int: String] {
+        let lower = text.lowercased()
+
+        struct SectionMatch: Comparable {
+            let section: Int
+            let position: Int
+            let phraseEnd: Int
+            static func < (lhs: SectionMatch, rhs: SectionMatch) -> Bool {
+                lhs.position < rhs.position
+            }
+        }
+
+        var matches: [SectionMatch] = []
+
+        for marker in ptrSectionMarkers {
+            for phrase in marker.phrases {
+                if let range = lower.range(of: phrase) {
+                    let pos = lower.distance(from: lower.startIndex, to: range.lowerBound)
+                    let end = lower.distance(from: lower.startIndex, to: range.upperBound)
+                    if !matches.contains(where: { $0.section == marker.section }) {
+                        matches.append(SectionMatch(section: marker.section, position: pos, phraseEnd: end))
+                    }
+                    break
+                }
+            }
+        }
+
+        guard matches.count >= 2 else { return [:] }
+
+        matches.sort()
+
+        var sections: [Int: String] = [:]
+        for i in 0..<matches.count {
+            var contentStart = matches[i].phraseEnd
+            // Skip past the question mark
+            let searchFrom = text.index(text.startIndex, offsetBy: min(contentStart, text.count))
+            let searchEnd = text.index(text.startIndex, offsetBy: min(contentStart + 200, text.count))
+            if searchFrom < searchEnd {
+                let tail = String(text[searchFrom..<searchEnd])
+                if let qMark = tail.firstIndex(of: "?") {
+                    contentStart += tail.distance(from: tail.startIndex, to: qMark) + 1
+                }
+            }
+
+            let contentEnd = i + 1 < matches.count ? matches[i + 1].position : text.count
+
+            guard contentStart < contentEnd && contentStart < text.count else { continue }
+
+            let startIdx = text.index(text.startIndex, offsetBy: contentStart)
+            let endIdx = text.index(text.startIndex, offsetBy: min(contentEnd, text.count))
+            let content = String(text[startIdx..<endIdx])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !content.isEmpty && content.count > 10 else { continue }
+            sections[matches[i].section] = content
+        }
+
+        return sections
+    }
+
+    /// Apply PTR sections directly to Leave form sections — 1 entry per section
+    private func applyPTRDataToLeaveSections(_ ptr: [Int: String], document: ExtractedDocument) {
+        func makeEntry(_ text: String) -> ASRImportedEntry {
+            let snippet = text.count > 200 ? String(text.prefix(200)) + "..." : text
+            return ASRImportedEntry(date: nil, text: text, categories: ["Report"], snippet: snippet)
+        }
+
+        // MOJL 4a (Past Psychiatric History) → PTR 6 + PTR 7
+        let s4a = [ptr[6], ptr[7]].compactMap { $0 }.joined(separator: "\n\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !s4a.isEmpty {
+            formData.hospitalAdmissionsImportedEntries = [makeEntry(s4a)]
+        }
+
+        // MOJL 4b (Index Offence) → PTR 5
+        if let s5 = ptr[5] {
+            formData.indexOffenceImportedEntries = [makeEntry(s5)]
+        }
+
+        // MOJL 4c (Mental Disorder) → PTR 9
+        if let s9 = ptr[9] {
+            formData.mentalDisorderImportedEntries = [makeEntry(s9)]
+        }
+
+        // MOJL 4d (Attitude & Behaviour) → PTR 14
+        if let s14 = ptr[14] {
+            formData.attitudeBehaviourImportedEntries = [makeEntry(s14)]
+        }
+
+        // MOJL 4e (Risk Factors) → PTR 17 + PTR 18
+        let s4e = [ptr[17], ptr[18]].compactMap { $0 }.joined(separator: "\n\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !s4e.isEmpty {
+            formData.riskFactorsImportedEntries = [makeEntry(s4e)]
+        }
+
+        // MOJL 4f (Medication) → PTR 10 + PTR 12 + PTR 15
+        let s4f = [ptr[10], ptr[12], ptr[15]].compactMap { $0 }.joined(separator: "\n\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !s4f.isEmpty {
+            formData.medicationImportedEntries = [makeEntry(s4f)]
+        }
+
+        // Auto-fill card text
+        if !s4a.isEmpty && formData.hospitalAdmissionsText.isEmpty { formData.hospitalAdmissionsText = s4a }
+        if let s5 = ptr[5], formData.indexOffenceText.isEmpty { formData.indexOffenceText = s5 }
+        if let s9 = ptr[9], formData.mentalDisorderText.isEmpty { formData.mentalDisorderText = s9 }
+        if let s14 = ptr[14], formData.attitudeBehaviourText.isEmpty { formData.attitudeBehaviourText = s14 }
+        if !s4e.isEmpty && formData.riskFactorsText.isEmpty { formData.riskFactorsText = s4e }
+        if !s4f.isEmpty && formData.medicationText.isEmpty { formData.medicationText = s4f }
+
+        // Extract diagnoses — create temporary notes from raw text for the existing method
+        if !document.text.isEmpty {
+            let tempNote = ClinicalNote(body: document.text)
+            extractAndFillDiagnoses([tempNote])
+        }
+
+        // Prefill risk factors and other auto-detections (these work off formData imported entries)
+        prefillRiskFactorsFromNotes([])
+        prefillExtremismFromEntries()
+        prefillAbscondingFromEntries()
+
+        print("[MOJ-LEAVE] PTR mapped: 4a=\(!s4a.isEmpty), 4b=\(ptr[5] != nil), 4c=\(ptr[9] != nil), 4d=\(ptr[14] != nil), 4e=\(!s4e.isEmpty), 4f=\(!s4f.isEmpty)")
+    }
+
+    /// Pure function: categorize notes off the main thread
+    private static func categorizeLeaveNotes(_ notes: [ClinicalNote]) -> LeaveCategorizationResults {
+        var results = LeaveCategorizationResults()
+
+        // 4a. Past Psychiatric History from clerkings
+        let pastPsychEntries = extractHistorySectionFromClerkingsStatic(notes, sectionType: .pastPsychiatric)
+        for entry in pastPsychEntries {
+            let snippet = entry.text.count > 150 ? String(entry.text.prefix(150)) + "..." : entry.text
+            results.hospitalAdmissions.append(ASRImportedEntry(date: entry.date, text: entry.text, categories: ["Past Psychiatric History"], snippet: snippet))
+        }
+
+        // 4b. Index Offence / Forensic History from clerkings
+        let forensicEntries = extractHistorySectionFromClerkingsStatic(notes, sectionType: .forensicHistory)
+        for entry in forensicEntries {
+            let snippet = entry.text.count > 150 ? String(entry.text.prefix(150)) + "..." : entry.text
+            results.indexOffence.append(ASRImportedEntry(date: entry.date, text: entry.text, categories: ["Forensic History"], snippet: snippet))
+        }
+
+        // 4c. Mental Disorder - diagnosis-specific lines
+        let diagnosisEntries = extractDiagnosisLinesStatic(from: notes)
+        for entry in diagnosisEntries {
+            let snippet = entry.text.count > 150 ? String(entry.text.prefix(150)) + "..." : entry.text
+            let diagnosisCategories = detectDiagnosisCategoriesStatic(in: entry.text)
+            results.mentalDisorder.append(ASRImportedEntry(date: entry.date, text: entry.text, categories: diagnosisCategories.isEmpty ? ["Diagnosis"] : diagnosisCategories, snippet: snippet))
+        }
+
+        // 4d. Attitude & Behaviour - 1 year filter
+        let mostRecentDate = notes.map { $0.date }.max() ?? Date()
+        let oneYearCutoff = Calendar.current.date(byAdding: .year, value: -1, to: mostRecentDate) ?? mostRecentDate
+        var attitudeSeenTexts = Set<String>()
+
+        for note in notes {
+            if note.date < oneYearCutoff { continue }
+            let text = note.body
+            let textKey = text.lowercased().prefix(200).description
+            if attitudeSeenTexts.contains(textKey) { continue }
+
+            let attCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.attitudeBehaviour)
+            if !attCats.isEmpty {
+                attitudeSeenTexts.insert(textKey)
+                let snippet = text.count > 150 ? String(text.prefix(150)) + "..." : text
+                results.attitudeBehaviour.append(ASRImportedEntry(date: note.date, text: text, categories: attCats, snippet: snippet))
+            }
+        }
+
+        // Process all notes for other sections
+        for note in notes {
+            let text = note.body
+            let snippet = text.count > 150 ? String(text.prefix(150)) + "..." : text
+
+            let riskCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.riskFactors)
+            let medCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.medication)
+            let leaveCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.leaveReport)
+            let mappaCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.mappa)
+            let victimsCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.victims)
+            let extremismCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.extremism)
+            let abscondingCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.absconding)
+            let prisonersCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.transferredPrisoners)
+            let fitnessCats = LeaveFormCategoryKeywords.categorize(text, using: LeaveFormCategoryKeywords.fitnessToPlead)
+
+            if !riskCats.isEmpty {
+                results.riskFactors.append(ASRImportedEntry(date: note.date, text: text, categories: riskCats, snippet: snippet))
+            }
+            if !medCats.isEmpty {
+                results.medication.append(ASRImportedEntry(date: note.date, text: text, categories: medCats, snippet: snippet))
+            }
+            if !leaveCats.isEmpty {
+                results.leaveReport.append(ASRImportedEntry(date: note.date, text: text, categories: leaveCats, snippet: snippet))
+            }
+            if !mappaCats.isEmpty {
+                results.mappa.append(ASRImportedEntry(date: note.date, text: text, categories: mappaCats, snippet: snippet))
+            }
+            if !victimsCats.isEmpty {
+                results.victims.append(ASRImportedEntry(date: note.date, text: text, categories: victimsCats, snippet: snippet))
+            }
+            if !extremismCats.isEmpty {
+                results.extremism.append(ASRImportedEntry(date: note.date, text: text, categories: extremismCats, snippet: snippet))
+            }
+            if !abscondingCats.isEmpty {
+                let twelveMonthsAgo = Calendar.current.date(byAdding: .month, value: -12, to: Date()) ?? Date()
+                if note.date >= twelveMonthsAgo {
+                    results.absconding.append(ASRImportedEntry(date: note.date, text: text, categories: abscondingCats, snippet: snippet))
+                }
+            }
+            if !prisonersCats.isEmpty {
+                results.prisoners.append(ASRImportedEntry(date: note.date, text: text, categories: prisonersCats, snippet: snippet))
+            }
+            if !fitnessCats.isEmpty {
+                results.fitness.append(ASRImportedEntry(date: note.date, text: text, categories: fitnessCats, snippet: snippet))
+            }
+        }
+
+        return results
+    }
+
+    /// Legacy synchronous version (kept for reference)
     private func processExtractedNotes(_ notes: [ClinicalNote]) {
         print("[MOJ-LEAVE] Processing \(notes.count) notes...")
 
         // === 4a. Past Psychiatric History - Use clerking extraction (like Desktop) ===
-        let pastPsychEntries = extractHistorySectionFromClerkings(notes, sectionType: .pastPsychiatric)
+        let pastPsychEntries = Self.extractHistorySectionFromClerkingsStatic(notes, sectionType: .pastPsychiatric)
         for entry in pastPsychEntries {
             let snippet = entry.text.count > 150 ? String(entry.text.prefix(150)) + "..." : entry.text
             formData.hospitalAdmissionsImportedEntries.append(ASRImportedEntry(
@@ -442,7 +879,7 @@ struct MOJLeaveFormView: View {
         print("[MOJ-LEAVE] 4a Past Psych: Found \(pastPsychEntries.count) entries from clerkings")
 
         // === 4b. Index Offence / Forensic History - Use clerking extraction (like Desktop) ===
-        let forensicEntries = extractHistorySectionFromClerkings(notes, sectionType: .forensicHistory)
+        let forensicEntries = Self.extractHistorySectionFromClerkingsStatic(notes, sectionType: .forensicHistory)
         for entry in forensicEntries {
             let snippet = entry.text.count > 150 ? String(entry.text.prefix(150)) + "..." : entry.text
             formData.indexOffenceImportedEntries.append(ASRImportedEntry(
@@ -456,10 +893,10 @@ struct MOJLeaveFormView: View {
 
         // === 4c. Mental Disorder - Extract ONLY diagnosis-specific lines (matching Desktop) ===
         // Desktop searches all notes for lines containing diagnosis terms and extracts just those lines
-        let diagnosisEntries = extractDiagnosisLines(from: notes)
+        let diagnosisEntries = Self.extractDiagnosisLinesStatic(from: notes)
         for entry in diagnosisEntries {
             let snippet = entry.text.count > 150 ? String(entry.text.prefix(150)) + "..." : entry.text
-            let diagnosisCategories = detectDiagnosisCategories(in: entry.text)
+            let diagnosisCategories = Self.detectDiagnosisCategoriesStatic(in: entry.text)
             formData.mentalDisorderImportedEntries.append(ASRImportedEntry(
                 date: entry.date,
                 text: entry.text,
@@ -1040,7 +1477,7 @@ struct MOJLeaveFormView: View {
     }
 
     // MARK: - Extract History Section from Clerkings (matching Desktop logic)
-    private func extractHistorySectionFromClerkings(_ notes: [ClinicalNote], sectionType: HistorySectionType) -> [(date: Date, text: String)] {
+    private static func extractHistorySectionFromClerkingsStatic(_ notes: [ClinicalNote], sectionType: HistorySectionType) -> [(date: Date, text: String)] {
         // Clerking triggers (matching Desktop history_extractor_sections.py)
         let clerkingTriggers = [
             "admission clerking", "clerking", "duty doctor admission",
@@ -1109,7 +1546,7 @@ struct MOJLeaveFormView: View {
     }
 
     // MARK: - Extract Diagnosis Lines from Notes (matching Desktop DIAGNOSIS_PATTERNS exactly)
-    private func extractDiagnosisLines(from notes: [ClinicalNote]) -> [(date: Date, text: String)] {
+    private static func extractDiagnosisLinesStatic(from notes: [ClinicalNote]) -> [(date: Date, text: String)] {
         // Exact patterns from Desktop moj_leave_form_page.py line 17437-17482
         let diagnosisPatterns = [
             // Schizophrenia variants
@@ -1290,7 +1727,7 @@ struct MOJLeaveFormView: View {
     }
 
     /// Detect specific diagnosis terms in text to use as selectable categories (like 3g leave types)
-    private func detectDiagnosisCategories(in text: String) -> [String] {
+    private static func detectDiagnosisCategoriesStatic(in text: String) -> [String] {
         let textLower = text.lowercased()
         var categories: [String] = []
 
@@ -2097,7 +2534,10 @@ struct LeavePopupView: View {
     private var patientDetailsPopup: some View {
         VStack(alignment: .leading, spacing: 16) {
             FormTextField(label: "Patient Name", text: $formData.patientName, isRequired: true)
-            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB, maxDate: Date())
+            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB,
+                                   maxDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()),
+                                   minDate: Calendar.current.date(byAdding: .year, value: -100, to: Date()),
+                                   defaultDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()))
 
             FormSectionHeader(title: "Gender", systemImage: "person")
             Picker("Gender", selection: $formData.patientGender) {

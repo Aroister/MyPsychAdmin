@@ -542,7 +542,7 @@ class ForensicHistoryPopup(QWidget):
                 self.extracted_checkboxes_layout = QVBoxLayout(self.extracted_container)
                 self.extracted_checkboxes_layout.setContentsMargins(2, 2, 2, 2)
                 self.extracted_checkboxes_layout.setSpacing(12)
-                self.extracted_checkboxes_layout.setAlignment(Qt.AlignTop)
+                # Removed AlignTop to allow entries to expand with container
 
                 extracted_scroll.setWidget(self.extracted_container)
                 extracted_layout.addWidget(extracted_scroll)
@@ -678,8 +678,8 @@ class ForensicHistoryPopup(QWidget):
 
                 if not all_incidents:
                         # Hide forensic section if no data
-                        if hasattr(self, '_forensic_data_section'):
-                                self._forensic_data_section.setVisible(False)
+                        if hasattr(self, '_forensic_notes_section'):
+                                self._forensic_notes_section.setVisible(False)
                         return
 
                 # Sort by date (newest first)
@@ -710,7 +710,7 @@ class ForensicHistoryPopup(QWidget):
                 }
 
                 # Create or get forensic data section
-                if not hasattr(self, '_forensic_data_section'):
+                if not hasattr(self, '_forensic_notes_section'):
                         self._create_forensic_data_section()
 
                 # Clear existing content
@@ -841,136 +841,65 @@ class ForensicHistoryPopup(QWidget):
                 self._forensic_content_layout.addStretch()
 
                 # Show the section
-                self._forensic_data_section.setVisible(True)
+                self._forensic_notes_section.setVisible(True)
 
                 print(f"[FORENSIC] Displayed {len(sorted_incidents)} forensic incidents")
 
         def _create_forensic_data_section(self):
-                """Create the forensic data section (called once on first use).
-
-                Matches GPRFixedDataPanel style - simple panel with scrollable content.
-                Added to splitter for drag-to-resize functionality.
-                """
-                self._forensic_data_section = QFrame()
-                self._forensic_data_section.setObjectName("forensicDataSection")
-                self._forensic_data_section.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-                self._forensic_data_section.setStyleSheet("""
-                        QFrame#forensicDataSection {
-                                background: white;
-                                border: 1px solid #e5e7eb;
-                                border-radius: 8px;
-                        }
-                """)
-
-                section_layout = QVBoxLayout(self._forensic_data_section)
-                section_layout.setContentsMargins(12, 12, 12, 12)
-                section_layout.setSpacing(8)
-
-                # Header with collapsible button
-                header_layout = QHBoxLayout()
-                header_layout.setSpacing(8)
-
-                self._forensic_collapse_btn = QPushButton("+")
-                self._forensic_collapse_btn.setFixedSize(24, 24)
-                self._forensic_collapse_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-                self._forensic_collapse_btn.setStyleSheet("""
-                        QPushButton {
+                """Create the forensic data section using CollapsibleSection (matches GPR sections 8/10)."""
+                self._forensic_notes_section = CollapsibleSection("Forensic Data from Notes", start_collapsed=True)
+                self._forensic_notes_section.set_content_height(300)
+                self._forensic_notes_section._min_height = 150
+                self._forensic_notes_section._max_height = 600
+                self._forensic_notes_section.set_header_style("""
+                        QFrame {
                                 background: rgba(183, 28, 28, 0.1);
-                                border: none;
-                                border-radius: 4px;
-                                font-size: 21px;
-                                font-weight: bold;
-                                color: #b71c1c;
-                        }
-                        QPushButton:hover {
-                                background: rgba(183, 28, 28, 0.2);
+                                border: 1px solid rgba(183, 28, 28, 0.3);
+                                border-radius: 6px 6px 0 0;
                         }
                 """)
-                self._forensic_collapse_btn.clicked.connect(self._toggle_forensic_collapse)
-                header_layout.addWidget(self._forensic_collapse_btn)
+                self._forensic_notes_section.set_title_style("""
+                        QLabel {
+                                font-size: 18px;
+                                font-weight: 600;
+                                color: #b71c1c;
+                                background: transparent;
+                                border: none;
+                        }
+                """)
 
-                # Title
-                title = QLabel("Forensic Data from Notes")
-                title.setStyleSheet("font-size: 21px; font-weight: 700; color: #b71c1c;")
-                header_layout.addWidget(title)
-                header_layout.addStretch()
-                section_layout.addLayout(header_layout)
-
-                self._forensic_collapsed = True  # Start collapsed
-
-                # Scrollable content area
+                # Scroll area as content (matches section 8/10 pattern)
                 self._forensic_scroll = QScrollArea()
                 self._forensic_scroll.setWidgetResizable(True)
-                self._forensic_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+                self._forensic_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
                 self._forensic_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                 self._forensic_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
                 self._forensic_scroll.setStyleSheet("""
                         QScrollArea {
-                                border: none;
-                                background: transparent;
+                                background: rgba(255, 255, 255, 0.95);
+                                border: 1px solid rgba(183, 28, 28, 0.2);
+                                border-top: none;
+                                border-radius: 0 0 12px 12px;
                         }
                 """)
 
                 self._forensic_content_widget = QWidget()
-                self._forensic_content_widget.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Minimum)
+                self._forensic_content_widget.setStyleSheet("background: transparent;")
                 self._forensic_content_layout = QVBoxLayout(self._forensic_content_widget)
-                self._forensic_content_layout.setContentsMargins(0, 0, 0, 0)
+                self._forensic_content_layout.setContentsMargins(12, 12, 12, 12)
                 self._forensic_content_layout.setSpacing(8)
+
                 self._forensic_scroll.setWidget(self._forensic_content_widget)
-                section_layout.addWidget(self._forensic_scroll, 1)
-
-                # Drag bar for resizing
-                self._forensic_drag_bar = QFrame()
-                self._forensic_drag_bar.setFixedHeight(10)
-                self._forensic_drag_bar.setCursor(QCursor(Qt.CursorShape.SizeVerCursor))
-                self._forensic_drag_bar.setStyleSheet("""
-                        QFrame {
-                                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                        stop:0 #e5e7eb, stop:0.5 #9ca3af, stop:1 #e5e7eb);
-                                border-radius: 3px;
-                                margin: 2px 40px;
-                        }
-                        QFrame:hover {
-                                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                        stop:0 #d1d5db, stop:0.5 #6b7280, stop:1 #d1d5db);
-                        }
-                """)
-                self._forensic_drag_bar.installEventFilter(self)
-                self._forensic_dragging = False
-                self._forensic_drag_start_y = 0
-                self._forensic_drag_start_height = 300
-                self._forensic_section_height = 300
-                section_layout.addWidget(self._forensic_drag_bar)
-
-                # Start collapsed
-                self._forensic_scroll.setVisible(False)
-                self._forensic_drag_bar.setVisible(False)
-                self._forensic_data_section.setMaximumHeight(self.FORENSIC_HEADER_HEIGHT)
-                self._forensic_data_section.setMinimumHeight(self.FORENSIC_HEADER_HEIGHT)
+                self._forensic_notes_section.set_content(self._forensic_scroll)
+                self._forensic_notes_section.setVisible(False)
 
                 # Add to main layout (before the stretch)
                 if hasattr(self, 'main_layout'):
-                        # Insert before the last stretch item
                         count = self.main_layout.count()
                         if count > 0:
-                                self.main_layout.insertWidget(count - 1, self._forensic_data_section)
+                                self.main_layout.insertWidget(count - 1, self._forensic_notes_section)
                         else:
-                                self.main_layout.addWidget(self._forensic_data_section)
-
-        def _toggle_forensic_collapse(self):
-                """Toggle the collapsed state of the forensic data section."""
-                self._forensic_collapsed = not self._forensic_collapsed
-                self._forensic_scroll.setVisible(not self._forensic_collapsed)
-                self._forensic_drag_bar.setVisible(not self._forensic_collapsed)
-                self._forensic_collapse_btn.setText("+" if self._forensic_collapsed else "-")
-                # Set size constraints based on collapsed state
-                if self._forensic_collapsed:
-                        self._forensic_data_section.setMaximumHeight(self.FORENSIC_HEADER_HEIGHT)
-                        self._forensic_data_section.setMinimumHeight(self.FORENSIC_HEADER_HEIGHT)
-                else:
-                        self._forensic_data_section.setMaximumHeight(16777215)  # Qt default max
-                        self._forensic_data_section.setMinimumHeight(150)
-                        self._forensic_data_section.setFixedHeight(self._forensic_section_height)
+                                self.main_layout.addWidget(self._forensic_notes_section)
 
         def _on_index_collapse_toggled(self):
                 """Resize index container when panel is toggled."""
@@ -1026,22 +955,6 @@ class ForensicHistoryPopup(QWidget):
                                 self._convictions_dragging = False
                                 return True
 
-                # Forensic data section drag bar
-                if hasattr(self, '_forensic_drag_bar') and obj == self._forensic_drag_bar:
-                        if event.type() == QEvent.Type.MouseButtonPress:
-                                self._forensic_dragging = True
-                                self._forensic_drag_start_y = event.globalPosition().y()
-                                self._forensic_drag_start_height = self._forensic_section_height
-                                return True
-                        elif event.type() == QEvent.Type.MouseMove and self._forensic_dragging:
-                                delta = event.globalPosition().y() - self._forensic_drag_start_y
-                                new_height = max(150, min(600, self._forensic_drag_start_height + delta))
-                                self._forensic_section_height = int(new_height)
-                                self._forensic_data_section.setFixedHeight(self._forensic_section_height)
-                                return True
-                        elif event.type() == QEvent.Type.MouseButtonRelease:
-                                self._forensic_dragging = False
-                                return True
                 return super().eventFilter(obj, event)
 
         def _apply_forensic_filter(self, label: str):
@@ -1077,6 +990,9 @@ class ForensicHistoryPopup(QWidget):
                         child = self._incidents_layout.takeAt(0)
                         if child.widget():
                                 child.widget().deleteLater()
+
+                # Clear checkboxes from previous render
+                self._extracted_checkboxes.clear()
 
                 for incident in incidents:
                         date = incident["date"]
@@ -1141,10 +1057,42 @@ class ForensicHistoryPopup(QWidget):
                         entry_layout = QVBoxLayout(entry_frame)
                         entry_layout.setContentsMargins(6, 6, 6, 6)
                         entry_layout.setSpacing(4)
+                        entry_layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinAndMaxSize)
 
-                        # Header row with category badge, subcategory, date, severity
+                        # Header row: toggle → date → category badge → severity → stretch → checkbox
                         header_row = QHBoxLayout()
                         header_row.setSpacing(8)
+
+                        # Toggle button
+                        toggle_btn = QPushButton("▸")
+                        toggle_btn.setFixedSize(22, 22)
+                        toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                        toggle_btn.setStyleSheet(f"""
+                                QPushButton {{
+                                        background: rgba(180, 150, 50, 0.2);
+                                        border: none;
+                                        border-radius: 4px;
+                                        font-size: 17px;
+                                        font-weight: bold;
+                                        color: {cat_color};
+                                }}
+                                QPushButton:hover {{ background: rgba(180, 150, 50, 0.35); }}
+                        """)
+                        header_row.addWidget(toggle_btn)
+
+                        # Date label
+                        date_label = QLabel(f"📅 {date_str}")
+                        date_label.setStyleSheet("""
+                                QLabel {
+                                        font-size: 16px;
+                                        font-weight: 500;
+                                        color: #806000;
+                                        background: transparent;
+                                        border: none;
+                                }
+                        """)
+                        date_label.setCursor(Qt.CursorShape.PointingHandCursor)
+                        header_row.addWidget(date_label)
 
                         # Category badge
                         badge_text = f"{cat_name}: {subcat_name}" if subcat_name and subcat_name != "Data Extractor" else cat_name
@@ -1176,24 +1124,23 @@ class ForensicHistoryPopup(QWidget):
                                 }}
                         """)
                         header_row.addWidget(sev_badge)
-
-                        # Date label
-                        date_label = QLabel(f"📅 {date_str}")
-                        date_label.setStyleSheet("""
-                                QLabel {
-                                        font-size: 21px;
-                                        font-weight: 500;
-                                        color: #6b7280;
-                                        background: transparent;
-                                        border: none;
-                                }
-                        """)
-                        header_row.addWidget(date_label)
-
                         header_row.addStretch()
+
+                        # Checkbox on the RIGHT
+                        cb = QCheckBox()
+                        cb.setProperty("full_text", text)
+                        cb.setFixedSize(18, 18)
+                        cb.setStyleSheet("""
+                                QCheckBox { background: transparent; }
+                                QCheckBox::indicator { width: 16px; height: 16px; }
+                        """)
+                        cb.stateChanged.connect(self._send_to_card)
+                        header_row.addWidget(cb)
+                        self._extracted_checkboxes.append(cb)
+
                         entry_layout.addLayout(header_row)
 
-                        # Text content
+                        # Text content (hidden by default, toggled by arrow)
                         body_text = QTextEdit()
                         body_text.setReadOnly(True)
                         body_text.setHtml(full_html)
@@ -1213,9 +1160,64 @@ class ForensicHistoryPopup(QWidget):
                                         color: #374151;
                                 }
                         """)
+                        body_text.setVisible(False)
                         entry_layout.addWidget(body_text)
 
+                        drag_bar = QFrame()
+                        drag_bar.setFixedHeight(8)
+                        drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+                        drag_bar.setStyleSheet("""
+                                QFrame {
+                                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                                stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                                        border-radius: 2px; margin: 2px 40px;
+                                }
+                                QFrame:hover {
+                                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                                stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                                }
+                        """)
+                        drag_bar.setVisible(False)
+                        drag_bar._drag_y = None
+                        drag_bar._init_h = None
+                        def _make_drag_handlers(handle, text_widget):
+                                def press(ev):
+                                        handle._drag_y = ev.globalPosition().y()
+                                        handle._init_h = text_widget.height()
+                                def move(ev):
+                                        if handle._drag_y is not None:
+                                                delta = int(ev.globalPosition().y() - handle._drag_y)
+                                                new_h = max(60, handle._init_h + delta)
+                                                text_widget.setMinimumHeight(new_h)
+                                                text_widget.setMaximumHeight(new_h)
+                                def release(ev):
+                                        if handle._drag_y is not None:
+                                                text_widget.setMaximumHeight(16777215)
+                                                handle._drag_y = None
+                                return press, move, release
+                        dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+                        drag_bar.mousePressEvent = dp
+                        drag_bar.mouseMoveEvent = dm
+                        drag_bar.mouseReleaseEvent = dr
+                        entry_layout.addWidget(drag_bar)
+
+                        # Toggle function
+                        def make_toggle(btn, body, frame, bar):
+                                def toggle():
+                                        is_visible = body.isVisible()
+                                        body.setVisible(not is_visible)
+                                        bar.setVisible(not is_visible)
+                                        btn.setText("▾" if not is_visible else "▸")
+                                        frame.updateGeometry()
+                                return toggle
+
+                        toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, drag_bar)
+                        toggle_btn.clicked.connect(toggle_fn)
+                        date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
+
                         self._incidents_layout.addWidget(entry_frame)
+
+                self._incidents_layout.addStretch()
 
         # ============================================================
         #  SET ENTRIES (for imported data)
@@ -1271,7 +1273,7 @@ class ForensicHistoryPopup(QWidget):
                                 # Create collapsible entry box
                                 entry_frame = QFrame()
                                 entry_frame.setObjectName("entryFrame")
-                                entry_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+                                entry_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
                                 entry_frame.setStyleSheet("""
                                         QFrame#entryFrame {
                                                 background: rgba(255, 255, 255, 0.95);
@@ -1283,6 +1285,7 @@ class ForensicHistoryPopup(QWidget):
                                 entry_layout = QVBoxLayout(entry_frame)
                                 entry_layout.setContentsMargins(10, 8, 10, 8)
                                 entry_layout.setSpacing(6)
+                                entry_layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinAndMaxSize)
 
                                 # Header row with checkbox, date label, and toggle button
                                 header_row = QHBoxLayout()
@@ -1338,11 +1341,11 @@ class ForensicHistoryPopup(QWidget):
                                 body_text.setPlainText(text)
                                 body_text.setReadOnly(True)
                                 body_text.setFrameShape(QFrame.Shape.NoFrame)
-                                body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                                body_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
                                 body_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                                 body_text.setStyleSheet("""
                                         QTextEdit {
-                                                font-size: 21px;
+                                                font-size: 17px;
                                                 color: #333;
                                                 background: rgba(255, 248, 220, 0.5);
                                                 border: none;
@@ -1350,18 +1353,55 @@ class ForensicHistoryPopup(QWidget):
                                                 border-radius: 6px;
                                         }
                                 """)
-                                # Calculate height based on content
-                                body_text.document().setTextWidth(body_text.viewport().width() if body_text.viewport().width() > 0 else 350)
-                                doc_height = body_text.document().size().height() + 20
-                                body_text.setFixedHeight(int(max(doc_height, 60)))
+                                body_text.setMinimumHeight(60)
+                                body_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
                                 body_text.setVisible(False)
                                 entry_layout.addWidget(body_text)
 
+                                drag_bar = QFrame()
+                                drag_bar.setFixedHeight(8)
+                                drag_bar.setCursor(Qt.CursorShape.SizeVerCursor)
+                                drag_bar.setStyleSheet("""
+                                        QFrame {
+                                                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                                        stop:0 rgba(180,150,50,0.1), stop:0.5 rgba(180,150,50,0.3), stop:1 rgba(180,150,50,0.1));
+                                                border-radius: 2px; margin: 2px 40px;
+                                        }
+                                        QFrame:hover {
+                                                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                                        stop:0 rgba(180,150,50,0.2), stop:0.5 rgba(180,150,50,0.5), stop:1 rgba(180,150,50,0.2));
+                                        }
+                                """)
+                                drag_bar.setVisible(False)
+                                drag_bar._drag_y = None
+                                drag_bar._init_h = None
+                                def _make_drag_handlers(handle, text_widget):
+                                        def press(ev):
+                                                handle._drag_y = ev.globalPosition().y()
+                                                handle._init_h = text_widget.height()
+                                        def move(ev):
+                                                if handle._drag_y is not None:
+                                                        delta = int(ev.globalPosition().y() - handle._drag_y)
+                                                        new_h = max(60, handle._init_h + delta)
+                                                        text_widget.setMinimumHeight(new_h)
+                                                        text_widget.setMaximumHeight(new_h)
+                                        def release(ev):
+                                                if handle._drag_y is not None:
+                                                        text_widget.setMaximumHeight(16777215)
+                                                        handle._drag_y = None
+                                        return press, move, release
+                                dp, dm, dr = _make_drag_handlers(drag_bar, body_text)
+                                drag_bar.mousePressEvent = dp
+                                drag_bar.mouseMoveEvent = dm
+                                drag_bar.mouseReleaseEvent = dr
+                                entry_layout.addWidget(drag_bar)
+
                                 # Toggle function
-                                def make_toggle(btn, body, frame, popup_self):
+                                def make_toggle(btn, body, frame, popup_self, bar):
                                         def toggle():
                                                 is_visible = body.isVisible()
                                                 body.setVisible(not is_visible)
+                                                bar.setVisible(not is_visible)
                                                 btn.setText("▾" if not is_visible else "▸")
                                                 frame.updateGeometry()
                                                 if hasattr(popup_self, 'extracted_container'):
@@ -1369,13 +1409,14 @@ class ForensicHistoryPopup(QWidget):
                                                         popup_self.extracted_container.update()
                                         return toggle
 
-                                toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self)
+                                toggle_fn = make_toggle(toggle_btn, body_text, entry_frame, self, drag_bar)
                                 toggle_btn.clicked.connect(toggle_fn)
                                 date_label.mousePressEvent = lambda e, fn=toggle_fn: fn()
 
                                 self.extracted_checkboxes_layout.addWidget(entry_frame)
                                 self._extracted_checkboxes.append(cb)
 
+                        self.extracted_checkboxes_layout.addStretch()
                         self.extracted_section.setVisible(True)
                         # Keep collapsed on open
                         # if self.extracted_section._is_collapsed:
@@ -1513,8 +1554,7 @@ class ForensicHistoryPopup(QWidget):
                 """Send current text to card immediately."""
                 import copy
                 text = self.formatted_text()
-                if text:
-                        self.sent.emit(text, copy.deepcopy(self.state))
+                self.sent.emit(text, copy.deepcopy(self.state))
 
         def _emit(self):
                 import copy

@@ -95,7 +95,41 @@ struct GeneralPsychReportView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            // Transparent header bar
+            HStack {
+                Button("Cancel") { dismiss() }
+                Spacer()
+                Text("General Psychiatric Report")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+                HStack(spacing: 16) {
+                    if let message = importStatusMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                    if isImporting {
+                        ProgressView().progressViewStyle(.circular)
+                    } else {
+                        Button { showingImportPicker = true } label: {
+                            Image(systemName: "square.and.arrow.down")
+                        }
+                    }
+                    if isExporting {
+                        ProgressView()
+                    } else {
+                        Button { exportDOCX() } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+
             ScrollView {
                 LazyVStack(spacing: 16) {
                     if let error = exportError {
@@ -119,44 +153,9 @@ struct GeneralPsychReportView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("General Psychiatric Report")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        if let message = importStatusMessage {
-                            Text(message)
-                                .font(.caption)
-                                .foregroundColor(.green)
-                        }
-
-                        if isImporting {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                        } else {
-                            Button {
-                                showingImportPicker = true
-                            } label: {
-                                Image(systemName: "square.and.arrow.down")
-                            }
-                        }
-
-                        if isExporting {
-                            ProgressView()
-                        } else {
-                            Button {
-                                exportDOCX()
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                        }
-                    }
-                }
-            }
+        }
+        .background {
+            Rectangle().fill(.thickMaterial).ignoresSafeArea()
         }
         .onAppear {
             prefillFromSharedData()
@@ -169,6 +168,13 @@ struct GeneralPsychReportView: View {
         .onReceive(sharedData.notesDidChange) { notes in
             if !notes.isEmpty {
                 populateFromClinicalNotesAsync(notes)
+            }
+        }
+        .onReceive(sharedData.patientInfoDidChange) { patientInfo in
+            if !patientInfo.fullName.isEmpty {
+                formData.patientName = patientInfo.fullName
+                formData.patientDOB = patientInfo.dateOfBirth
+                formData.patientGender = patientInfo.gender
             }
         }
         .sheet(item: $activePopup) { section in
@@ -319,6 +325,9 @@ struct GeneralPsychReportView: View {
                         }
 
                         if !extractedDoc.patientInfo.fullName.isEmpty {
+                            // Set in SharedDataStore so other views get notified
+                            sharedData.setPatientInfo(extractedDoc.patientInfo, source: "gpr_import")
+                            // Also set locally for immediate display
                             formData.patientName = extractedDoc.patientInfo.fullName
                             if let dob = extractedDoc.patientInfo.dateOfBirth {
                                 formData.patientDOB = dob
@@ -391,27 +400,113 @@ struct GeneralPsychReportView: View {
         let mostRecentAdmission = inpatientEpisodes.last
 
         // === SECTION 6: Find admission clerkings ===
+        // Desktop find_clerkings_rio EXACT LOGIC:
+        // 1. Filter to MEDICAL notes only (type contains "med", "doctor", "clinician", "physician")
+        // 2. Check for CLERKING_TRIGGERS in content OR ROLE_TRIGGERS in originator
         var seenClerkingKeys: Set<String> = []
         var allClerkingsForEpisode: [(date: Date, text: String, admissionDate: Date)] = []
 
+        // Desktop CLERKING_TRIGGERS_RIO (content triggers)
+        let clerkingTriggers = [
+            "admission clerking", "clerking", "duty doctor admission",
+            "new admission", "new transfer", "circumstances of admission",
+            "circumstances leading to admission", "new client assessment"
+        ]
+
+        // Desktop ROLE_TRIGGERS_RIO (originator/content role triggers)
+        let roleTriggers = [
+            "physician associate", "medical", "senior house officer",
+            "sho", "ct1", "ct2", "ct3", "st4", "doctor"
+        ]
+
         for episode in inpatientEpisodes {
             let admissionStart = episode.start
-            let windowEnd = calendar.date(byAdding: .day, value: 14, to: admissionStart) ?? admissionStart
+            let windowEnd = calendar.date(byAdding: .day, value: 10, to: admissionStart) ?? admissionStart  // Desktop uses 10 days
 
             let windowNotes = notes.filter { note in
                 let noteDay = calendar.startOfDay(for: note.date)
                 return noteDay >= admissionStart && noteDay <= windowEnd
             }.sorted { $0.date < $1.date }
 
+            // Desktop: Filter to MEDICAL notes ONLY first
+            // is_medical_type checks: "med" in t or "doctor" in t or "clinician" in t or "physician" in t
+            let medicalNotes = windowNotes.filter { note in
+                let typeLower = note.type.lowercased()
+                return typeLower.contains("med") ||
+                       typeLower.contains("doctor") ||
+                       typeLower.contains("clinician") ||
+                       typeLower.contains("physician")
+            }
+
+            print("[GPR iOS] Window \(admissionStart) -> \(windowEnd): \(windowNotes.count) notes, \(medicalNotes.count) medical")
+
             var firstClerkingDate: Date? = nil
-            for note in windowNotes {
-                if AdmissionKeywords.noteIndicatesAdmission(note.body) {
-                    let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(100)))"
-                    if !seenClerkingKeys.contains(key) {
-                        seenClerkingKeys.insert(key)
-                        allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
-                        if firstClerkingDate == nil {
-                            firstClerkingDate = note.date
+            for note in medicalNotes {
+                let bodyLower = note.body.lowercased()
+
+                // Check for clerking triggers in content
+                let hasClerkingTrigger = clerkingTriggers.contains { trigger in
+                    bodyLower.contains(trigger)
+                }
+
+                // Check for role triggers in author (fallback) - desktop uses "originator", iOS uses "author"
+                let authorLower = note.author.lowercased()
+                let hasRoleTriggerInAuthor = roleTriggers.contains { role in
+                    authorLower.contains(role)
+                }
+
+                // Desktop logic: note must have clerking trigger OR author role trigger
+                if !hasClerkingTrigger && !hasRoleTriggerInAuthor {
+                    continue
+                }
+
+                let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(120)))"
+                if !seenClerkingKeys.contains(key) {
+                    seenClerkingKeys.insert(key)
+                    allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
+                    if firstClerkingDate == nil {
+                        firstClerkingDate = note.date
+                    }
+                    print("[GPR iOS] Found MEDICAL clerking: \(note.body.count) chars, type=\(note.type), trigger=\(hasClerkingTrigger), author=\(hasRoleTriggerInAuthor)")
+                }
+            }
+
+            // FALLBACK: If no medical clerkings found for THIS episode, try ALL window notes with history sections
+            let foundInThisEpisode = allClerkingsForEpisode.contains { $0.admissionDate == admissionStart }
+            if !foundInThisEpisode {
+                print("[GPR iOS] No medical clerkings found for episode \(admissionStart), trying fallback...")
+                for note in windowNotes {
+                    let bodyLower = note.body.lowercased()
+
+                    // Check for history section headers - more flexible matching
+                    // Check both newline prefix AND start of note
+                    let hasPersonalHistory = bodyLower.contains("\npersonal history") ||
+                                             bodyLower.hasPrefix("personal history")
+                    let hasBackgroundHistory = bodyLower.contains("\nbackground history") ||
+                                               bodyLower.hasPrefix("background history")
+                    let hasPastMedicalHistory = bodyLower.contains("\npast medical history") ||
+                                                bodyLower.hasPrefix("past medical history")
+                    let hasForensicHistory = bodyLower.contains("\nforensic history") ||
+                                             bodyLower.hasPrefix("forensic history")
+                    let hasMSE = bodyLower.contains("\nmental state examination") ||
+                                 bodyLower.hasPrefix("mental state examination") ||
+                                 bodyLower.contains("\nmse") ||
+                                 bodyLower.hasPrefix("mse")
+
+                    let hasHistorySection = hasPersonalHistory || hasBackgroundHistory ||
+                                            hasPastMedicalHistory || hasForensicHistory || hasMSE
+
+                    // Note is a clerking if it has history sections AND is substantial (>500 chars)
+                    let isSubstantial = note.body.count > 500
+                    if hasHistorySection && isSubstantial {
+                        let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(120)))"
+                        if !seenClerkingKeys.contains(key) {
+                            seenClerkingKeys.insert(key)
+                            allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
+                            if firstClerkingDate == nil {
+                                firstClerkingDate = note.date
+                            }
+                            print("[GPR iOS] Found FALLBACK clerking: \(note.body.count) chars, type=\(note.type), hasPersonal=\(hasPersonalHistory)")
                         }
                     }
                 }
@@ -447,6 +542,30 @@ struct GeneralPsychReportView: View {
             ))
         }
 
+        // GLOBAL FALLBACK: If still no clerkings found, search ALL notes for Personal history sections
+        if allClerkingsForEpisode.isEmpty {
+            print("[GPR iOS] GLOBAL FALLBACK: No clerkings found, searching ALL notes for Personal history...")
+            for note in notes {
+                let bodyLower = note.body.lowercased()
+
+                // Check for Personal history section (the key indicator of a detailed clerking)
+                let hasPersonalHistory = bodyLower.contains("\npersonal history") ||
+                                         bodyLower.contains("personal history:") ||
+                                         bodyLower.hasPrefix("personal history")
+
+                if hasPersonalHistory && note.body.count > 500 {
+                    let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(120)))"
+                    if !seenClerkingKeys.contains(key) {
+                        seenClerkingKeys.insert(key)
+                        allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: note.date))
+                        print("[GPR iOS] GLOBAL FALLBACK: Found note with Personal history: \(note.body.count) chars, type=\(note.type)")
+                    }
+                }
+            }
+        }
+
+        print("[GPR iOS] Total clerkings found: \(allClerkingsForEpisode.count)")
+
         // Store clerkings as GPRImportedEntry
         for clerking in allClerkingsForEpisode {
             result.clerkingNotes.append(GPRImportedEntry(
@@ -470,47 +589,11 @@ struct GeneralPsychReportView: View {
                 ))
             }
 
-            // Background
-            if let bgSection = extractSectionStatic(from: note.body, sectionHeadings: [
-                "background history", "personal history", "social history", "family history",
-                "developmental history", "early history", "past and personal history"
-            ]) {
-                result.backgroundImportedEntries.append(GPRImportedEntry(
-                    date: note.date,
-                    text: bgSection,
-                    snippet: String(bgSection.prefix(150)),
-                    categories: ["Background"]
-                ))
-            }
+            // NOTE: Background is extracted from CLERKINGS only (like desktop), not all notes
+            // See the clerkings loop below for background extraction
 
-            // Medical history - matching desktop extraction (history_extractor_sections.py)
-            // Uses PHYSICAL HEALTH PRECISION GUARD to exclude psychiatric content
-            let medicalHeadings = [
-                "past medical history", "medical history", "pmh",
-                "physical health", "physical hx", "physical health history",
-                "comorbidities", "comorbid"
-            ]
-            let psychiatricTerms = [
-                "delusion", "delusional", "hallucination", "hallucinating",
-                "insight", "thought", "affect", "mood", "mental state", "mse",
-                "behaviour", "behavior", "psychotic", "paranoid"
-            ]
-
-            if let medSection = extractSectionStatic(from: note.body, sectionHeadings: medicalHeadings) {
-                // Apply PHYSICAL HEALTH PRECISION GUARD
-                let medLower = medSection.lowercased()
-                let hasPsychiatricContent = psychiatricTerms.contains { medLower.contains($0) }
-
-                if !hasPsychiatricContent {
-                    let medCategories = GPRCategoryKeywords.categorize(medSection, using: GPRCategoryKeywords.medicalHistory)
-                    result.medicalHistoryImported.append(GPRImportedEntry(
-                        date: note.date,
-                        text: medSection,
-                        snippet: String(medSection.prefix(150)),
-                        categories: medCategories.isEmpty ? ["Medical"] : medCategories
-                    ))
-                }
-            }
+            // NOTE: Medical history is extracted from CLERKINGS only (like desktop), not all notes
+            // See the clerkings loop below for medical history extraction
 
             // Substance use with highlighting
             if let substanceResult = GPRCategoryKeywords.categorizeSubstanceWithContext(note.body) {
@@ -537,12 +620,79 @@ struct GeneralPsychReportView: View {
             }
         }
 
-        // Medical history from clerkings (matching desktop approach)
-        // Desktop extracts medical history from ALL clerkings, similar to forensic
+        // Background history from CLERKINGS ONLY (matching desktop and Section 5 approach)
+        // Desktop extracts from admission clerkings which have detailed "Personal history:" sections
+        // CPA review notes have "Relevant Social History" which we want to SKIP
+        print("[GPR iOS] Extracting background from \(result.clerkingNotes.count) clerkings only")
+
+        // Use specific headings that appear in actual clerkings, NOT CPA review templates
+        // "Personal history:" is in clerkings, "Relevant Social History" is in CPA reviews
+        let backgroundHeadings = [
+            "personal history", "background history", "family history",
+            "developmental history", "early history", "past and personal history",
+            "personal and social history"
+        ]
+
+        for clerking in result.clerkingNotes {
+            if let bgSection = extractSectionStatic(from: clerking.text, sectionHeadings: backgroundHeadings) {
+                // Only keep sections with substantial content (>200 chars for background)
+                if bgSection.count > 200 {
+                    let bgCategories = GPRCategoryKeywords.categorize(bgSection, using: GPRCategoryKeywords.background)
+                    result.backgroundImportedEntries.append(GPRImportedEntry(
+                        date: clerking.date,
+                        text: bgSection,
+                        snippet: String(bgSection.prefix(200)),
+                        categories: bgCategories.isEmpty ? ["Background"] : bgCategories
+                    ))
+                    print("[GPR iOS] Found background in clerking: \(bgSection.count) chars")
+                }
+            }
+        }
+
+        // Sort by length (longest first) to prioritize most detailed
+        result.backgroundImportedEntries.sort { $0.text.count > $1.text.count }
+
+        print("[GPR iOS] Found \(result.backgroundImportedEntries.count) background entries from clerkings")
+
+        // ADDITIONAL: Search ALL notes for Personal history sections (to find more background entries)
+        // This expands beyond just clerkings to catch any note with detailed personal history
+        var seenBackgroundTexts = Set(result.backgroundImportedEntries.map { String($0.text.prefix(200)) })
+        for note in notes {
+            if let bgSection = extractSectionStatic(from: note.body, sectionHeadings: backgroundHeadings) {
+                // Only keep substantial sections (>200 chars) that aren't duplicates
+                let textKey = String(bgSection.prefix(200))
+                if bgSection.count > 200 && !seenBackgroundTexts.contains(textKey) {
+                    // Skip CPA review template content
+                    let bgLower = bgSection.lowercased()
+                    let isCPATemplate = bgLower.contains("relevant social history") ||
+                                        bgLower.contains("daily function") ||
+                                        bgLower.contains("current illegal drugs")
+                    if !isCPATemplate {
+                        seenBackgroundTexts.insert(textKey)
+                        let bgCategories = GPRCategoryKeywords.categorize(bgSection, using: GPRCategoryKeywords.background)
+                        result.backgroundImportedEntries.append(GPRImportedEntry(
+                            date: note.date,
+                            text: bgSection,
+                            snippet: String(bgSection.prefix(200)),
+                            categories: bgCategories.isEmpty ? ["Background"] : bgCategories
+                        ))
+                        print("[GPR iOS] Found ADDITIONAL background in note: \(bgSection.count) chars")
+                    }
+                }
+            }
+        }
+
+        // Re-sort by length after adding more entries
+        result.backgroundImportedEntries.sort { $0.text.count > $1.text.count }
+        print("[GPR iOS] Total background entries after broad search: \(result.backgroundImportedEntries.count)")
+
+        // Medical history from clerkings ONLY (matching desktop approach)
+        // Desktop extracts medical history from admission clerkings, NOT all notes
+        print("[GPR iOS] Extracting medical history from \(result.clerkingNotes.count) clerkings (not all notes)")
         let medHistoryHeadings = [
             "past medical history", "medical history", "pmh",
             "physical health", "physical hx", "physical health history",
-            "comorbidities", "comorbid"
+            "comorbidities", "comorbid", "physical examination", "ecg"
         ]
         let psyExclusionTerms = [
             "delusion", "delusional", "hallucination", "hallucinating",
@@ -563,25 +713,33 @@ struct GeneralPsychReportView: View {
                         snippet: String(pmhSection.prefix(200)),
                         categories: medCategories.isEmpty ? ["Medical History"] : medCategories
                     ))
+                    print("[GPR iOS] Found PMH in clerking: \(String(pmhSection.prefix(60)))...")
                 }
             }
         }
+        print("[GPR iOS] Found \(result.medicalHistoryImported.count) medical history entries from clerkings")
 
-        // Circumstances - last 7 days relative to most recent admission
-        if let admissionDate = mostRecentAdmission?.start {
-            let windowStart = calendar.date(byAdding: .day, value: -7, to: admissionDate) ?? admissionDate
-            let windowEnd = calendar.date(byAdding: .day, value: 7, to: admissionDate) ?? admissionDate
+        // Circumstances - ALL notes from the last admission period (matching desktop TribunalProgressPopup)
+        // Desktop: Uses notes from admission start to end of admission OR admission + 14 days (whichever is later)
+        if let lastAdmission = mostRecentAdmission {
+            let admissionStart = lastAdmission.start
+            let admissionEnd = lastAdmission.end
+            // Use the full admission period, or at least 14 days from admission
+            let minWindowEnd = calendar.date(byAdding: .day, value: 14, to: admissionStart) ?? admissionStart
+            let windowEnd = max(admissionEnd, minWindowEnd)
 
             let circumstancesNotes = notes.filter { note in
-                return note.date >= windowStart && note.date <= windowEnd
+                return note.date >= admissionStart && note.date <= windowEnd
             }.sorted { $0.date < $1.date }
+
+            print("[GPR iOS] Circumstances: Using last admission period \(admissionStart) to \(windowEnd), found \(circumstancesNotes.count) notes")
 
             for note in circumstancesNotes {
                 result.circumstancesImported.append(GPRImportedEntry(
                     date: note.date,
                     text: note.body,
                     snippet: String(note.body.prefix(150)),
-                    categories: ["Circumstances"]
+                    categories: ["Admission Period"]
                 ))
             }
         }
@@ -775,6 +933,8 @@ struct GeneralPsychReportView: View {
         }
 
         print("[GPR iOS] Found \(diagnosisFindings.count) diagnosis mentions, \(bestByCategory.count) unique categories")
+        print("[GPR iOS] Background: \(result.backgroundImportedEntries.count) entries from CLERKINGS only")
+        print("[GPR iOS] Medical history: \(result.medicalHistoryImported.count) entries from CLERKINGS only")
         print("[GPR iOS] Background computation complete")
         return result
     }
@@ -806,75 +966,115 @@ struct GeneralPsychReportView: View {
     }
 
     /// Static version of extractSection for background thread use
+    /// Matches desktop history_extractor_sections.py _detect_header logic exactly
     private static func extractSectionStatic(from text: String, sectionHeadings: [String]) -> String? {
         let lines = text.components(separatedBy: .newlines)
         // Common headings that indicate section boundaries (matches desktop CATEGORIES_ORDERED and HARD_OVERRIDE_HEADINGS)
+        // Also includes common RiO progress note section headers to detect boundaries
         let allHeadings = [
+            // Clinical history sections
             "background history", "personal history", "social history", "family history",
             "developmental history", "early history", "past and personal history",
             "past psychiatric history", "psychiatric history", "mental health history", "pph",
             "history of presenting complaint", "presenting complaint", "hpc",
             "past medical history", "medical history", "pmh", "physical health",
-            // Drug and alcohol headings - critical for proper section boundaries
+            // Drug and alcohol headings
             "drug and alcohol", "drug and alcohol history", "drug history", "alcohol history",
             "substance use", "substance misuse", "substance", "illicit",
-            // Forensic and other
+            // Forensic and clinical
             "forensic history", "forensic", "offence", "offending", "criminal", "police", "charges", "index offence",
             "mental state", "mse", "mental state examination", "risk", "impression", "plan", "diagnosis",
-            "medication", "medication history", "current medication", "physical examination", "summary", "capacity", "ecg"
+            "medication", "medication history", "current medication", "physical examination", "summary", "capacity", "ecg",
+            // Common RiO progress note headers that END medical history sections
+            "finances", "finance", "accommodation", "leave", "section", "legal status",
+            "occupational therapy", "ot", "psychology", "nursing", "social work", "sw",
+            "cpa", "care plan", "review", "follow up", "follow-up", "next steps",
+            "actions", "outcome", "progress", "update", "contact", "telephone",
+            "activities", "engagement", "presentation", "observations", "obs level",
+            "safeguarding", "discharge", "transfer", "referral"
         ]
+
+        // Helper to detect headers - matches desktop _detect_header exactly
+        // Desktop logic: if ":" not in line and "-" not in line: if len(words) <= 2 and nl not in HEADER_LOOKUP: return None
+        // Then checks: nl == term or nl.startswith(term)
+        func isHeaderLine(_ line: String, for headings: [String]) -> String? {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let lower = trimmed.lowercased()
+            let words = trimmed.split(separator: " ")
+
+            // Desktop: lines without : or - must have <= 2 words to be considered headers
+            // (unless they exactly match a known header)
+            let hasColon = line.contains(":")
+            let hasDash = line.contains("-")
+
+            // Clean the line for matching (remove : and normalize -)
+            let cleanedLine = lower
+                .replacingOccurrences(of: ":", with: "")
+                .replacingOccurrences(of: "-", with: " ")
+                .trimmingCharacters(in: .whitespaces)
+
+            for heading in headings {
+                // Desktop: nl == term or nl.startswith(term)
+                if cleanedLine == heading || cleanedLine.hasPrefix(heading + " ") || lower.hasPrefix(heading) {
+                    return heading
+                }
+            }
+
+            // For short lines (<=2 words) with colon/dash, also check if line starts with heading
+            if (hasColon || hasDash) && words.count <= 4 {
+                for heading in headings {
+                    if cleanedLine.hasPrefix(heading) {
+                        return heading
+                    }
+                }
+            }
+
+            return nil
+        }
 
         var sectionStartLine: Int? = nil
         var matchedHeading: String? = nil
 
+        // Find the line where our target section starts
         for (index, line) in lines.enumerated() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
-            let cleanedLine = trimmed
-                .replacingOccurrences(of: ":", with: "")
-                .replacingOccurrences(of: "-", with: " ")
-                .trimmingCharacters(in: .whitespaces)
-
-            for heading in sectionHeadings {
-                if cleanedLine == heading ||
-                   cleanedLine.hasPrefix(heading + " ") ||
-                   cleanedLine.hasSuffix(" " + heading) ||
-                   (cleanedLine.count < 50 && cleanedLine.contains(heading)) {
-                    sectionStartLine = index
-                    matchedHeading = heading
-                    break
-                }
+            if let heading = isHeaderLine(line, for: sectionHeadings) {
+                sectionStartLine = index
+                matchedHeading = heading
+                break
             }
-            if sectionStartLine != nil { break }
         }
 
-        guard let startLine = sectionStartLine else { return nil }
+        guard let startLine = sectionStartLine, let heading = matchedHeading else { return nil }
 
         var sectionEndLine = lines.count
 
+        // Find where the section ends (next header line)
         for index in (startLine + 1)..<lines.count {
-            let trimmed = lines[index].trimmingCharacters(in: .whitespaces).lowercased()
-            let cleanedLine = trimmed
-                .replacingOccurrences(of: ":", with: "")
-                .replacingOccurrences(of: "-", with: " ")
-                .trimmingCharacters(in: .whitespaces)
+            let line = lines[index]
+            if line.trimmingCharacters(in: .whitespaces).isEmpty { continue }
 
-            if cleanedLine.isEmpty { continue }
-
-            for heading in allHeadings {
-                if heading == matchedHeading { continue }
-
-                if cleanedLine == heading ||
-                   cleanedLine.hasPrefix(heading + " ") ||
-                   cleanedLine.hasSuffix(" " + heading) ||
-                   (cleanedLine.count < 50 && cleanedLine.contains(heading)) {
+            if let nextHeading = isHeaderLine(line, for: allHeadings) {
+                if nextHeading != heading {
                     sectionEndLine = index
                     break
                 }
             }
-            if sectionEndLine < lines.count { break }
         }
 
-        let contentLines = Array(lines[(startLine + 1)..<sectionEndLine])
+        // Get content AFTER the header line
+        var contentLines = Array(lines[(startLine + 1)..<sectionEndLine])
+
+        // IMPORTANT: Also extract any inline content from the header line itself
+        // e.g., "Personal history: Ms Adeniyi was born..." - the content after ":" is on the same line
+        let headerLine = lines[startLine]
+        if let colonRange = headerLine.range(of: ":") {
+            let afterColon = String(headerLine[colonRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+            if !afterColon.isEmpty {
+                // Prepend the inline content
+                contentLines.insert(afterColon, at: 0)
+            }
+        }
+
         let content = contentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
 
         return content.isEmpty ? nil : content
@@ -916,13 +1116,28 @@ struct GeneralPsychReportView: View {
         let calendar = Calendar.current
 
         // === SECTION 6: PSYCHIATRIC HISTORY - Populate admissions table and find clerking notes ===
-        // This matches desktop history_extractor_sections.py find_clerkings_rio logic
+        // Desktop find_clerkings_rio EXACT LOGIC:
+        // 1. Filter to MEDICAL notes only (type contains "med", "doctor", "clinician", "physician")
+        // 2. Check for CLERKING_TRIGGERS in content OR ROLE_TRIGGERS in originator
         var seenClerkingKeys: Set<String> = []
         var allClerkingsForEpisode: [(date: Date, text: String, admissionDate: Date)] = []
 
+        // Desktop CLERKING_TRIGGERS_RIO (content triggers)
+        let clerkingTriggers = [
+            "admission clerking", "clerking", "duty doctor admission",
+            "new admission", "new transfer", "circumstances of admission",
+            "circumstances leading to admission", "new client assessment"
+        ]
+
+        // Desktop ROLE_TRIGGERS_RIO (originator/content role triggers)
+        let roleTriggers = [
+            "physician associate", "medical", "senior house officer",
+            "sho", "ct1", "ct2", "ct3", "st4", "doctor"
+        ]
+
         for episode in inpatientEpisodes {
             let admissionStart = episode.start
-            let windowEnd = calendar.date(byAdding: .day, value: 14, to: admissionStart) ?? admissionStart
+            let windowEnd = calendar.date(byAdding: .day, value: 10, to: admissionStart) ?? admissionStart  // Desktop uses 10 days
 
             // Get notes in the admission window, sorted by date
             let windowNotes = notes.filter { note in
@@ -930,17 +1145,86 @@ struct GeneralPsychReportView: View {
                 return noteDay >= admissionStart && noteDay <= windowEnd
             }.sorted { $0.date < $1.date }
 
-            // Find ALL admission clerking notes in window (not just the first - matches desktop)
+            // Desktop: Filter to MEDICAL notes ONLY first
+            // is_medical_type checks: "med" in t or "doctor" in t or "clinician" in t or "physician" in t
+            let medicalNotes = windowNotes.filter { note in
+                let typeLower = note.type.lowercased()
+                return typeLower.contains("med") ||
+                       typeLower.contains("doctor") ||
+                       typeLower.contains("clinician") ||
+                       typeLower.contains("physician")
+            }
+
+            print("[GPR iOS SYNC] Window \(admissionStart) -> \(windowEnd): \(windowNotes.count) notes, \(medicalNotes.count) medical")
+
+            // Find clerkings from medical notes
             var firstClerkingDate: Date? = nil
-            for note in windowNotes {
-                if AdmissionKeywords.noteIndicatesAdmission(note.body) {
-                    let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(100)))"
-                    if !seenClerkingKeys.contains(key) {
-                        seenClerkingKeys.insert(key)
-                        allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
-                        // Track first clerking date for admission table
-                        if firstClerkingDate == nil {
-                            firstClerkingDate = note.date
+            for note in medicalNotes {
+                let bodyLower = note.body.lowercased()
+
+                // Check for clerking triggers in content
+                let hasClerkingTrigger = clerkingTriggers.contains { trigger in
+                    bodyLower.contains(trigger)
+                }
+
+                // Check for role triggers in author (fallback) - desktop uses "originator", iOS uses "author"
+                let authorLower = note.author.lowercased()
+                let hasRoleTriggerInAuthor = roleTriggers.contains { role in
+                    authorLower.contains(role)
+                }
+
+                // Desktop logic: note must have clerking trigger OR author role trigger
+                if !hasClerkingTrigger && !hasRoleTriggerInAuthor {
+                    continue
+                }
+
+                let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(120)))"
+                if !seenClerkingKeys.contains(key) {
+                    seenClerkingKeys.insert(key)
+                    allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
+                    if firstClerkingDate == nil {
+                        firstClerkingDate = note.date
+                    }
+                    print("[GPR iOS SYNC] Found MEDICAL clerking: \(note.body.count) chars, type=\(note.type), trigger=\(hasClerkingTrigger), author=\(hasRoleTriggerInAuthor)")
+                }
+            }
+
+            // FALLBACK: If no medical clerkings found for THIS episode, try ALL window notes with history sections
+            let foundInThisEpisode = allClerkingsForEpisode.contains { $0.admissionDate == admissionStart }
+            if !foundInThisEpisode {
+                print("[GPR iOS SYNC] No medical clerkings found for episode \(admissionStart), trying fallback...")
+                for note in windowNotes {
+                    let bodyLower = note.body.lowercased()
+
+                    // Check for history section headers - more flexible matching
+                    // Check both newline prefix AND start of note
+                    let hasPersonalHistory = bodyLower.contains("\npersonal history") ||
+                                             bodyLower.hasPrefix("personal history")
+                    let hasBackgroundHistory = bodyLower.contains("\nbackground history") ||
+                                               bodyLower.hasPrefix("background history")
+                    let hasPastMedicalHistory = bodyLower.contains("\npast medical history") ||
+                                                bodyLower.hasPrefix("past medical history")
+                    let hasForensicHistory = bodyLower.contains("\nforensic history") ||
+                                             bodyLower.hasPrefix("forensic history")
+                    let hasMSE = bodyLower.contains("\nmental state examination") ||
+                                 bodyLower.hasPrefix("mental state examination") ||
+                                 bodyLower.contains("\nmse") ||
+                                 bodyLower.hasPrefix("mse")
+
+                    let hasHistorySection = hasPersonalHistory || hasBackgroundHistory ||
+                                            hasPastMedicalHistory || hasForensicHistory || hasMSE
+
+                    // Note is a clerking if it has history sections AND is substantial (>500 chars)
+                    let isSubstantial = note.body.count > 500
+                    if hasHistorySection && isSubstantial {
+                        let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(120)))"
+                        if !seenClerkingKeys.contains(key) {
+                            seenClerkingKeys.insert(key)
+                            allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: admissionStart))
+                            if firstClerkingDate == nil {
+                                firstClerkingDate = note.date
+                            }
+                            print("[GPR iOS SYNC] Found FALLBACK clerking: \(note.body.count) chars, type=\(note.type), hasPersonal=\(hasPersonalHistory)")
                         }
                     }
                 }
@@ -1008,6 +1292,30 @@ struct GeneralPsychReportView: View {
             }
         }
 
+        // GLOBAL FALLBACK: If still no clerkings found, search ALL notes for Personal history sections
+        if allClerkingsForEpisode.isEmpty {
+            print("[GPR iOS SYNC] GLOBAL FALLBACK: No clerkings found, searching ALL notes for Personal history...")
+            for note in notes {
+                let bodyLower = note.body.lowercased()
+
+                // Check for Personal history section (the key indicator of a detailed clerking)
+                let hasPersonalHistory = bodyLower.contains("\npersonal history") ||
+                                         bodyLower.contains("personal history:") ||
+                                         bodyLower.hasPrefix("personal history")
+
+                if hasPersonalHistory && note.body.count > 500 {
+                    let key = "\(calendar.startOfDay(for: note.date))-\(String(note.body.prefix(120)))"
+                    if !seenClerkingKeys.contains(key) {
+                        seenClerkingKeys.insert(key)
+                        allClerkingsForEpisode.append((date: note.date, text: note.body, admissionDate: note.date))
+                        print("[GPR iOS SYNC] GLOBAL FALLBACK: Found note with Personal history: \(note.body.count) chars, type=\(note.type)")
+                    }
+                }
+            }
+        }
+
+        print("[GPR iOS SYNC] Total clerkings found: \(allClerkingsForEpisode.count)")
+
         // === SECTION 9: FORENSIC HISTORY - Extract from ALL clerkings (matches desktop) ===
         // Desktop extracts forensic history from ALL clerkings found, not just one per admission
         for clerking in allClerkingsForEpisode {
@@ -1029,11 +1337,11 @@ struct GeneralPsychReportView: View {
 
         // === SECTION 5: MEDICAL HISTORY - Extract from ALL clerkings (matches desktop) ===
         // Desktop extracts medical history from ALL clerkings, with precision guard for psychiatric terms
-        // Section headings match desktop: history_extractor_sections.py
+        // Section headings match desktop: history_extractor_sections.py and data_extractor_popup.py
         let medicalHistoryHeadings = [
             "past medical history", "medical history", "pmh",
             "physical health", "physical hx", "physical health history",
-            "comorbidities", "comorbid"
+            "comorbidities", "comorbid", "physical examination", "ecg"
         ]
 
         // Psychiatric exclusion terms (PHYSICAL HEALTH PRECISION GUARD from desktop)
@@ -1066,6 +1374,30 @@ struct GeneralPsychReportView: View {
 
         print("[GPR iOS] Populated: \(formData.admissionsTableData.count) admissions, \(formData.clerkingNotes.count) clerking notes, \(allClerkingsForEpisode.count) total clerkings for forensic/medical")
 
+        // === FALLBACK: If no medical history found from clerkings, search ALL notes ===
+        // This matches how desktop data_extractor_popup.py searches all content for PHYSICAL_HEALTH category
+        if formData.medicalHistoryImported.isEmpty {
+            print("[GPR iOS] No medical history found in clerkings, searching all notes...")
+            for note in notes {
+                if let pmhSection = extractSection(from: note.body, sectionHeadings: medicalHistoryHeadings) {
+                    let pmhLower = pmhSection.lowercased()
+                    let hasPsychiatricContent = psychiatricExclusionTerms.contains { pmhLower.contains($0) }
+
+                    if !hasPsychiatricContent {
+                        let sectionSnippet = pmhSection.count > 150 ? String(pmhSection.prefix(150)) + "..." : pmhSection
+                        let medicalCategories = GPRCategoryKeywords.categorize(pmhSection, using: GPRCategoryKeywords.medicalHistory)
+                        formData.medicalHistoryImported.append(GPRImportedEntry(
+                            date: note.date,
+                            text: pmhSection,
+                            snippet: sectionSnippet,
+                            categories: medicalCategories.isEmpty ? ["Medical History"] : medicalCategories
+                        ))
+                    }
+                }
+            }
+            print("[GPR iOS] Found \(formData.medicalHistoryImported.count) medical history entries from all notes")
+        }
+
         // Process each note for other sections
         for note in notes {
             let text = note.body
@@ -1074,10 +1406,14 @@ struct GeneralPsychReportView: View {
             let noteDay = calendar.startOfDay(for: date)
 
             // === CIRCUMSTANCES (Section 3) ===
-            // Only include notes from most recent admission to 2 weeks post admission
+            // Include ALL notes from the last admission period (matching desktop TribunalProgressPopup)
+            // Use full admission period OR at least 14 days from admission start
             if let recentAdmission = mostRecentAdmission {
-                let windowEnd = calendar.date(byAdding: .day, value: 14, to: recentAdmission.start) ?? recentAdmission.start
-                if noteDay >= recentAdmission.start && noteDay <= windowEnd {
+                let admissionStart = recentAdmission.start
+                let admissionEnd = recentAdmission.end
+                let minWindowEnd = calendar.date(byAdding: .day, value: 14, to: admissionStart) ?? admissionStart
+                let windowEnd = max(admissionEnd, minWindowEnd)
+                if noteDay >= admissionStart && noteDay <= windowEnd {
                     formData.circumstancesImported.append(GPRImportedEntry(
                         date: date,
                         text: text,
@@ -1087,32 +1423,7 @@ struct GeneralPsychReportView: View {
                 }
             }
 
-            // === BACKGROUND (Section 4) - extract only background section from admission clerkings ===
-            // Only include the relevant background section from admission clerking notes (matching desktop)
-            for episode in inpatientEpisodes {
-                let windowEnd = calendar.date(byAdding: .day, value: 14, to: episode.start) ?? episode.start
-                if noteDay >= episode.start && noteDay <= windowEnd {
-                    // Check if this note indicates admission using AdmissionKeywords
-                    if AdmissionKeywords.noteIndicatesAdmission(text) {
-                        // Extract only the background section from the note
-                        if let backgroundSection = extractSection(from: text, sectionHeadings: [
-                            "background history", "personal history", "social history",
-                            "family history", "developmental history", "early history",
-                            "past and personal history", "personal and social history"
-                        ]) {
-                            let sectionSnippet = backgroundSection.count > 150 ? String(backgroundSection.prefix(150)) + "..." : backgroundSection
-                            let backgroundCategories = GPRCategoryKeywords.categorize(backgroundSection, using: GPRCategoryKeywords.background)
-                            formData.backgroundImportedEntries.append(GPRImportedEntry(
-                                date: date,
-                                text: backgroundSection,
-                                snippet: sectionSnippet,
-                                categories: backgroundCategories.isEmpty ? ["Background"] : backgroundCategories
-                            ))
-                        }
-                        break // Only check once per note
-                    }
-                }
-            }
+            // === BACKGROUND (Section 4) - now extracted separately below after all notes processed ===
 
             // === RISK (Section 7) - search all notes with specific incident patterns (matching desktop) ===
             // Extract only the relevant context (matched line + 2 lines before/after) instead of full note
@@ -1158,6 +1469,70 @@ struct GeneralPsychReportView: View {
                 formData.legalCriteriaImported.append(GPRImportedEntry(date: date, text: text, snippet: snippet, categories: legalCategories))
             }
         }
+
+        // === BACKGROUND (Section 4) - Extract from CLERKINGS ONLY (matching Section 5 approach) ===
+        // Desktop extracts from admission clerkings which have detailed "Personal history:" sections
+        // CPA review notes have "Relevant Social History" which we want to SKIP
+        print("[GPR iOS SYNC] Extracting background from \(allClerkingsForEpisode.count) clerkings only")
+
+        // Use specific headings that appear in actual clerkings, NOT CPA review templates
+        let backgroundHeadings = [
+            "personal history", "background history", "family history",
+            "developmental history", "early history", "past and personal history",
+            "personal and social history"
+        ]
+
+        for clerking in allClerkingsForEpisode {
+            if let bgSection = extractSection(from: clerking.text, sectionHeadings: backgroundHeadings) {
+                // Only keep sections with substantial content (>200 chars for background)
+                if bgSection.count > 200 {
+                    let bgCategories = GPRCategoryKeywords.categorize(bgSection, using: GPRCategoryKeywords.background)
+                    formData.backgroundImportedEntries.append(GPRImportedEntry(
+                        date: clerking.date,
+                        text: bgSection,
+                        snippet: String(bgSection.prefix(200)),
+                        categories: bgCategories.isEmpty ? ["Background"] : bgCategories
+                    ))
+                    print("[GPR iOS SYNC] Found background in clerking: \(bgSection.count) chars")
+                }
+            }
+        }
+
+        // Sort by length (longest first) to prioritize most detailed
+        formData.backgroundImportedEntries.sort { $0.text.count > $1.text.count }
+        print("[GPR iOS SYNC] Found \(formData.backgroundImportedEntries.count) background entries from clerkings")
+
+        // ADDITIONAL: Search ALL notes for Personal history sections (to find more background entries)
+        // This expands beyond just clerkings to catch any note with detailed personal history
+        var seenBackgroundTexts = Set(formData.backgroundImportedEntries.map { String($0.text.prefix(200)) })
+        for note in notes {
+            if let bgSection = extractSection(from: note.body, sectionHeadings: backgroundHeadings) {
+                // Only keep substantial sections (>200 chars) that aren't duplicates
+                let textKey = String(bgSection.prefix(200))
+                if bgSection.count > 200 && !seenBackgroundTexts.contains(textKey) {
+                    // Skip CPA review template content
+                    let bgLower = bgSection.lowercased()
+                    let isCPATemplate = bgLower.contains("relevant social history") ||
+                                        bgLower.contains("daily function") ||
+                                        bgLower.contains("current illegal drugs")
+                    if !isCPATemplate {
+                        seenBackgroundTexts.insert(textKey)
+                        let bgCategories = GPRCategoryKeywords.categorize(bgSection, using: GPRCategoryKeywords.background)
+                        formData.backgroundImportedEntries.append(GPRImportedEntry(
+                            date: note.date,
+                            text: bgSection,
+                            snippet: String(bgSection.prefix(200)),
+                            categories: bgCategories.isEmpty ? ["Background"] : bgCategories
+                        ))
+                        print("[GPR iOS SYNC] Found ADDITIONAL background in note: \(bgSection.count) chars")
+                    }
+                }
+            }
+        }
+
+        // Re-sort by length after adding more entries
+        formData.backgroundImportedEntries.sort { $0.text.count > $1.text.count }
+        print("[GPR iOS SYNC] Total background entries after broad search: \(formData.backgroundImportedEntries.count)")
 
         // Sort all by date (newest first)
         formData.psychiatricHistoryImported.sort { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
@@ -1408,32 +1783,63 @@ struct GeneralPsychReportView: View {
         let lines = text.components(separatedBy: .newlines)
 
         // Common headings that indicate section boundaries (matches desktop CATEGORIES_ORDERED and HARD_OVERRIDE_HEADINGS)
+        // Also includes common RiO progress note section headers to detect boundaries
         let allHeadings = [
+            // Clinical history sections
             "background history", "personal history", "social history", "family history",
             "developmental history", "early history", "past and personal history",
             "past psychiatric history", "psychiatric history", "mental health history", "pph",
             "history of presenting complaint", "presenting complaint", "hpc",
             "past medical history", "medical history", "pmh", "physical health",
-            // Drug and alcohol headings - critical for proper section boundaries
+            // Drug and alcohol headings
             "drug and alcohol", "drug and alcohol history", "drug history", "alcohol history",
             "substance use", "substance misuse", "substance", "illicit",
-            // Forensic and other
+            // Forensic and clinical
             "forensic history", "forensic", "offence", "offending", "criminal", "police", "charges", "index offence",
             "mental state", "mse", "mental state examination", "risk", "impression", "plan", "diagnosis",
-            "medication", "medication history", "current medication", "physical examination", "summary", "capacity", "ecg"
+            "medication", "medication history", "current medication", "physical examination", "summary", "capacity", "ecg",
+            // Common RiO progress note headers that END medical history sections
+            "finances", "finance", "accommodation", "leave", "section", "legal status",
+            "occupational therapy", "ot", "psychology", "nursing", "social work", "sw",
+            "cpa", "care plan", "review", "follow up", "follow-up", "next steps",
+            "actions", "outcome", "progress", "update", "contact", "telephone",
+            "activities", "engagement", "presentation", "observations", "obs level",
+            "safeguarding", "discharge", "transfer", "referral"
         ]
 
-        // Helper: detect if a line starts with a heading (matches desktop _detect_header)
-        func detectHeader(_ line: String) -> String? {
-            let normalized = line.trimmingCharacters(in: .whitespaces).lowercased()
-            // Remove trailing colons/dashes for matching
-            let cleanNorm = normalized.replacingOccurrences(of: ":", with: "").replacingOccurrences(of: "-", with: "").trimmingCharacters(in: .whitespaces)
+        // Helper: detect if a line is a section header (matches desktop _detect_header exactly)
+        // Desktop logic: if ":" not in line and "-" not in line: if len(words) <= 2: check
+        // Then checks: nl == term or nl.startswith(term) - NO contains!
+        func isHeaderLine(_ line: String, for headings: [String]) -> String? {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let lower = trimmed.lowercased()
+            let words = trimmed.split(separator: " ")
 
-            for heading in allHeadings {
-                if cleanNorm == heading || cleanNorm.hasPrefix(heading + " ") || normalized.hasPrefix(heading) {
+            let hasColon = line.contains(":")
+            let hasDash = line.contains("-")
+
+            // Clean the line for matching
+            let cleanedLine = lower
+                .replacingOccurrences(of: ":", with: "")
+                .replacingOccurrences(of: "-", with: " ")
+                .trimmingCharacters(in: .whitespaces)
+
+            for heading in headings {
+                // Desktop: nl == term or nl.startswith(term) - NOT contains!
+                if cleanedLine == heading || cleanedLine.hasPrefix(heading + " ") || lower.hasPrefix(heading) {
                     return heading
                 }
             }
+
+            // For short lines with colon/dash, also check hasPrefix without space
+            if (hasColon || hasDash) && words.count <= 4 {
+                for heading in headings {
+                    if cleanedLine.hasPrefix(heading) {
+                        return heading
+                    }
+                }
+            }
+
             return nil
         }
 
@@ -1442,12 +1848,10 @@ struct GeneralPsychReportView: View {
         var matchedHeading: String? = nil
 
         for (idx, line) in lines.enumerated() {
-            if let header = detectHeader(line) {
-                if sectionHeadings.contains(header) {
-                    sectionStartLineIdx = idx
-                    matchedHeading = header
-                    break
-                }
+            if let header = isHeaderLine(line, for: sectionHeadings) {
+                sectionStartLineIdx = idx
+                matchedHeading = header
+                break
             }
         }
 
@@ -1457,8 +1861,10 @@ struct GeneralPsychReportView: View {
         var sectionEndLineIdx = lines.count
 
         for idx in (startIdx + 1)..<lines.count {
-            if let header = detectHeader(lines[idx]) {
-                // Stop at any heading that's not one of our target headings
+            let line = lines[idx]
+            if line.trimmingCharacters(in: .whitespaces).isEmpty { continue }
+
+            if let header = isHeaderLine(line, for: allHeadings) {
                 if !sectionHeadings.contains(header) {
                     sectionEndLineIdx = idx
                     break
@@ -1467,7 +1873,19 @@ struct GeneralPsychReportView: View {
         }
 
         // Extract content: skip the heading line, take content until next heading
-        let contentLines = Array(lines[(startIdx + 1)..<sectionEndLineIdx])
+        var contentLines = Array(lines[(startIdx + 1)..<sectionEndLineIdx])
+
+        // IMPORTANT: Also extract any inline content from the header line itself
+        // e.g., "Personal history: Ms Adeniyi was born..." - the content after ":" is on the same line
+        let headerLine = lines[startIdx]
+        if let colonRange = headerLine.range(of: ":") {
+            let afterColon = String(headerLine[colonRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+            if !afterColon.isEmpty {
+                // Prepend the inline content
+                contentLines.insert(afterColon, at: 0)
+            }
+        }
+
         let sectionContent = contentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Only return if we have meaningful content (more than 20 chars)
@@ -1505,7 +1923,7 @@ struct GPREditableCard: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(Color(.systemGray6))
+                .background(.ultraThinMaterial)
             }
             .buttonStyle(.plain)
 
@@ -1513,15 +1931,18 @@ struct GPREditableCard: View {
             TextEditor(text: $text)
                 .frame(height: editorHeight)
                 .padding(8)
-                .background(Color(.systemBackground))
                 .scrollContentBackground(.hidden)
 
             // Resize handle
             ResizeHandle(height: $editorHeight)
         }
-        .background(Color(.systemBackground))
+        .background(.thinMaterial)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.7), radius: 12, y: 6)
         .onAppear {
             editorHeight = section.defaultHeight
         }
@@ -1624,7 +2045,10 @@ struct GPRPopupView: View {
                 .frame(width: 200)
             }
 
-            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB, maxDate: Date())
+            FormOptionalDatePicker(label: "Date of Birth", date: $formData.patientDOB,
+                                   maxDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()),
+                                   minDate: Calendar.current.date(byAdding: .year, value: -100, to: Date()),
+                                   defaultDate: Calendar.current.date(byAdding: .year, value: -18, to: Date()))
 
             // Calculated Age
             if let dob = formData.patientDOB {
