@@ -8501,6 +8501,8 @@ class GPRDOCXExporter {
     private let currentLocation: String
     private let reportBy: String
     private let reportDate: Date
+    private let admissionDate: Date?
+    private let dateSeen: Date?
 
     init(sectionContent: [String: String],
          patientName: String,
@@ -8509,7 +8511,9 @@ class GPRDOCXExporter {
          mhaSection: String,
          currentLocation: String,
          reportBy: String,
-         reportDate: Date) {
+         reportDate: Date,
+         admissionDate: Date?,
+         dateSeen: Date?) {
         self.sectionContent = sectionContent
         self.patientName = patientName
         self.patientDOB = patientDOB
@@ -8518,31 +8522,49 @@ class GPRDOCXExporter {
         self.currentLocation = currentLocation
         self.reportBy = reportBy
         self.reportDate = reportDate
+        self.admissionDate = admissionDate
+        self.dateSeen = dateSeen
     }
 
     func generateDOCX() -> Data? {
         createDOCXArchive(documentXML: buildDocumentXML())
     }
 
+    // MARK: - Document Builder (matches desktop _export_docx layout)
+
     private func buildDocumentXML() -> String {
         let dateFmt = DateFormatter()
         dateFmt.dateFormat = "dd/MM/yyyy"
         var body = ""
 
-        body += gprParagraph("General Psychiatric Report", bold: true, size: 32, alignment: "center")
-        body += gprParagraph("", size: 12)
+        // Title: "PSYCHIATRIC REPORT" - 16pt bold center (matching desktop)
+        body += gprTitleParagraph("PSYCHIATRIC REPORT")
+        body += gprEmptyParagraph()
 
-        body += gprBorderedField("Name:", patientName)
-        if let dob = patientDOB { body += gprBorderedField("Date of Birth:", dateFmt.string(from: dob)) }
-        body += gprBorderedField("Gender:", patientGender.rawValue)
-        if !mhaSection.isEmpty { body += gprBorderedField("MHA Status:", mhaSection) }
-        if !currentLocation.isEmpty { body += gprBorderedField("Location:", currentLocation) }
-        body += gprBorderedField("Report By:", reportBy)
-        body += gprBorderedField("Date of Report:", dateFmt.string(from: reportDate))
-        body += gprParagraph("", size: 12)
+        // Compute age from DOB
+        var ageStr = ""
+        if let dob = patientDOB {
+            let years = Calendar.current.dateComponents([.year], from: dob, to: Date()).year ?? 0
+            ageStr = "\(years)"
+        }
 
+        // Header table: 5 rows × 4 columns with Table Grid borders (matching desktop)
+        let rows: [[(String, Bool)]] = [
+            [("NAME OF PATIENT", true), (patientName, false),
+             ("ADMISSION DATE", true), (admissionDate.map { dateFmt.string(from: $0) } ?? "", false)],
+            [("DATE OF BIRTH", true), (patientDOB.map { dateFmt.string(from: $0) } ?? "", false),
+             ("CURRENT LOCATION", true), (currentLocation, false)],
+            [("AGE", true), (ageStr, false),
+             ("SECTION", true), (mhaSection, false)],
+            [("REPORT BY", true), (reportBy, false),
+             ("DATE SEEN", true), (dateSeen.map { dateFmt.string(from: $0) } ?? "", false)],
+            [("", false), ("", false), ("", false), ("", false)],
+        ]
+        body += gprHeaderTable(rows: rows)
+        body += gprEmptyParagraph()
+
+        // Sections 2-13: Heading 2 + content paragraph + blank (matching desktop)
         let sections: [(key: String, heading: String)] = [
-            ("1. Patient Details", "1. Patient Details"),
             ("2. Report Based On", "2. Report Based On"),
             ("3. Circumstances to this Admission", "3. Circumstances to this Admission"),
             ("4. Background Information", "4. Background Information"),
@@ -8555,47 +8577,82 @@ class GPRDOCXExporter {
             ("11. Mental Disorder", "11. Mental Disorder"),
             ("12. Legal Criteria for Detention", "12. Legal Criteria for Detention"),
             ("13. Strengths", "13. Strengths"),
-            ("14. Signature", "14. Signature"),
         ]
 
         for (key, heading) in sections {
             let content = sectionContent[key] ?? ""
-            guard !content.isEmpty else { continue }
-            body += gprParagraph(heading, bold: true, size: 24, underline: true)
-            body += gprParagraph(content, size: 22)
-            body += gprParagraph("", size: 12)
+            body += gprHeading2(heading)
+            body += gprContentParagraph(content.isEmpty ? "[No content]" : content)
+            body += gprEmptyParagraph()
         }
+
+        // Section 14: Signature (handled separately like desktop)
+        body += gprHeading2("14. Signature")
+        let sigContent = sectionContent["14. Signature"] ?? ""
+        body += gprContentParagraph(sigContent.isEmpty ? reportBy : sigContent)
 
         return gprWrapInDocumentXML(body: body)
     }
 
-    private func gprParagraph(_ text: String, bold: Bool = false, size: Int = 24,
-                              underline: Bool = false, alignment: String = "left") -> String {
+    // MARK: - Paragraph Helpers
+
+    private func gprTitleParagraph(_ text: String) -> String {
         let escaped = gprEscapeXML(text)
-        var rPr = "<w:rPr><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/><w:sz w:val=\"\(size)\"/><w:szCs w:val=\"\(size)\"/>"
-        if bold { rPr += "<w:b/>" }
-        if underline { rPr += "<w:u w:val=\"single\"/>" }
-        rPr += "</w:rPr>"
-        var pPr = "<w:pPr>"
-        if alignment == "center" { pPr += "<w:jc w:val=\"center\"/>" }
-        pPr += "<w:spacing w:after=\"120\"/></w:pPr>"
+        return "<w:p><w:pPr><w:jc w:val=\"center\"/><w:spacing w:after=\"0\"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr><w:t>\(escaped)</w:t></w:r></w:p>"
+    }
+
+    private func gprHeading2(_ text: String) -> String {
+        let escaped = gprEscapeXML(text)
+        return "<w:p><w:pPr><w:pStyle w:val=\"Heading2\"/></w:pPr><w:r><w:t>\(escaped)</w:t></w:r></w:p>"
+    }
+
+    private func gprContentParagraph(_ text: String) -> String {
+        let escaped = gprEscapeXML(text)
         let lines = escaped.components(separatedBy: "\n")
         var runs = ""
         for (idx, line) in lines.enumerated() {
-            runs += "<w:r>\(rPr)<w:t xml:space=\"preserve\">\(line)</w:t>"
+            runs += "<w:r><w:t xml:space=\"preserve\">\(line)</w:t>"
             if idx < lines.count - 1 { runs += "<w:br/>" }
             runs += "</w:r>"
         }
-        return "<w:p>\(pPr)\(runs)</w:p>"
+        return "<w:p>\(runs)</w:p>"
     }
 
-    private func gprBorderedField(_ label: String, _ value: String) -> String {
-        let el = gprEscapeXML(label)
-        let ev = gprEscapeXML(value)
-        let lRPr = "<w:rPr><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/><w:b/><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/></w:rPr>"
-        let vRPr = "<w:rPr><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/></w:rPr>"
-        return "<w:p><w:pPr><w:pBdr><w:top w:val=\"single\" w:sz=\"4\" w:space=\"1\" w:color=\"auto\"/><w:left w:val=\"single\" w:sz=\"4\" w:space=\"4\" w:color=\"auto\"/><w:bottom w:val=\"single\" w:sz=\"4\" w:space=\"1\" w:color=\"auto\"/><w:right w:val=\"single\" w:sz=\"4\" w:space=\"4\" w:color=\"auto\"/></w:pBdr><w:spacing w:after=\"0\"/></w:pPr><w:r>\(lRPr)<w:t xml:space=\"preserve\">\(el) </w:t></w:r><w:r>\(vRPr)<w:t>\(ev)</w:t></w:r></w:p>"
+    private func gprEmptyParagraph() -> String {
+        "<w:p/>"
     }
+
+    // MARK: - Header Table (4 columns, Table Grid borders)
+
+    private func gprHeaderTable(rows: [[(String, Bool)]]) -> String {
+        let borders = "<w:tblBorders>" +
+            "<w:top w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"auto\"/>" +
+            "<w:left w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"auto\"/>" +
+            "<w:bottom w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"auto\"/>" +
+            "<w:right w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"auto\"/>" +
+            "<w:insideH w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"auto\"/>" +
+            "<w:insideV w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"auto\"/>" +
+            "</w:tblBorders>"
+        var xml = "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/><w:jc w:val=\"center\"/>\(borders)<w:tblLook w:val=\"04A0\"/></w:tblPr>"
+
+        for row in rows {
+            xml += "<w:tr>"
+            for (text, isBold) in row {
+                let escaped = gprEscapeXML(text)
+                if isBold && !text.isEmpty {
+                    xml += "<w:tc><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>\(escaped)</w:t></w:r></w:p></w:tc>"
+                } else {
+                    xml += "<w:tc><w:p><w:r><w:t>\(escaped)</w:t></w:r></w:p></w:tc>"
+                }
+            }
+            xml += "</w:tr>"
+        }
+
+        xml += "</w:tbl>"
+        return xml
+    }
+
+    // MARK: - XML Helpers
 
     private func gprEscapeXML(_ text: String) -> String {
         text.replacingOccurrences(of: "&", with: "&amp;")
@@ -8606,17 +8663,27 @@ class GPRDOCXExporter {
     }
 
     private func gprWrapInDocumentXML(body: String) -> String {
-        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><w:body>\(body)<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr></w:body></w:document>"
+        // Margins: 2cm top/bottom (1134 twips), 2.5cm left/right (1418 twips) — matching desktop
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><w:body>\(body)<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1134\" w:right=\"1418\" w:bottom=\"1134\" w:left=\"1418\"/></w:sectPr></w:body></w:document>"
     }
+
+    private func gprStylesXML() -> String {
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\"><w:name w:val=\"Normal\"/><w:rPr><w:rFonts w:ascii=\"Calibri\" w:hAnsi=\"Calibri\"/><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/></w:rPr></w:style><w:style w:type=\"paragraph\" w:styleId=\"Heading2\"><w:name w:val=\"heading 2\"/><w:basedOn w:val=\"Normal\"/><w:next w:val=\"Normal\"/><w:pPr><w:keepNext/><w:spacing w:before=\"200\" w:after=\"0\"/></w:pPr><w:rPr><w:rFonts w:ascii=\"Calibri Light\" w:hAnsi=\"Calibri Light\"/><w:b/><w:color w:val=\"2F5496\"/><w:sz w:val=\"26\"/><w:szCs w:val=\"26\"/></w:rPr></w:style></w:styles>"
+    }
+
+    // MARK: - DOCX Archive (with styles.xml for Heading2 support)
 
     private func createDOCXArchive(documentXML: String) -> Data? {
         gprCreateZIPArchive(files: [
-            ("[Content_Types].xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/></Types>"),
+            ("[Content_Types].xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/><Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/></Types>"),
             ("_rels/.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/></Relationships>"),
-            ("word/_rels/document.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"></Relationships>"),
+            ("word/_rels/document.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>"),
+            ("word/styles.xml", gprStylesXML()),
             ("word/document.xml", documentXML)
         ])
     }
+
+    // MARK: - ZIP Archive
 
     private func gprCreateZIPArchive(files: [(String, String)]) -> Data? {
         var zipData = Data()
@@ -8640,7 +8707,7 @@ class GPRDOCXExporter {
             ce.append(contentsOf: gprU32(UInt32(contentData.count)))
             ce.append(contentsOf: gprU32(UInt32(contentData.count)))
             ce.append(contentsOf: gprU16(UInt16(nd.count)))
-            ce.append(contentsOf: [0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00])
+            ce.append(contentsOf: [0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00])
             ce.append(contentsOf: gprU32(offset)); ce.append(nd); cd.append(ce)
             offset = UInt32(zipData.count); count += 1
         }

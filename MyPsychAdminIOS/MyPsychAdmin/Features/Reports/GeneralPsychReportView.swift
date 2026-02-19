@@ -322,6 +322,8 @@ struct GeneralPsychReportView: View {
         let location = formData.currentLocation
         let reportBy = formData.reportBy.isEmpty ? formData.signatureName : formData.reportBy
         let reportDate = Date()
+        let admissionDate = formData.admissionDate
+        let dateSeen = formData.dateSeen
 
         DispatchQueue.global(qos: .userInitiated).async {
             let exporter = GPRDOCXExporter(
@@ -332,7 +334,9 @@ struct GeneralPsychReportView: View {
                 mhaSection: mhaSec,
                 currentLocation: location,
                 reportBy: reportBy,
-                reportDate: reportDate
+                reportDate: reportDate,
+                admissionDate: admissionDate,
+                dateSeen: dateSeen
             )
             let data = exporter.generateDOCX()
 
