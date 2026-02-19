@@ -261,17 +261,11 @@ struct AdmissionsTimelineView: View {
     private func handleEpisodeTap(_ episode: Episode) {
         withAnimation(.easeInOut(duration: 0.25)) {
             selectedEpisode = episode
-
-            if episode.type == .inpatient {
-                // Toggle expansion for inpatient episodes
-                if expandedEpisodeId == episode.id {
-                    expandedEpisodeId = nil
-                } else {
-                    expandedEpisodeId = episode.id
-                }
-            } else {
-                // Collapse any expanded episode for community
+            // Toggle expansion for any episode type
+            if expandedEpisodeId == episode.id {
                 expandedEpisodeId = nil
+            } else {
+                expandedEpisodeId = episode.id
             }
         }
     }
@@ -325,6 +319,8 @@ struct TimelineBuilder {
         switch source {
         case .carenotes:
             episodes = buildCareNotesTimeline(from: notes)
+        case .epjs:
+            episodes = buildEPJSTimeline(from: notes)
         default:
             episodes = buildRIOTimeline(from: notes)
         }
@@ -335,32 +331,39 @@ struct TimelineBuilder {
         return episodes
     }
 
-    // MARK: - Attach Clerking Notes to Admissions
+    // MARK: - Attach Key Notes to Episodes
     static func attachClerkingNotes(to episodes: [Episode], from notes: [ClinicalNote]) -> [Episode] {
         let calendar = Calendar.current
 
         return episodes.map { episode in
             var updated = episode
 
-            guard episode.type == .inpatient else { return updated }
+            if episode.type == .inpatient {
+                // Search 2-week window from admission start for clerking note
+                let windowEnd = calendar.date(byAdding: .day, value: 14, to: episode.start)!
+                let windowNotes = notes
+                    .filter { note in
+                        let noteDay = calendar.startOfDay(for: note.date)
+                        return noteDay >= episode.start && noteDay <= windowEnd
+                    }
+                    .sorted { $0.date < $1.date }
 
-            // Search 2-week window from admission start
-            let windowEnd = calendar.date(byAdding: .day, value: 14, to: episode.start)!
-
-            // Find notes in window, sorted by date
-            let windowNotes = notes
-                .filter { note in
-                    let noteDay = calendar.startOfDay(for: note.date)
-                    return noteDay >= episode.start && noteDay <= windowEnd
+                for note in windowNotes {
+                    if AdmissionKeywords.noteIndicatesAdmission(note.body) {
+                        updated.clerkingNote = note
+                        break
+                    }
                 }
-                .sorted { $0.date < $1.date }
+            } else {
+                // Community episode — attach the first note in the period
+                let windowNotes = notes
+                    .filter { note in
+                        let noteDay = calendar.startOfDay(for: note.date)
+                        return noteDay >= episode.start && noteDay <= episode.end
+                    }
+                    .sorted { $0.date < $1.date }
 
-            // Find first note that indicates admission
-            for note in windowNotes {
-                if AdmissionKeywords.noteIndicatesAdmission(note.body) {
-                    updated.clerkingNote = note
-                    break
-                }
+                updated.clerkingNote = windowNotes.first
             }
 
             return updated
@@ -488,6 +491,158 @@ struct TimelineBuilder {
         }
 
         return buildEpisodes(from: segments, firstDate: firstDate, lastDate: lastDate)
+    }
+
+    // MARK: - EPJS Timeline (Inpatient note type detection)
+    // Detects admissions by looking for notes with "Inpatient" in the type/body.
+    // Uses 30-day gap tolerance, then merges across transfers (patient moved to another unit).
+    // Extends admission end dates to include discharge-day notes.
+    static func buildEPJSTimeline(from notes: [ClinicalNote]) -> [Episode] {
+        let calendar = Calendar.current
+
+        let sorted = notes.sorted { $0.date < $1.date }
+        guard !sorted.isEmpty else { return [] }
+
+        let firstDate = calendar.startOfDay(for: sorted.first!.date)
+        let lastDate = calendar.startOfDay(for: sorted.last!.date)
+
+        // Collect all note dates and inpatient dates
+        var allNoteDates: Set<Date> = []
+        var inpatientDates: Set<Date> = []
+        for note in sorted {
+            let day = calendar.startOfDay(for: note.date)
+            allNoteDates.insert(day)
+            if noteIsInpatient(note) {
+                inpatientDates.insert(day)
+            }
+        }
+
+        guard !inpatientDates.isEmpty else {
+            return [Episode(type: .community, start: firstDate, end: lastDate, label: "Community")]
+        }
+
+        // Build segments from inpatient dates with 30-day gap tolerance.
+        let sortedIPDates = inpatientDates.sorted()
+        var segments: [(start: Date, end: Date)] = []
+        var segStart = sortedIPDates[0]
+        var segEnd = sortedIPDates[0]
+
+        for date in sortedIPDates.dropFirst() {
+            let daysBetween = calendar.dateComponents([.day], from: segEnd, to: date).day ?? 0
+            if daysBetween <= 30 {
+                segEnd = date
+            } else {
+                segments.append((start: segStart, end: segEnd))
+                segStart = date
+                segEnd = date
+            }
+        }
+        segments.append((start: segStart, end: segEnd))
+
+        // Only keep splits where the gap has confirmed community evidence.
+        // If the gap has no community notes (CC contacts, discharge notification, etc.),
+        // the patient was likely transferred to another unit, not discharged.
+        segments = mergeNonCommunityGaps(segments: segments, notes: sorted)
+
+        // Extend each segment's end to capture discharge-day notes.
+        // After the last "Inpatient" note, look for any notes within 7 days
+        // that are still part of the admission (discharge summaries, etc.).
+        let sortedAllDates = allNoteDates.sorted()
+        for i in 0..<segments.count {
+            let segEndDate = segments[i].end
+            let nextSegStart = (i + 1 < segments.count)
+                ? segments[i + 1].start
+                : calendar.date(byAdding: .year, value: 10, to: segEndDate)!
+            for noteDate in sortedAllDates {
+                guard noteDate > segEndDate else { continue }
+                guard noteDate < nextSegStart else { break }
+                let gap = calendar.dateComponents([.day], from: segEndDate, to: noteDate).day ?? 0
+                if gap <= 7 {
+                    segments[i] = (start: segments[i].start, end: noteDate)
+                } else {
+                    break
+                }
+            }
+        }
+
+        return buildEpisodes(from: segments, firstDate: firstDate, lastDate: lastDate)
+    }
+
+    /// Merge adjacent segments when the gap does NOT have confirmed community evidence.
+    /// If the patient was genuinely discharged, there will be CC/community notes in the gap.
+    /// If the gap has no community evidence, the patient was likely transferred to another unit.
+    private static func mergeNonCommunityGaps(
+        segments: [(start: Date, end: Date)],
+        notes: [ClinicalNote]
+    ) -> [(start: Date, end: Date)] {
+        guard segments.count > 1 else { return segments }
+
+        var merged = [segments[0]]
+        for seg in segments.dropFirst() {
+            let prevEnd = merged.last!.end
+            if hasConfirmedCommunityPeriod(in: notes, from: prevEnd, to: seg.start) {
+                // Confirmed community care in gap → true discharge, keep split
+                merged.append(seg)
+            } else {
+                // No community evidence → likely transfer, merge
+                merged[merged.count - 1] = (start: merged.last!.start, end: seg.end)
+            }
+        }
+        return merged
+    }
+
+    /// Check if notes in a gap indicate genuine community care (true discharge).
+    /// Looks for CC/care coordinator notes, discharge notifications, community nursing,
+    /// and HTT (home treatment team) notes — all strong indicators the patient was living
+    /// in the community, not transferred to another inpatient unit.
+    private static func hasConfirmedCommunityPeriod(
+        in notes: [ClinicalNote],
+        from startDate: Date,
+        to endDate: Date
+    ) -> Bool {
+        let calendar = Calendar.current
+        var communityScore = 0
+
+        for note in notes {
+            let day = calendar.startOfDay(for: note.date)
+            guard day > startDate && day < endDate else { continue }
+
+            let firstLine = note.body.components(separatedBy: "\n")
+                .first?.lowercased().trimmingCharacters(in: .whitespaces) ?? ""
+            let lower = note.body.lowercased()
+
+            // Discharge Notification = strong confirmed discharge
+            if lower.contains("discharge notification") { communityScore += 5; continue }
+            // CC/Main Contact = care coordinator (strong community indicator)
+            if firstLine.hasPrefix("cc") { communityScore += 2; continue }
+            // Community-prefixed notes
+            if firstLine.hasPrefix("community") { communityScore += 2; continue }
+            // STaR/Support Worker = community support
+            if firstLine.contains("star") || firstLine.contains("support worker") {
+                communityScore += 1; continue
+            }
+            // CR/HTT = crisis resolution / home treatment team
+            if firstLine.hasPrefix("cr/") || firstLine.contains("htt") ||
+               firstLine.contains("home treatment") {
+                communityScore += 1; continue
+            }
+        }
+
+        // Require meaningful community evidence (not just 1-2 admin notes)
+        return communityScore >= 5
+    }
+
+    /// Check if an EPJS note is from an inpatient stay by looking for "Inpatient" prefix in body
+    private static func noteIsInpatient(_ note: ClinicalNote) -> Bool {
+        // Check type field
+        if note.type.lowercased().contains("inpatient") { return true }
+        // Check first 3 lines of body for EPJS type headers like "Inpatient - Nursing"
+        let lines = note.body.components(separatedBy: "\n")
+        for line in lines.prefix(3) {
+            let lower = line.lowercased().trimmingCharacters(in: .whitespaces)
+            if lower.hasPrefix("inpatient") { return true }
+        }
+        return false
     }
 
     // MARK: - Build Episodes from Segments
@@ -723,17 +878,11 @@ struct EpisodeRowView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Main row
             HStack(spacing: 12) {
-                // Expand indicator for inpatient
-                if episode.type == .inpatient {
-                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(episode.type.color)
-                        .frame(width: 12)
-                } else {
-                    Circle()
-                        .fill(episode.type.color)
-                        .frame(width: 12, height: 12)
-                }
+                // Expand indicator
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(episode.type.color)
+                    .frame(width: 12)
 
                 // Info
                 VStack(alignment: .leading, spacing: 4) {
@@ -768,16 +917,21 @@ struct EpisodeRowView: View {
             }
             .padding(.vertical, 10)
 
-            // Expanded clerking note content
-            if isExpanded && episode.type == .inpatient {
+            // Expanded note content
+            if isExpanded {
                 VStack(alignment: .leading, spacing: 8) {
                     if let note = episode.clerkingNote {
-                        // Clerking note header
+                        let headerTitle = episode.type == .inpatient
+                            ? "Admission Clerking" : "First Community Note"
+                        let headerIcon = episode.type == .inpatient
+                            ? "doc.text.fill" : "leaf.fill"
+
+                        // Note header
                         HStack(spacing: 8) {
-                            Image(systemName: "doc.text.fill")
+                            Image(systemName: headerIcon)
                                 .foregroundColor(episode.type.color)
 
-                            Text("Admission Clerking")
+                            Text(headerTitle)
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(episode.type.color)
@@ -821,8 +975,8 @@ struct EpisodeRowView: View {
 
                         // View full note button
                         Button {
-                            // Find the admission keyword for highlighting
-                            let highlight = findAdmissionKeyword(in: note.body)
+                            let highlight = episode.type == .inpatient
+                                ? findAdmissionKeyword(in: note.body) : ""
                             onViewNote?(note, highlight)
                         } label: {
                             HStack {
@@ -835,12 +989,15 @@ struct EpisodeRowView: View {
                         .buttonStyle(.plain)
                         .padding(.top, 4)
                     } else {
-                        // No clerking note found
+                        let emptyText = episode.type == .inpatient
+                            ? "No admission clerking note found"
+                            : "No community note found"
+
                         HStack(spacing: 8) {
                             Image(systemName: "exclamationmark.triangle")
                                 .foregroundColor(.orange)
 
-                            Text("No admission clerking note found")
+                            Text(emptyText)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .italic()

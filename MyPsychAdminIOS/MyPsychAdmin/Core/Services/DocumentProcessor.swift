@@ -30,6 +30,13 @@ actor DocumentProcessor {
     private static let bracketTypePattern = try! NSRegularExpression(pattern: "\\[([^\\]]+)\\]")
     private static let epjsSigPattern = try! NSRegularExpression(pattern: "-{20,}\\s*(\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4})\\s+(\\d{1,2}:\\d{2})\\s*,\\s*([^,]+)")
     private static let confirmedByPattern = try! NSRegularExpression(pattern: "Confirmed By\\s+(.+?),\\s*\\d{1,2}/\\d{1,2}/\\d{4}", options: .caseInsensitive)
+    // "-----Confirmed By NAME, dd/mm/yyyy" — EPJS note-end boundary with dashes
+    private static let confirmedBySigPattern = try! NSRegularExpression(pattern: "-{5,}\\s*Confirmed\\s+By\\s+(.+?),\\s*(\\d{1,2}/\\d{1,2}/\\d{4})", options: .caseInsensitive)
+    // "dd/mm/yyyy HH:MM" alone on a line (from Excel date serial with time component)
+    private static let dateTimeDMYPattern = try! NSRegularExpression(pattern: "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(\\d{1,2}:\\d{2}(?::\\d{2})?)$")
+    // Date at start of line with content: "17/02/2024 14:30 Nursing Note..." or "17/02/2024 Nursing Note..."
+    private static let dateStartWithTimePattern = try! NSRegularExpression(pattern: "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(\\d{1,2}:\\d{2}(?::\\d{2})?)\\s+(\\S.*)")
+    private static let dateStartNoTimePattern = try! NSRegularExpression(pattern: "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(?!\\d)(\\S.*)")
     private static let careNotesSigPattern = try! NSRegularExpression(pattern: "-{2,}\\s*([A-Za-z .'-]+?)\\s*,\\s*,?\\s*(\\d{1,2}/\\d{1,2}/\\d{4})?")
     private static let genericSigPattern = try! NSRegularExpression(pattern: "-{2,}\\s*([A-Za-z .'-]+)")
     private static let dateExtractPattern1 = try! NSRegularExpression(pattern: "\\d{1,2}/\\d{1,2}/\\d{4}")
@@ -543,92 +550,230 @@ actor DocumentProcessor {
         return notes
     }
 
-    // MARK: - EPJS Format Parser (matching desktop importer_epjs.py) - Using pre-compiled patterns
+    // MARK: - EPJS Format Parser (matching desktop importer_epjs.py)
+    // Note boundaries: date lines (with separate time lookahead) + "-----Confirmed By" lines
+    // Body cleaning: strips "confirmed by" and "---" lines (metadata, not content)
     private func parseEPJSFormat(lines: [String]) -> [ClinicalNote] {
         var notes: [ClinicalNote] = []
-        notes.reserveCapacity(lines.count / 20) // Pre-allocate estimate
+        notes.reserveCapacity(lines.count / 20)
 
         var currentDate: Date?
         var currentBody: [String] = []
         var currentOriginator: String = ""
 
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty else { continue }
+        // Helper to save accumulated note
+        func saveCurrentNote() {
+            guard !currentBody.isEmpty else { return }
+            // Skip notes with no date — these are pre-header UI metadata (not clinical content)
+            guard currentDate != nil else { return }
+            // Clean body: remove "confirmed by" and dash-only lines (like desktop lines 215-220)
+            let cleanedBody = currentBody.filter { ln in
+                let lower = ln.lowercased()
+                if lower.contains("confirmed by") { return false }
+                if ln.hasPrefix("---") { return false }
+                return true
+            }
+            let text = cleanedBody.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return }
 
-            // Check for EPJS signature line (end of note)
-            let range = NSRange(trimmed.startIndex..., in: trimmed)
-            if let match = Self.epjsSigPattern.firstMatch(in: trimmed, range: range) {
-                // Save current note first
-                if !currentBody.isEmpty {
-                    let note = ClinicalNote(
-                        date: currentDate ?? Date(),
-                        type: extractNoteType(from: currentBody),
-                        author: currentOriginator,
-                        body: currentBody.joined(separator: "\n"),
-                        source: .epjs
-                    )
-                    notes.append(note)
+            // Extract author from body if not already set (3-tier like desktop lines 176-209)
+            if currentOriginator.isEmpty {
+                for ln in currentBody {
+                    let r = NSRange(ln.startIndex..., in: ln)
+                    // Priority 1: EPJS dashed author "---date time, Name"
+                    if let m = Self.epjsSigPattern.firstMatch(in: ln, range: r),
+                       let nr = Range(m.range(at: 3), in: ln) {
+                        currentOriginator = String(ln[nr]).trimmingCharacters(in: .whitespaces)
+                        break
+                    }
+                    // Priority 2: "Confirmed By Name"
+                    if let m = Self.confirmedByPattern.firstMatch(in: ln, range: r),
+                       let nr = Range(m.range(at: 1), in: ln) {
+                        currentOriginator = String(ln[nr]).trimmingCharacters(in: .whitespaces)
+                        break
+                    }
                 }
+            }
 
-                // Extract date and originator from signature
-                if let dateRange = Range(match.range(at: 1), in: trimmed),
+            let noteDate = currentDate ?? Date()
+            notes.append(ClinicalNote(
+                date: noteDate,
+                type: extractNoteType(from: cleanedBody),
+                author: currentOriginator,
+                body: text,
+                source: .epjs
+            ))
+        }
+
+        var i = 0
+        while i < lines.count {
+            let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { i += 1; continue }
+            let range = NSRange(trimmed.startIndex..., in: trimmed)
+
+            // 1. "-----Confirmed By NAME, dd/mm/yyyy" — note END boundary
+            if let match = Self.confirmedBySigPattern.firstMatch(in: trimmed, range: range) {
+                // Extract author from this boundary for the CURRENT note
+                if let nameRange = Range(match.range(at: 1), in: trimmed) {
+                    currentOriginator = String(trimmed[nameRange]).trimmingCharacters(in: .whitespaces)
+                }
+                // Use date from boundary if we have no date yet
+                if currentDate == nil, let dateRange = Range(match.range(at: 2), in: trimmed) {
+                    currentDate = Self.rioFormatters[2].date(from: String(trimmed[dateRange]))
+                }
+                saveCurrentNote()
+                // Don't reset currentDate — carry forward for sub-sections within ward rounds
+                // Next date+time START boundary will override if needed
+                currentBody = []; currentOriginator = ""
+                i += 1; continue
+            }
+
+            // 2. EPJS dashed signature "----17 Feb 2024 14:30, Name" — note END boundary
+            if let match = Self.epjsSigPattern.firstMatch(in: trimmed, range: range) {
+                if let nameRange = Range(match.range(at: 3), in: trimmed) {
+                    currentOriginator = String(trimmed[nameRange]).trimmingCharacters(in: .whitespaces)
+                }
+                if currentDate == nil,
+                   let dateRange = Range(match.range(at: 1), in: trimmed),
+                   let timeRange = Range(match.range(at: 2), in: trimmed) {
+                    currentDate = Self.epjsFormatters[0].date(from: "\(String(trimmed[dateRange])) \(String(trimmed[timeRange]))")
+                }
+                saveCurrentNote()
+                // Don't reset currentDate — carry forward for sub-sections within ward rounds
+                currentBody = []; currentOriginator = ""
+                i += 1; continue
+            }
+
+            // 3. Standalone "dd/mm/yyyy HH:MM" line (from cleanCell date serial conversion) — note START boundary
+            if let match = Self.dateTimeDMYPattern.firstMatch(in: trimmed, range: range),
+               let dateRange = Range(match.range(at: 1), in: trimmed),
+               let timeRange = Range(match.range(at: 2), in: trimmed) {
+                let dateStr = String(trimmed[dateRange])
+                let timeStr = String(trimmed[timeRange])
+                if let parsedDate = Self.rioFormatters[0].date(from: "\(dateStr) \(timeStr)") {
+                    saveCurrentNote()
+                    currentDate = parsedDate
+                    currentBody = []; currentOriginator = ""
+                    i += 1; continue
+                }
+            }
+
+            // 4. Date at start of line with content after (merged Excel columns)
+            //    Only create boundary when body is empty (start of new note).
+            //    When body has content, dates at start of lines are narrative text (e.g. risk history).
+            if currentBody.isEmpty {
+                if let match = Self.dateStartWithTimePattern.firstMatch(in: trimmed, range: range),
+                   let dateRange = Range(match.range(at: 1), in: trimmed),
                    let timeRange = Range(match.range(at: 2), in: trimmed),
-                   let nameRange = Range(match.range(at: 3), in: trimmed) {
+                   let contentRange = Range(match.range(at: 3), in: trimmed) {
                     let dateStr = String(trimmed[dateRange])
                     let timeStr = String(trimmed[timeRange])
-                    currentOriginator = String(trimmed[nameRange]).trimmingCharacters(in: .whitespaces)
-                    currentDate = Self.epjsFormatters[0].date(from: "\(dateStr) \(timeStr)")
+                    if let parsedDate = Self.rioFormatters[0].date(from: "\(dateStr) \(timeStr)") {
+                        saveCurrentNote()
+                        currentDate = parsedDate
+                        currentBody = [String(trimmed[contentRange])]
+                        currentOriginator = ""
+                        i += 1; continue
+                    }
                 }
-
-                currentBody = []
-                continue
+                if let match = Self.dateStartNoTimePattern.firstMatch(in: trimmed, range: range),
+                   let dateRange = Range(match.range(at: 1), in: trimmed),
+                   let contentRange = Range(match.range(at: 2), in: trimmed) {
+                    let dateStr = String(trimmed[dateRange])
+                    if let parsedDate = Self.rioFormatters[2].date(from: dateStr) {
+                        saveCurrentNote()
+                        currentDate = parsedDate
+                        currentBody = [String(trimmed[contentRange])]
+                        currentOriginator = ""
+                        i += 1; continue
+                    }
+                }
             }
 
-            // Check for EPJS date-time line (start of new note)
+            // 5. Date-only line + time on next line (like desktop lines 126-160)
+            if isDateLine(trimmed) {
+                var j = i + 1
+                // Scan ahead for time (skip empties, max 3 lines)
+                while j < lines.count && j <= i + 3 {
+                    let next = lines[j].trimmingCharacters(in: .whitespaces)
+                    if next.isEmpty { j += 1; continue }
+                    if isTimeLine(next) { break }
+                    break
+                }
+
+                if j < lines.count && j <= i + 3 && isTimeLine(lines[j].trimmingCharacters(in: .whitespaces)) {
+                    // Found date + time pair → note START boundary
+                    saveCurrentNote()
+                    let timeStr = lines[j].trimmingCharacters(in: .whitespaces)
+                    currentDate = epjsParseDateTimePair(date: trimmed, time: timeStr)
+                    currentBody = []; currentOriginator = ""
+                    i = j + 1; continue
+                }
+                // No time found — only use as date if body is empty (start of new note).
+                // If body has content, this is a historical date within content — treat as content.
+                if currentBody.isEmpty {
+                    currentDate = Self.rioFormatters[2].date(from: trimmed)    // dd/MM/yyyy
+                        ?? Self.rioFormatters[4].date(from: trimmed)           // yyyy-MM-dd
+                        ?? Self.rioFormatters[3].date(from: trimmed)           // yyyy-MM-dd HH:mm:ss
+                    i += 1; continue
+                }
+                // Fall through to content
+            }
+
+            // 5. Date+time on same line "17 Feb 2024 14:30" — note START boundary
             if let epjsDateTime = isEPJSDateTime(trimmed) {
-                // Save previous note
-                if !currentBody.isEmpty {
-                    let note = ClinicalNote(
-                        date: currentDate ?? Date(),
-                        type: extractNoteType(from: currentBody),
-                        author: currentOriginator,
-                        body: currentBody.joined(separator: "\n"),
-                        source: .epjs
-                    )
-                    notes.append(note)
-                }
-
-                // Parse new date using cached formatter
+                saveCurrentNote()
                 currentDate = Self.epjsFormatters[0].date(from: "\(epjsDateTime.date) \(epjsDateTime.time)")
-                currentBody = []
-                currentOriginator = ""
-                continue
+                currentBody = []; currentOriginator = ""
+                i += 1; continue
             }
 
-            // Check for "Confirmed By" pattern
+            // 6. Plain "Confirmed By NAME, date" (no dashes) — metadata, extract author + date
             if let match = Self.confirmedByPattern.firstMatch(in: trimmed, range: range),
                let nameRange = Range(match.range(at: 1), in: trimmed) {
                 currentOriginator = String(trimmed[nameRange]).trimmingCharacters(in: .whitespaces)
+                // Also extract date as fallback when note has no date at top
+                if currentDate == nil,
+                   let dateMatch = Self.dateExtractPattern1.firstMatch(in: trimmed, range: range),
+                   let dateRange = Range(dateMatch.range, in: trimmed) {
+                    currentDate = Self.rioFormatters[2].date(from: String(trimmed[dateRange]))
+                }
+                i += 1; continue
             }
 
-            // Regular content
+            // 7. Skip EPJS metadata lines that follow boundaries (not clinical content)
+            let lower = trimmed.lowercased()
+            if lower.hasPrefix("event by") || lower.hasPrefix("entered by") ||
+               lower.hasPrefix("amended by") || lower.hasPrefix("locked by") ||
+               lower == "detail" || lower == "amend" || lower == "lock" {
+                i += 1; continue
+            }
+
+            // 8. Skip dash-only lines
+            if trimmed.hasPrefix("---") && trimmed.filter({ $0 != "-" && !$0.isWhitespace }).isEmpty {
+                i += 1; continue
+            }
+
+            // 9. Regular content
             currentBody.append(trimmed)
+            i += 1
         }
 
-        // Last note
-        if !currentBody.isEmpty {
-            let note = ClinicalNote(
-                date: currentDate ?? Date(),
-                type: extractNoteType(from: currentBody),
-                author: currentOriginator,
-                body: currentBody.joined(separator: "\n"),
-                source: .epjs
-            )
-            notes.append(note)
-        }
+        // Save last note
+        saveCurrentNote()
 
         return notes
+    }
+
+    /// Parse date+time from separate strings (like desktop lines 141-155)
+    private func epjsParseDateTimePair(date: String, time: String) -> Date? {
+        if date.contains("/") {
+            return Self.rioFormatters[0].date(from: "\(date) \(time)")
+                ?? Self.rioFormatters[1].date(from: "\(date) \(time)")
+        } else {
+            let base = String(date.split(separator: " ").first ?? Substring(date))
+            return Self.rioFormatters[3].date(from: "\(base) \(time)")
+        }
     }
 
     // MARK: - Generic Format Parser
