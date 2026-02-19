@@ -1,0 +1,268 @@
+ fairly stable in mood and settled in his mental state  , -10
+ abusive , 250
+ accept , -10
+ accessed , -10
+ accommodation , -10
+ adamant , 20
+ adequate , -10
+ adhere , -20
+ adhering , -20
+ advocate , -5
+ aggression , 250
+ aggressive , 250
+ agitation , 250
+ alarming , 250
+ ambivalent , 15
+ AMPH , 50
+ anger , 250
+ Animated , 30
+ appears settled in his mental presentation, bright in mood and appropriate on approach , -10
+ appropriate , -20
+ arrest , 250
+ ashamed , -20
+ attend , -10
+ avail , 20
+ barricade , 500
+ bet , 20
+ calm , -20
+ concordant , -20
+ condemned , 30
+ confrontational , 500
+ Continue LTS, 500
+ Continue seclusion , 500
+ contrary , 25
+ cordial , -25
+ custody , 500
+ Datix , 500
+ decline , 30
+ defence , 30
+ deltoid , 20
+ delusion, 40
+ demand, 50
+ deteriorat, 100
+ did not present any challenging behaviour , -10
+ disengage, 50
+ dismiss, 50
+ disordered , 50
+ distress, 25
+ disturbing , 20
+ downgrade , -10
+ drug , 100
+ eager , -25
+ edge, 100
+ encourage, 15
+ engage, -15
+ engaging, -15
+ enhanced , 50
+ Enhanced , 50
+ enjoy, -10
+ episode, 30
+ episodes of irritability, aggression  , 250
+ escalate, 100
+ exercise, -20
+ experiment, 20
+ facilitated , -20
+ fairly settled in his mental presentation, bright in mood and appropriate on approach , -10
+ family , -20
+ father , -20
+ feel, -10
+ fell , 25
+ fight, 500
+ fine , -20
+ fire, 500
+ fist, 500
+ fixed , 20
+ force, 100
+ forgive, -20
+ friend, -20
+ frustration, 50
+ gesturing , 10
+ grandios, 100
+ happy , -30
+ harm, 20
+ harm/risk , 20
+ held , 20
+ high , 100
+ hold, 20
+ hourly , -5
+ hours , -5
+ hrs , -5
+ ideation , 20
+ IM , 50
+ immediate , 50
+ inappropriat, 250
+ Incident/Challenging Behaviour:  ******** did not present any challenging behaviour during the shift , -100
+ inject, 50
+ injur, 100
+ insist, 50
+ intact , -10
+ intentional , 50
+ intox, 500
+ irate , 100
+ irrita, 100
+ isolat, 50
+ joke, -20
+ killer, 200
+ kind , -20
+ king , 50
+ late , 20
+ lay, 20
+ leav, -30
+ less , 20
+ lied , 20
+ like, -10
+ limited , 10
+ loading , 40
+ lock, 10
+ loud, 150
+mood is low, 
+mood was low, 
+ low mood, 20
+low in mood, 
+lower in mood, 
+lower mood, 
+ lying , 20
+ major , 50
+ manage, -20
+ manageable during the *** shift , -20
+ manageable during the ***** shift , -20
+ medical LTS review  , 500
+ mental presentation was unsettled, irritable, abusive, threatening and disruptive,  , 1000
+ midnight , 10
+ minim, 40
+ moderate, 10
+ mute, 100
+ naked, 200
+ nearest , -20
+ needles , 10
+ negative , 50
+ neglect , 50
+ nil , -15
+ No immediate risk identified  , -50
+ no significant , -30
+ noncompliance , 100
+ nude , 200
+ NURSING SECLUSION REVIEW AT  , 500
+ odour, 50
+ officer , 100
+ OT , -20
+ overhear, 40
+ pacing , 40
+ pain, 40
+ partially , 20
+ periodic , 10
+ physically , 20
+ physio , -10
+ PICU , 100
+ planned , 20
+ pleasant , -25
+ please, -20
+ police, 100
+ polite, -20
+ poo , 100
+ positive, -30
+ potential, 20
+ powerful , 50
+ pre-plan , 20
+ PRN , 50
+ profile, 20
+ progress, -20
+ prompt, 10
+ properly , 10
+ protect, 30
+ prove, 10
+ quiet, 10
+ raise, 20
+ ran , 50
+ reassur, 10
+ reclusive , 30
+ recurrent , 20
+ reduce, 40
+ reflect, -15
+ refus, 40
+ reiterate, 30
+ relative, -10
+ relax, -20
+ release, 10
+ reliev, -10
+ religious , 50
+ remain, 20
+ remind, 20
+ remov, 10
+ repeated , 10
+ resistive , 70
+ respond, 20
+ restrain, 500
+ resulted , 5
+ retaliation , 500
+ room-base , 20
+ rude , 100
+ scream, 500
+ secluded , 500
+ seclusion , 500
+ SECLUSION OBSERVATION , 500
+ Seclusion Room: Conditions , 500
+ selective , 15
+ self-appeared , 5
+ self-isolat, 40
+ self-neglect , 250
+ Senior Seclusion Review , 500
+ sepsis , 10
+ settle, -20
+ settled and relatively calm in mood , -100
+ severed , 100
+ sexual, 250
+ shout, 100
+ significant, 30
+ singing , 20
+ smile , -10
+ SNR MEDICAL & NURSING REVIEW , 500
+ sore , 15
+ sorry , -10
+ stable, -20
+ stark , 40
+ stay , 10
+ stimuli , 30
+ stripped , 250
+ sufficient , -10
+ superficial, 10
+ support, -10
+ swap , 10
+ t the start of the shift with irritable behaviour towards staff , 100
+ techniques , 100
+ telephone , -10
+ Terminate seclusion today  , -20
+ thank, -10
+ thought, 10
+ threaten, 500
+ threw , 500
+ throw, 500
+ tone , -10
+ toothache , 20
+ transfer, 20
+ tried , 10
+ trying , 10
+ unchanged , 10
+ understood , -20
+ universe , 50
+ unpleasant , 100
+ unsafe , 100
+ unseen , 100
+ unwell , 30
+ upset , 25
+ urinated , 100
+ violence, 500
+ violent, 500
+ visible , -10
+ vision , 10
+ visited , -10
+ waking , -10
+ war , 100
+ washed , -10
+ wasn’t , 10
+ wear, -10
+ well, -10
+ withdraw, 70
+ withdrew , 75
+he was delusional , 40
+no grandiose , -100

@@ -1,0 +1,101 @@
+# Curated ICD-10 diagnoses for Mental Health Act forms
+# Matches the iOS app's targeted list (~60 diagnoses in 9 categories)
+
+ICD10_GROUPED = [
+    ("Schizophrenia & Psychosis", [
+        "F20.0 Paranoid schizophrenia",
+        "F20.1 Hebephrenic schizophrenia",
+        "F20.2 Catatonic schizophrenia",
+        "F20.3 Undifferentiated schizophrenia",
+        "F20.5 Residual schizophrenia",
+        "F20.6 Simple schizophrenia",
+        "F20.9 Schizophrenia, unspecified",
+        "F21 Schizotypal disorder",
+        "F22 Persistent delusional disorders",
+        "F23 Acute and transient psychotic disorders",
+        "F25.0 Schizoaffective disorder, manic type",
+        "F25.1 Schizoaffective disorder, depressive type",
+        "F25.2 Schizoaffective disorder, mixed type",
+        "F25.9 Schizoaffective disorder, unspecified",
+        "F29 Unspecified nonorganic psychosis",
+    ]),
+    ("Mood Disorders - Bipolar", [
+        "F30.0 Hypomania",
+        "F30.1 Mania without psychotic symptoms",
+        "F30.2 Mania with psychotic symptoms",
+        "F31.0 Bipolar disorder, current episode hypomanic",
+        "F31.1 Bipolar disorder, current episode manic without psychosis",
+        "F31.2 Bipolar disorder, current episode manic with psychosis",
+        "F31.3 Bipolar disorder, current episode mild/moderate depression",
+        "F31.4 Bipolar disorder, current episode severe depression without psychosis",
+        "F31.5 Bipolar disorder, current episode severe depression with psychosis",
+        "F31.6 Bipolar disorder, current episode mixed",
+        "F31.7 Bipolar disorder, currently in remission",
+        "F31.9 Bipolar disorder, unspecified",
+    ]),
+    ("Mood Disorders - Depression", [
+        "F32.0 Mild depressive episode",
+        "F32.1 Moderate depressive episode",
+        "F32.2 Severe depressive episode without psychosis",
+        "F32.3 Severe depressive episode with psychosis",
+        "F32.9 Depressive episode, unspecified",
+        "F33.0 Recurrent depression, current episode mild",
+        "F33.1 Recurrent depression, current episode moderate",
+        "F33.2 Recurrent depression, current episode severe without psychosis",
+        "F33.3 Recurrent depression, current episode severe with psychosis",
+        "F33.9 Recurrent depressive disorder, unspecified",
+    ]),
+    ("Anxiety Disorders", [
+        "F40.0 Agoraphobia",
+        "F40.1 Social phobias",
+        "F40.2 Specific (isolated) phobias",
+        "F41.0 Panic disorder",
+        "F41.1 Generalized anxiety disorder",
+        "F41.2 Mixed anxiety and depressive disorder",
+        "F42 Obsessive-compulsive disorder",
+        "F43.0 Acute stress reaction",
+        "F43.1 Post-traumatic stress disorder",
+        "F43.2 Adjustment disorders",
+    ]),
+    ("Eating Disorders", [
+        "F50.0 Anorexia nervosa",
+        "F50.2 Bulimia nervosa",
+    ]),
+    ("Personality Disorders", [
+        "F60.0 Paranoid personality disorder",
+        "F60.1 Schizoid personality disorder",
+        "F60.2 Dissocial personality disorder",
+        "F60.3 Emotionally unstable personality disorder",
+        "F60.4 Histrionic personality disorder",
+        "F60.5 Anankastic personality disorder",
+        "F60.6 Anxious personality disorder",
+        "F60.7 Dependent personality disorder",
+        "F60.9 Personality disorder, unspecified",
+    ]),
+    ("Intellectual Disability", [
+        "F70 Mild intellectual disability",
+        "F71 Moderate intellectual disability",
+        "F72 Severe intellectual disability",
+        "F79 Unspecified intellectual disability",
+    ]),
+    ("Organic Disorders", [
+        "F00 Dementia in Alzheimer's disease",
+        "F01 Vascular dementia",
+        "F03 Unspecified dementia",
+        "F05 Delirium",
+        "F06 Other mental disorders due to brain damage",
+    ]),
+    ("Substance Use Disorders", [
+        "F10 Mental disorders due to alcohol",
+        "F11 Mental disorders due to opioids",
+        "F12 Mental disorders due to cannabinoids",
+        "F14 Mental disorders due to cocaine",
+        "F15 Mental disorders due to stimulants",
+        "F19 Mental disorders due to multiple drug use",
+    ]),
+]
+
+# Flat list for compatibility (all diagnoses without grouping)
+ICD10_FLAT = []
+for group_name, diagnoses in ICD10_GROUPED:
+    ICD10_FLAT.extend(diagnoses)

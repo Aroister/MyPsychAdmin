@@ -1,0 +1,441 @@
+INTRODUCTION;Front Page;1
+Account of current admission;HISTORY OF PRESENTING COMPLAINT;3
+Circumstances of Admission;HISTORY OF PRESENTING COMPLAINT;3
+Current Admission;HISTORY OF PRESENTING COMPLAINT;3
+CIRCUMSTANCES OF CURRENT ADMISSION;HISTORY OF PRESENTING COMPLAINT;3
+Circumstances giving rise to detention;HISTORY OF PRESENTING COMPLAINT;3
+Circumstances of current admission;HISTORY OF PRESENTING COMPLAINT;3
+Current Leave:;HISTORY OF PRESENTING COMPLAINT;3
+Details Of Leave:;HISTORY OF PRESENTING COMPLAINT;3
+Drug history;HISTORY OF PRESENTING COMPLAINT;3
+Current Medication;HISTORY OF PRESENTING COMPLAINT;3
+Medication:;HISTORY OF PRESENTING COMPLAINT;3
+Current Mental Health.;HISTORY OF PRESENTING COMPLAINT;3
+Mental State Examination on Admission;HISTORY OF PRESENTING COMPLAINT;3
+Mental State on Admission;HISTORY OF PRESENTING COMPLAINT;3
+MENTAL STATE EXAMINATION ON ADMSSION;HISTORY OF PRESENTING COMPLAINT;3
+PROGRESS IN ;HISTORY OF PRESENTING COMPLAINT;3
+Progress on the ward:;HISTORY OF PRESENTING COMPLAINT;3
+PROGRESS ON WARD: ;HISTORY OF PRESENTING COMPLAINT;3
+PROGRESS SINCE ADMISSION;HISTORY OF PRESENTING COMPLAINT;3
+Recent Progress:;HISTORY OF PRESENTING COMPLAINT;3
+Risk Assessment on Admission;HISTORY OF PRESENTING COMPLAINT;3
+Section 17 leave:;HISTORY OF PRESENTING COMPLAINT;3
+Treatment to Date;HISTORY OF PRESENTING COMPLAINT;3
+CURRENT MEDICATION:;HISTORY OF PRESENTING COMPLAINT;3
+Psychology;HISTORY OF PRESENTING COMPLAINT;3
+PSYCHOLOGY;HISTORY OF PRESENTING COMPLAINT;3
+ Occupational therapy;HISTORY OF PRESENTING COMPLAINT;3
+ Occupational Therapy;HISTORY OF PRESENTING COMPLAINT;3
+OCCUPATIONAL THERAPY;HISTORY OF PRESENTING COMPLAINT;3
+10th ADMISSION;PAST PSYCH;7
+10th admission;PAST PSYCH;7
+10th Admission;PAST PSYCH;7
+10TH ADMISSION;PAST PSYCH;7
+10TH admission;PAST PSYCH;7
+10TH Admission;PAST PSYCH;7
+11th ADMISSION;PAST PSYCH;7
+11th admission;PAST PSYCH;7
+11th Admission;PAST PSYCH;7
+11TH ADMISSION;PAST PSYCH;7
+11TH admission;PAST PSYCH;7
+11TH Admission;PAST PSYCH;7
+12th ADMISSION;PAST PSYCH;7
+12th admission;PAST PSYCH;7
+12th Admission;PAST PSYCH;7
+12TH ADMISSION;PAST PSYCH;7
+12TH admission;PAST PSYCH;7
+12TH Admission;PAST PSYCH;7
+13th ADMISSION;PAST PSYCH;7
+13th admission;PAST PSYCH;7
+13th Admission;PAST PSYCH;7
+13TH ADMISSION;PAST PSYCH;7
+13TH admission;PAST PSYCH;7
+13TH Admission;PAST PSYCH;7
+14th ADMISSION;PAST PSYCH;7
+14th admission;PAST PSYCH;7
+14th Admission;PAST PSYCH;7
+14TH ADMISSION;PAST PSYCH;7
+14TH admission;PAST PSYCH;7
+14TH Admission;PAST PSYCH;7
+1ST ADMISSION;PAST PSYCH;7
+1ST admission;PAST PSYCH;7
+1ST Admission;PAST PSYCH;7
+1st ADMISSION;PAST PSYCH;7
+1st admission;PAST PSYCH;7
+1st Admission;PAST PSYCH;7
+2nd ADMISSION;PAST PSYCH;7
+2nd admission;PAST PSYCH;7
+2nd Admission;PAST PSYCH;7
+2ND ADMISSION;PAST PSYCH;7
+2ND admission;PAST PSYCH;7
+2ND Admission;PAST PSYCH;7
+3rd ADMISSION;PAST PSYCH;7
+3rd admission;PAST PSYCH;7
+3rd Admission;PAST PSYCH;7
+3RD ADMISSION;PAST PSYCH;7
+3RD admission;PAST PSYCH;7
+3RD Admission;PAST PSYCH;7
+4th ADMISSION;PAST PSYCH;7
+4th admission;PAST PSYCH;7
+4th Admission;PAST PSYCH;7
+4TH ADMISSION;PAST PSYCH;7
+4TH admission;PAST PSYCH;7
+4TH Admission;PAST PSYCH;7
+5th ADMISSION;PAST PSYCH;7
+5th admission;PAST PSYCH;7
+5th Admission;PAST PSYCH;7
+5TH ADMISSION;PAST PSYCH;7
+5TH admission;PAST PSYCH;7
+5TH Admission;PAST PSYCH;7
+6th ADMISSION;PAST PSYCH;7
+6th admission;PAST PSYCH;7
+6th Admission;PAST PSYCH;7
+6TH ADMISSION;PAST PSYCH;7
+6TH admission;PAST PSYCH;7
+6TH Admission;PAST PSYCH;7
+7th ADMISSION;PAST PSYCH;7
+7th admission;PAST PSYCH;7
+7th Admission;PAST PSYCH;7
+7TH ADMISSION;PAST PSYCH;7
+7TH admission;PAST PSYCH;7
+7TH Admission;PAST PSYCH;7
+8th ADMISSION;PAST PSYCH;7
+8th admission;PAST PSYCH;7
+8th Admission;PAST PSYCH;7
+8TH ADMISSION;PAST PSYCH;7
+8TH admission;PAST PSYCH;7
+8TH Admission;PAST PSYCH;7
+9th ADMISSION;PAST PSYCH;7
+9th admission;PAST PSYCH;7
+9th Admission;PAST PSYCH;7
+9TH ADMISSION;PAST PSYCH;7
+9TH admission;PAST PSYCH;7
+9TH Admission;PAST PSYCH;7
+Disengagement from services: ;PAST PSYCH;7
+Disengagement from services: ;PAST PSYCH;7
+eighth admission;PAST PSYCH;7
+Eighth Admission;PAST PSYCH;7
+Eighth admission;PAST PSYCH;7
+EIGHTH ADMISSION;PAST PSYCH;7
+eleventh admission;PAST PSYCH;7
+Eleventh Admission;PAST PSYCH;7
+Eleventh admission;PAST PSYCH;7
+ELEVENTH ADMISSION;PAST PSYCH;7
+fifth admission;PAST PSYCH;7
+Fifth Admission;PAST PSYCH;7
+Fifth admission;PAST PSYCH;7
+FIFTH ADMISSION;PAST PSYCH;7
+First Admission;PAST PSYCH;7
+First admission;PAST PSYCH;7
+FIRST ADMISSION;PAST PSYCH;7
+fourteenth admission;PAST PSYCH;7
+Fourteenth Admission;PAST PSYCH;7
+Fourteenth admission;PAST PSYCH;7
+FOURTEENTH ADMISSION;PAST PSYCH;7
+fourth admission;PAST PSYCH;7
+Fourth Admission;PAST PSYCH;7
+Fourth admission;PAST PSYCH;7
+FOURTH ADMISSION;PAST PSYCH;7
+ninth admission;PAST PSYCH;7
+Ninth Admission;PAST PSYCH;7
+Ninth admission;PAST PSYCH;7
+NINTH ADMISSION;PAST PSYCH;7
+PAST PSYCHIATRIC HISTORY;PAST PSYCH;7
+PAST PSYCHIATRIC HISTORY;PAST PSYCH;7
+Please explain the case for treatment in hospital. Why can treatment not be given in the community?;PAST PSYCH;7
+Please explain the case for treatment in hospital. Why can treatment not be given in the community?;PAST PSYCH;7
+PROGRESS DURING PAST ADMISSIONS;PAST PSYCH;7
+PROGRESS DURING PAST ADMISSIONS;PAST PSYCH;7
+Psychiatric history;PAST PSYCH;7
+Psychiatric history;PAST PSYCH;7
+Psychiatric history; history and duration of admissions ;PAST PSYCH;7
+Psychiatric history; history and duration of admissions ;PAST PSYCH;7
+Recent admission to ;PAST PSYCH;7
+Recent admission to ;PAST PSYCH;7
+Second Admission;PAST PSYCH;7
+Second admission;PAST PSYCH;7
+SECOND ADMISSION;PAST PSYCH;7
+seventh admission;PAST PSYCH;7
+Seventh Admission;PAST PSYCH;7
+Seventh admission;PAST PSYCH;7
+SEVENTH ADMISSION;PAST PSYCH;7
+sixth admission;PAST PSYCH;7
+Sixth Admission;PAST PSYCH;7
+Sixth admission;PAST PSYCH;7
+SIXTH ADMISSION;PAST PSYCH;7
+Suicide (Ideations and attempts);PAST PSYCH;7
+Suicide (Ideations and attempts);PAST PSYCH;7
+tenth admission;PAST PSYCH;7
+Tenth Admission;PAST PSYCH;7
+Tenth admission;PAST PSYCH;7
+TENTH ADMISSION;PAST PSYCH;7
+Third Admission;PAST PSYCH;7
+Third admission;PAST PSYCH;7
+THIRD ADMISSION;PAST PSYCH;7
+thirteenth admission;PAST PSYCH;7
+Thirteenth Admission;PAST PSYCH;7
+Thirteenth admission;PAST PSYCH;7
+THIRTEENTH ADMISSION;PAST PSYCH;7
+twelfth admission;PAST PSYCH;7
+Twelfth Admission;PAST PSYCH;7
+Twelfth admission;PAST PSYCH;7
+TWELFTH ADMISSION;PAST PSYCH;7
+Acyclovir;PAST PSYCH;7
+Amisulpride;PAST PSYCH;7
+Amitriptyline;PAST PSYCH;7
+Amoxicillin;PAST PSYCH;7
+Aripiprazole;PAST PSYCH;7
+Aspirin;PAST PSYCH;7
+Atenolol;PAST PSYCH;7
+Benztropine;PAST PSYCH;7
+Benzhexol;PAST PSYCH;7
+Betadine;PAST PSYCH;7
+Carbamazepine;PAST PSYCH;7
+Cefalexin;PAST PSYCH;7
+Cefotaxime;PAST PSYCH;7
+Cetirizine;PAST PSYCH;7
+Chloral Hydrate;PAST PSYCH;7
+Chloramphenicol;PAST PSYCH;7
+Chlorpromazine;PAST PSYCH;7
+Ciprofloxacin;PAST PSYCH;7
+Citalopram;PAST PSYCH;7
+Clexane;PAST PSYCH;7
+Clomipramine;PAST PSYCH;7
+Clonazepam;PAST PSYCH;7
+Clotrimazole;PAST PSYCH;7
+Clozapine;PAST PSYCH;7
+Co-Amoxiclav;PAST PSYCH;7
+Co-Codamol;PAST PSYCH;7
+Cod Liver Oil;PAST PSYCH;7
+Codeine Phosphate;PAST PSYCH;7
+Codydramol;PAST PSYCH;7
+Cyclizine;PAST PSYCH;7
+Depakote;PAST PSYCH;7
+Diazepam;PAST PSYCH;7
+Diclofenac;PAST PSYCH;7
+Dihydrocodeine;PAST PSYCH;7
+Docusate Sodium;PAST PSYCH;7
+Domperidone;PAST PSYCH;7
+Dothiepin;PAST PSYCH;7
+Duloxetine;PAST PSYCH;7
+Epilim;PAST PSYCH;7
+Erythromycin;PAST PSYCH;7
+Escitalopram;PAST PSYCH;7
+Ferrous Sulphate;PAST PSYCH;7
+Flucloxacillin;PAST PSYCH;7
+Fluconazole;PAST PSYCH;7
+Flumazenil;PAST PSYCH;7
+Fluoxetine;PAST PSYCH;7
+Flupentixol;PAST PSYCH;7
+Fluvoxamine;PAST PSYCH;7
+Folic Acid;PAST PSYCH;7
+Fucidin;PAST PSYCH;7
+Fybogel;PAST PSYCH;7
+Gaviscon;PAST PSYCH;7
+Glucagon;PAST PSYCH;7
+Glycerin;PAST PSYCH;7
+Glyceryl trinitrate;PAST PSYCH;7
+Haloperidol;PAST PSYCH;7
+Hydroxyzine;PAST PSYCH;7
+Hyoscine;PAST PSYCH;7
+Hypostopgel;PAST PSYCH;7
+Ibuprofen;PAST PSYCH;7
+Imipramine;PAST PSYCH;7
+KY Jelly;PAST PSYCH;7
+Lactulose;PAST PSYCH;7
+Lamotrigine;PAST PSYCH;7
+Lansoprazole;PAST PSYCH;7
+Levomepromazine;PAST PSYCH;7
+Levothyroxine;PAST PSYCH;7
+Lithium;PAST PSYCH;7
+Lofepramine;PAST PSYCH;7
+Loperamide;PAST PSYCH;7
+Lorazepam;PAST PSYCH;7
+Ly clear;PAST PSYCH;7
+Mefenamic Acid;PAST PSYCH;7
+Metformin;PAST PSYCH;7
+Methylphenidate;PAST PSYCH;7
+Metoclopramide;PAST PSYCH;7
+Metronidazole;PAST PSYCH;7
+Mirtazapine;PAST PSYCH;7
+Morphine;PAST PSYCH;7
+Mouthwash;PAST PSYCH;7
+Movicol;PAST PSYCH;7
+Multivitamin;PAST PSYCH;7
+Naloxone;PAST PSYCH;7
+Nicorette;PAST PSYCH;7
+Niquitincq;PAST PSYCH;7
+Nitrazepam;PAST PSYCH;7
+Olanzapine;PAST PSYCH;7
+Omega Fish oil;PAST PSYCH;7
+Omeprazole;PAST PSYCH;7
+Oramorph;PAST PSYCH;7
+Orlistat;PAST PSYCH;7
+Orphenadrine;PAST PSYCH;7
+Paliperidone;PAST PSYCH;7
+Pantoprazole;PAST PSYCH;7
+Paracetamol;PAST PSYCH;7
+Paroxetine;PAST PSYCH;7
+Penicillin V;PAST PSYCH;7
+Phenytoin;PAST PSYCH;7
+Piportil;PAST PSYCH;7
+Pipothiazine;PAST PSYCH;7
+Prednisolone;PAST PSYCH;7
+Prochlorperazine;PAST PSYCH;7
+Procyclidine;PAST PSYCH;7
+Promazine;PAST PSYCH;7
+Promethazine;PAST PSYCH;7
+Propantheline Bromide;PAST PSYCH;7
+Propranolol;PAST PSYCH;7
+Pyridoxine;PAST PSYCH;7
+Quetiapine;PAST PSYCH;7
+Reboxetine;PAST PSYCH;7
+Risperidone;PAST PSYCH;7
+Salbutamol inhaler;PAST PSYCH;7
+Semi-sodium Valproate;PAST PSYCH;7
+Senna;PAST PSYCH;7
+Sertraline;PAST PSYCH;7
+Simple Linctus;PAST PSYCH;7
+Sodium Valproate;PAST PSYCH;7
+Sotalol;PAST PSYCH;7
+Strepsil;PAST PSYCH;7
+Sulpiride;PAST PSYCH;7
+Sunblock;PAST PSYCH;7
+Tetracycline;PAST PSYCH;7
+Thiamine;PAST PSYCH;7
+Topiramate;PAST PSYCH;7
+Tramadol;PAST PSYCH;7
+Trazodone;PAST PSYCH;7
+Trifluperazine;PAST PSYCH;7
+Trimethopprim;PAST PSYCH;7
+Venlafaxine;PAST PSYCH;7
+Waxsol;PAST PSYCH;7
+Zolpidem;PAST PSYCH;7
+Zopiclone;PAST PSYCH;7
+Zuclopenthixol;PAST PSYCH;7
+BACKGROUND;BACKGROUND HISTORY;8
+BACKGROUND;BACKGROUND HISTORY;8
+Family History;BACKGROUND HISTORY;8
+Personal History;BACKGROUND HISTORY;8
+Personal History;BACKGROUND HISTORY;8
+Drugs/Alcohol;DRUGS&ALC;9
+Drug & Alcohol;DRUGS&ALC;9
+Alcohol and Drug use;DRUGS&ALC;9
+Substance Abuse  ;DRUGS&ALC;9
+Substance Misuse;DRUGS&ALC;9
+Substance Misuse;DRUGS&ALC;9
+CURRENT SOCIAL CIRCUMSTANCES:;Social History;10
+What are the patient's home and family circumstances?;Social History;10
+What are the patient's home and family circumstances?;Social History;10
+Forensic/Offending History;FORENSIC;11
+Forensic History;FORENSIC;11
+Investigations:;PHYSICAL HEALTH;12
+Medical History;PHYSICAL HEALTH;12
+Physical Examination:;PHYSICAL HEALTH;12
+Physical health;PHYSICAL HEALTH;12
+Physical health;PHYSICAL HEALTH;12
+g/dl;PHYSICAL HEALTH;12
+mmol/L;PHYSICAL HEALTH;12
+mL/min;PHYSICAL HEALTH;12
+mg/L;PHYSICAL HEALTH;12
+109/L;PHYSICAL HEALTH;12
+g/L;PHYSICAL HEALTH;12
+mg/mmol;PHYSICAL HEALTH;12
+mm/hr;PHYSICAL HEALTH;12
+mmol/mol;PHYSICAL HEALTH;12
+ng/mL;PHYSICAL HEALTH;12
+ug/L;PHYSICAL HEALTH;12
+umol/24hrs;PHYSICAL HEALTH;12
+umol/L;PHYSICAL HEALTH;12
+·       Insight;MENTAL STATE EXAMINATION;14
+AWOL;SUMMARY;15
+Child Safeguarding;SUMMARY;15
+Child Safeguarding;SUMMARY;15
+Exploitation;SUMMARY;15
+exploitation;SUMMARY;15
+Financial vulnerability;SUMMARY;15
+Financial Vulnerability;SUMMARY;15
+From Others:;SUMMARY;15
+from others:;SUMMARY;15
+Inappropriate sexual behaviour;SUMMARY;15
+Inappropriate sexual behaviour;SUMMARY;15
+Accidental self-harm;SUMMARY;15
+Non-adherence to medication;SUMMARY;15
+Non-compliance (other interventions);SUMMARY;15
+Non-compliance (pharmacological);SUMMARY;15
+Non-compliance with Treatment;SUMMARY;15
+Non-compliance with treatment;SUMMARY;15
+Physical Aggression:;SUMMARY;15
+Physical Aggression:;SUMMARY;15
+Problem Behaviours;SUMMARY;15
+Problem behaviours;SUMMARY;15
+RISK ASSESSMENT;SUMMARY;15
+Risk Assessment;SUMMARY;15
+Risk assessment;SUMMARY;15
+Risk assessment and management of risk if the patient were discharged, and how these could be managed effectively;SUMMARY;15
+RISK HISTORY;SUMMARY;15
+RISK HISTORY;SUMMARY;15
+Risk of absconsion:;SUMMARY;15
+Risk of absconsion:;SUMMARY;15
+Risk of damage to property: ;SUMMARY;15
+Risk of damage to property: ;SUMMARY;15
+Risk of drug abuse:;SUMMARY;15
+Risk of drug abuse:;SUMMARY;15
+Risk of Fire;SUMMARY;15
+Risk of fire;SUMMARY;15
+Risk of fire setting (deliberate/accidental):;SUMMARY;15
+Risk of fire setting (deliberate/accidental):;SUMMARY;15
+Risk of self-neglect/vulnerability:;SUMMARY;15
+Risk of self-neglect/vulnerability:;SUMMARY;15
+Risk of sexually inappropriate behaviour: ;SUMMARY;15
+Risk of sexually inappropriate behaviour: ;SUMMARY;15
+Risk of suicide: ;SUMMARY;15
+Risk of suicide: ;SUMMARY;15
+Risk of verbal/physical aggression: ;SUMMARY;15
+Risk of verbal/physical aggression: ;SUMMARY;15
+Risk related to physical condition:;SUMMARY;15
+Risk related to physical condition:;SUMMARY;15
+Safeguarding:;SUMMARY;15
+Safeguarding:;SUMMARY;15
+sexual assault:;SUMMARY;15
+sexual Assault:;SUMMARY;15
+Sexual assault:;SUMMARY;15
+Sexual Assault:;SUMMARY;15
+To Others;SUMMARY;15
+To others;SUMMARY;15
+To self:;SUMMARY;15
+To Self:;SUMMARY;15
+Verbal Aggression (Including Threats);SUMMARY;15
+Verbal Aggression (Including Threats);SUMMARY;15
+Vulnerabilities;SUMMARY;15
+Vulnerabilities:;SUMMARY;15
+·       Nature;SUMMARY;15
+1. Is the patient still suffering from a mental disorder?;SUMMARY;15
+2. Is the disorder of a nature or degree which makes it appropriate for the patient to receive;SUMMARY;15
+3. Is it necessary in the interests of the patient’s health and safety or for the protection of other;SUMMARY;15
+Absconding;SUMMARY;15
+Abuse / Exploitation to others;SUMMARY;15
+Abuse / Exploitation to others;SUMMARY;15
+Accidental self-harm;SUMMARY;15
+Are you relying on just nature, just degree or both?;SUMMARY;15
+Characteristics of disorder warranting detention;SUMMARY;15
+Diagnosis (including ICD10 code);SUMMARY;15
+Conclusion and recommendations;SUMMARY;15
+Insight. Include patient’s view of the disorder.;SUMMARY;15
+Is it necessary in the interests of the patient’s health and safety or for the protection of other people that the patient should receive such treatment?;SUMMARY;15
+Is the disorder of a nature or degree which makes it appropriate for the patient to receive;SUMMARY;15
+Is the patient still suffering from a mental disorder?;SUMMARY;15
+OPINION AND RECOMMENDATIONS;SUMMARY;15
+OPINIONS AND RECOMMENDATION;SUMMARY;15
+Impression;SUMMARY;15
+Summary of Case for Continued Detention/Recommendation;SUMMARY;15
+STATUTORY CRITERIA;SUMMARY;15
+Positive Factors;SUMMARY;15
+SUMMARY OF CASE FOR MAINTAINING THE SECTION;SUMMARY;15
+WHAT ARE THE PATIENT’S STRENGTHS?;SUMMARY;15
+WHAT ARE THE PATIENT’S STRENGTHS?;SUMMARY;15
+4. Is appropriate medical treatment available?;PLAN;16
+Is appropriate medical treatment available?;PLAN;16
+The patient’s compliance with medical treatment and likely future willingness to comply.;PLAN;16
+Aftercare /Community Care;PLAN;16

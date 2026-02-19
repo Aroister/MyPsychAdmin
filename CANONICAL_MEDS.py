@@ -1,0 +1,7170 @@
+MEDICATIONS = {
+
+"ACAMPROSATE": {
+    "id": 1,
+    "canonical": "Acamprosate",
+    "patterns": ["acamprosate", "campral"],
+    "units": ["mg"],
+    "class": "Addictions",
+    "subclass": "Alcohol dependence",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "333mg",
+    "allowed_strengths": [333, 666, 999],
+    "bnf_max": "1998mg/day"
+},
+
+"ACARBOSE": {
+    "id": 2,
+    "canonical": "Acarbose",
+    "patterns": ["acarbose", "glucobay"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Alpha-glucosidase inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per diabetes guidance"
+},
+
+"ACEBUTOLOL": {
+    "id": 3,
+    "canonical": "Acebutolol",
+    "patterns": ["acebutolol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg, 400mg",
+    "allowed_strengths": [100, 200, 400],
+    "bnf_max": "1200mg/day"
+},
+
+"ACENOCOUMAROL": {
+    "id": 4,
+    "canonical": "Acenocoumarol",
+    "patterns": ["acenocoumarol", "sintrom"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Anticoagulant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 4mg",
+    "allowed_strengths": [1, 4],
+    "bnf_max": "per INR"
+},
+
+"ACETAZOLAMIDE": {
+    "id": 5,
+    "canonical": "Acetazolamide",
+    "patterns": ["acetazolamide", "diamox"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Carbonic anhydrase inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg",
+    "allowed_strengths": [250],
+    "bnf_max": "1g/day"
+},
+
+"ACETYLCYSTEINE": {
+    "id": 6,
+    "canonical": "Acetylcysteine",
+    "patterns": ["acetylcysteine", "n-acetylcysteine"],
+    "units": ["mg", "mg/ml"],
+    "class": "Respiratory / Toxicology",
+    "subclass": "Mucolytic / Paracetamol antidote",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per protocol"
+},
+
+"ACICLOVIR": {
+    "id": 7,
+    "canonical": "Aciclovir",
+    "patterns": ["aciclovir", "acyclovir", "zovirax"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiviral",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg, 800mg",
+    "allowed_strengths": [200, 400, 800],
+    "bnf_max": "per infection protocol"
+},
+
+"ACITRETIN": {
+    "id": 8,
+    "canonical": "Acitretin",
+    "patterns": ["acitretin", "neotigason"],
+    "units": ["mg"],
+    "class": "Dermatology",
+    "subclass": "Retinoid",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg",
+    "allowed_strengths": [10, 25],
+    "bnf_max": "per dermatology guidance"
+},
+
+"ACONITINE": {
+    "id": 9,
+    "canonical": "Aconitine",
+    "patterns": ["aconitine"],
+    "units": ["mg"],
+    "class": "Toxicology",
+    "subclass": "Poison",
+    "forms": ["n/a"],
+    "route": "n/a",
+    "depot": False,
+    "strengths": "n/a",
+    "allowed_strengths": [],
+    "bnf_max": "n/a"
+},
+
+"ACOTIAMIDE": {
+    "id": 10,
+    "canonical": "Acotiamide",
+    "patterns": ["acotiamide"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Prokinetic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg",
+    "allowed_strengths": [100],
+    "bnf_max": "per gastroparesis protocol"
+},
+
+"ACUPAN": {
+    "id": 11,
+    "canonical": "Nefopam",
+    "patterns": ["acupan", "nefopam"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Analgesic",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "30mg",
+    "allowed_strengths": [30],
+    "bnf_max": "90mg/day"
+},
+
+"ADALIMUMAB": {
+    "id": 12,
+    "canonical": "Adalimumab",
+    "patterns": ["adalimumab", "humira"],
+    "units": ["mg"],
+    "class": "Rheumatology / Dermatology",
+    "subclass": "TNF inhibitor",
+    "forms": ["injection"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "40mg",
+    "allowed_strengths": [40],
+    "bnf_max": "per biologics protocol"
+},
+
+"ADAPALENE": {
+    "id": 13,
+    "canonical": "Adapalene",
+    "patterns": ["adapalene"],
+    "units": ["mg", "g"],
+    "class": "Dermatology",
+    "subclass": "Retinoid",
+    "forms": ["gel", "cream"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "0.1%",
+    "allowed_strengths": [],
+    "bnf_max": "per dermatology protocol"
+},
+
+"ADEFOVIR": {
+    "id": 14,
+    "canonical": "Adefovir",
+    "patterns": ["adefovir"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Hepatitis B antiviral",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "per hepatitis protocol"
+},
+
+"ADEMPAS": {
+    "id": 15,
+    "canonical": "Riociguat",
+    "patterns": ["adempas", "riociguat"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Pulmonary hypertension",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 1mg, 1.5mg, 2mg, 2.5mg",
+    "allowed_strengths": [0.5, 1, 1.5, 2, 2.5],
+    "bnf_max": "per specialist"
+},
+
+"ADRENALINE": {
+    "id": 16,
+    "canonical": "Adrenaline",
+    "patterns": ["adrenaline", "epinephrine"],
+    "units": ["mg", "mg/ml"],
+    "class": "Emergency",
+    "subclass": "Catecholamine",
+    "forms": ["IM", "IV"],
+    "route": "IM / IV",
+    "depot": False,
+    "strengths": "1mg/ml",
+    "allowed_strengths": [1],
+    "bnf_max": "per resuscitation protocol"
+},
+
+"AGOMELATINE": {
+    "id": 17,
+    "canonical": "Agomelatine",
+    "patterns": ["agomelatine", "valdoxan"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "Melatonergic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg",
+    "allowed_strengths": [25],
+    "bnf_max": "50mg/day"
+},
+
+"ALBIGLUTIDE": {
+    "id": 18,
+    "canonical": "Albiglutide",
+    "patterns": ["albiglutide", "tanzeum"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "GLP-1 agonist",
+    "forms": ["injection"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "30mg, 50mg",
+    "allowed_strengths": [30, 50],
+    "bnf_max": "per protocol"
+},
+
+
+"ALENDRONATE": {
+    "id": 20,
+    "canonical": "Alendronate",
+    "patterns": ["alendronate", "fosamax"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Bisphosphonate",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 70mg weekly",
+    "allowed_strengths": [10, 70],
+    "bnf_max": "per osteoporosis guidance"
+},
+
+"ALEMTUZUMAB": {
+    "id": 21,
+    "canonical": "Alemtuzumab",
+    "patterns": ["alemtuzumab", "lemtrada"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "MS biologic",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "12mg",
+    "allowed_strengths": [12],
+    "bnf_max": "per MS protocol"
+},
+
+"ALFENTANIL": {
+    "id": 22,
+    "canonical": "Alfentanil",
+    "patterns": ["alfentanil"],
+    "units": ["mcg", "mcg/ml"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "500mcg/ml",
+    "allowed_strengths": [500],
+    "bnf_max": "per anaesthetics"
+},
+
+"GAVISCON": {
+    "id": 23,
+    "canonical": "Gaviscon",
+    "patterns": ["alginate", "gaviscon"],
+    "units": ["ml"],
+    "class": "Gastroenterology",
+    "subclass": "Reflux therapy",
+    "forms": ["liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5ml, 10mls, 15ml, 20ml",
+    "allowed_strengths": [5, 10, 15, 20],
+    "bnf_max": "OTC"
+},
+
+"ALGLUCOSIDASE": {
+    "id": 24,
+    "canonical": "Alglucosidase alfa",
+    "patterns": ["alglucosidase", "myozyme"],
+    "units": ["mg"],
+    "class": "Metabolic",
+    "subclass": "Enzyme replacement",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "per specialist"
+},
+
+"ALIMEMAZINE": {
+    "id": 25,
+    "canonical": "Alimemazine",
+    "patterns": ["alimemazine", "trimeprazine"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 30mg",
+    "allowed_strengths": [10, 30],
+    "bnf_max": "per guidance"
+},
+
+"ALISKIREN": {
+    "id": 26,
+    "canonical": "Aliskiren",
+    "patterns": ["aliskiren", "rasilez"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Renin inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 300mg",
+    "allowed_strengths": [150, 300],
+    "bnf_max": "300mg/day"
+},
+
+"ALLANTOIN": {
+    "id": 27,
+    "canonical": "Allantoin",
+    "patterns": ["allantoin"],
+    "units": ["mg", "g"],
+    "class": "Dermatology",
+    "subclass": "Skin healing agent",
+    "forms": ["cream"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"ALLERCLEAR": {
+    "id": 28,
+    "canonical": "Loratadine (Allerclear)",
+    "patterns": ["allerclear", "loratadine"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "10mg/day"
+},
+
+"ALLOPURINOL": {
+    "id": 29,
+    "canonical": "Allopurinol",
+    "patterns": ["allopurinol", "zyloric"],
+    "units": ["mg"],
+    "class": "Rheumatology",
+    "subclass": "Gout therapy",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 300mg",
+    "allowed_strengths": [100, 300],
+    "bnf_max": "900mg/day"
+},
+
+"ALMOTRIPTAN": {
+    "id": 30,
+    "canonical": "Almotriptan",
+    "patterns": ["almotriptan"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anti-migraine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "12.5mg",
+    "allowed_strengths": [12.5],
+    "bnf_max": "25mg/day"
+},
+
+"ALOGLIPTIN": {
+    "id": 31,
+    "canonical": "Alogliptin",
+    "patterns": ["alogliptin", "vipidia"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "DPP-4 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg",
+    "allowed_strengths": [25],
+    "bnf_max": "25mg/day"
+},
+
+"ALPHA_BLOCKERS": {
+    "id": 32,
+    "canonical": "Alpha-blockers (class)",
+    "patterns": ["alpha blocker", "alpha-blocker"],
+    "units": ["mg"],
+    "class": "Urology / Hypertension",
+    "subclass": "Class entry",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"ALPHA_LIPOIC_ACID": {
+    "id": 33,
+    "canonical": "Alpha Lipoic Acid",
+    "patterns": ["alpha lipoic acid"],
+    "units": ["mg"],
+    "class": "Supplement",
+    "subclass": "Antioxidant",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 600mg",
+    "allowed_strengths": [200, 600],
+    "bnf_max": "OTC"
+},
+
+"ALPRAZOLAM": {
+    "id": 34,
+    "canonical": "Alprazolam",
+    "patterns": ["alprazolam", "xanax"],
+    "units": ["mg"],
+    "class": "Benzodiazepine",
+    "subclass": "Anxiolytic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.25mg, 0.5mg, 1mg",
+    "allowed_strengths": [0.25, 0.5, 1],
+    "bnf_max": "per guidance"
+},
+
+"ALVERINE": {
+    "id": 35,
+    "canonical": "Alverine",
+    "patterns": ["alverine", "spasmonal"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Antispasmodic",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "60mg, 120mg",
+    "allowed_strengths": [60, 120],
+    "bnf_max": "per IBS protocol"
+},
+
+"AMANTADINE": {
+    "id": 36,
+    "canonical": "Amantadine",
+    "patterns": ["amantadine"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Antiviral / Parkinson’s",
+    "forms": ["tablet", "capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg",
+    "allowed_strengths": [100],
+    "bnf_max": "300mg/day"
+},
+
+"AMBRISENTAN": {
+    "id": 37,
+    "canonical": "Ambrisentan",
+    "patterns": ["ambrisentan", "volibris"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Pulmonary hypertension",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "per PH protocol"
+},
+
+"AMBROXOL": {
+    "id": 38,
+    "canonical": "Ambroxol",
+    "patterns": ["ambroxol"],
+    "units": ["mg"],
+    "class": "Respiratory",
+    "subclass": "Mucolytic",
+    "forms": ["tablet", "syrup"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "30mg",
+    "allowed_strengths": [30],
+    "bnf_max": "OTC"
+},
+
+"AMIKACIN": {
+    "id": 39,
+    "canonical": "Amikacin",
+    "patterns": ["amikacin"],
+    "units": ["mg", "mg/ml"],
+    "class": "Infectious Disease",
+    "subclass": "Aminoglycoside",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per renal protocol"
+},
+
+"AMILORIDE": {
+    "id": 40,
+    "canonical": "Amiloride",
+    "patterns": ["amiloride"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Diuretic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg",
+    "allowed_strengths": [5],
+    "bnf_max": "per guidance"
+},
+
+"AMINOPHYLLINE": {
+    "id": 41,
+    "canonical": "Aminophylline",
+    "patterns": ["aminophylline"],
+    "units": ["mg"],
+    "class": "Respiratory",
+    "subclass": "Bronchodilator",
+    "forms": ["IV", "tablet"],
+    "route": "IV / oral",
+    "depot": False,
+    "strengths": "100mg, 225mg",
+    "allowed_strengths": [100, 225],
+    "bnf_max": "per asthma/COPD protocol"
+},
+
+"AMIODARONE": {
+    "id": 42,
+    "canonical": "Amiodarone",
+    "patterns": ["amiodarone"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiarrhythmic",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per cardiology protocol"
+},
+
+"AMISULPRIDE": {
+    "id": 43,
+    "canonical": "Amisulpride",
+    "patterns": ["amisulpride", "solian", "amisulp"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 200mg, 400mg, 600mg",
+    "allowed_strengths": [50, 100, 200, 400, 600],
+    "bnf_max": "1200mg/day"
+},
+
+"AMITRIPTYLINE": {
+    "id": 44,
+    "canonical": "Amitriptyline",
+    "patterns": ["amitriptyline"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "TCA",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg, 75mg, 100mg, 125mg, 150mg",
+    "allowed_strengths": [10, 25, 50, 75, 100, 125, 150],
+    "bnf_max": "150mg/day"
+},
+
+"AMITRIPTYLINE_CHLORIDE": {
+    "id": 45,
+    "canonical": "Amitriptyline (Chloride Salt)",
+    "patterns": ["amitriptyline chloride"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "TCA",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per TCA guidance"
+},
+
+"AMLODIPINE": {
+    "id": 46,
+    "canonical": "Amlodipine",
+    "patterns": ["amlodipine"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Calcium channel blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "10mg/day"
+},
+
+"AMMONIUM_CHLORIDE": {
+    "id": 47,
+    "canonical": "Ammonium Chloride",
+    "patterns": ["ammonium chloride"],
+    "units": ["mg"],
+    "class": "Respiratory",
+    "subclass": "Expectorant",
+    "forms": ["liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per OTC"
+},
+
+"AMOXICILLIN": {
+    "id": 48,
+    "canonical": "Amoxicillin",
+    "patterns": ["amoxicillin", "amoxil"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Penicillin",
+    "forms": ["tablet", "capsule", "suspension"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"AMPICILLIN": {
+    "id": 49,
+    "canonical": "Ampicillin",
+    "patterns": ["ampicillin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Penicillin",
+    "forms": ["IV", "oral"],
+    "route": "IV / oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"ANAGRELIDE": {
+    "id": 50,
+    "canonical": "Anagrelide",
+    "patterns": ["anagrelide"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Platelet lowering",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 1mg",
+    "allowed_strengths": [0.5, 1],
+    "bnf_max": "per haematology"
+},
+"ANASTROZOLE": {
+    "id": 51,
+    "canonical": "Anastrozole",
+    "patterns": ["anastrozole", "arimidex"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Aromatase inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg",
+    "allowed_strengths": [1],
+    "bnf_max": "1mg/day"
+},
+
+"ANDROGEL": {
+    "id": 52,
+    "canonical": "Testosterone Gel",
+    "patterns": ["androgel", "testosterone gel"],
+    "units": ["g", "mg"],
+    "class": "Endocrine",
+    "subclass": "Testosterone replacement",
+    "forms": ["gel"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per endocrine"
+},
+
+"ANIDULAFUNGIN": {
+    "id": 53,
+    "canonical": "Anidulafungin",
+    "patterns": ["anidulafungin", "eraxis"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "100mg",
+    "allowed_strengths": [100],
+    "bnf_max": "per protocol"
+},
+
+"APIXABAN": {
+    "id": 54,
+    "canonical": "Apixaban",
+    "patterns": ["apixaban", "eliquis"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "DOAC",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg",
+    "allowed_strengths": [2.5, 5],
+    "bnf_max": "per anticoagulation guidance"
+},
+
+"APREMILAST": {
+    "id": 55,
+    "canonical": "Apremilast",
+    "patterns": ["apremilast", "otezla"],
+    "units": ["mg"],
+    "class": "Dermatology",
+    "subclass": "PDE4 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 30mg",
+    "allowed_strengths": [10, 20, 30],
+    "bnf_max": "per psoriasis guidance"
+},
+
+"ARACHIS_OIL": {
+    "id": 56,
+    "canonical": "Arachis Oil",
+    "patterns": ["arachis oil"],
+    "units": ["ml"],
+    "class": "Gastroenterology",
+    "subclass": "Enema",
+    "forms": ["enema"],
+    "route": "rectal",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per product"
+},
+
+"ARIPIPRAZOLE": {
+    "id": 57,
+    "canonical": "Aripiprazole",
+    "patterns": ["aripiprazole", "abilify", "aripip"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet", "IM"],
+    "route": "oral / IM",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 20mg, 25mg, 30mg, 9.75mg IM",
+    "allowed_strengths": [5, 10, 15, 20, 25, 30, 9.75],
+    "bnf_max": "30mg/day oral"
+},
+
+"ARIPIPRAZOLE_LAI": {
+    "id": 58,
+    "canonical": "Aripiprazole LAI",
+    "patterns": ["aripiprazole laI", "aripiprazole depot", "abilify maintena"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical depot",
+    "forms": ["IM depot"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "300mg, 400mg",
+    "allowed_strengths": [300, 400],
+    "bnf_max": "per depot protocol"
+},
+
+"ARMODAFINIL": {
+    "id": 59,
+    "canonical": "Armodafinil",
+    "patterns": ["armodafinil", "nuvigil"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Wakefulness",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 150mg, 250mg",
+    "allowed_strengths": [50, 150, 250],
+    "bnf_max": "250mg/day"
+},
+
+"ARTEMETHER_LUMEFANTRINE": {
+    "id": 60,
+    "canonical": "Artemether/Lumefantrine",
+    "patterns": ["artemether", "lumefantrine", "riamet"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Malaria",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg/120mg",
+    "allowed_strengths": [],
+    "bnf_max": "per malaria protocol"
+},
+
+"ASCORBIC_ACID": {
+    "id": 61,
+    "canonical": "Ascorbic Acid",
+    "patterns": ["ascorbic acid", "vitamin c"],
+    "units": ["mg"],
+    "class": "Supplement",
+    "subclass": "Vitamin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg, 1000mg",
+    "allowed_strengths": [500, 1000],
+    "bnf_max": "OTC"
+},
+
+"ASPIRIN": {
+    "id": 62,
+    "canonical": "Aspirin",
+    "patterns": ["aspirin", "asa"],
+    "units": ["mg"],
+    "class": "Pain / Cardiac",
+    "subclass": "NSAID / Antiplatelet",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "75mg, 150mg, 225mg, 300mg",
+    "allowed_strengths": [75, 150, 225, 300],
+    "bnf_max": "300mg qds (pain)"
+},
+
+"ATENOLOL": {
+    "id": 63,
+    "canonical": "Atenolol",
+    "patterns": ["atenolol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg",
+    "allowed_strengths": [25, 50, 75, 100],
+    "bnf_max": "100mg/day"
+},
+
+"ATENOLOL_CHLORTHALIDONE": {
+    "id": 64,
+    "canonical": "Atenolol + Chlorthalidone",
+    "patterns": ["atenolol chlorthalidone"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Combination",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"ATENOLOL_NIFEDIPINE": {
+    "id": 65,
+    "canonical": "Atenolol + Nifedipine",
+    "patterns": ["atenolol nifedipine"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Combination",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"ATENOLOL_OTHER": {
+    "id": 66,
+    "canonical": "Atenolol (other combos)",
+    "patterns": ["atenolol combination"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Combination",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"ATENOLOL_RETARD": {
+    "id": 67,
+    "canonical": "Atenolol Retard",
+    "patterns": ["atenolol retard"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Retard preparation",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"ATOMOXETINE": {
+    "id": 68,
+    "canonical": "Atomoxetine",
+    "patterns": ["atomoxetine", "strattera"],
+    "units": ["mg"],
+    "class": "Psychiatry",
+    "subclass": "ADHD",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 18mg, 25mg, 40mg, 60mg, 80mg, 100mg, 120mg",
+    "allowed_strengths": [10, 18, 25, 40, 60, 80,100, 120],
+    "bnf_max": "120mg/day"
+},
+
+"ATOVAQUONE_PROGUANIL": {
+    "id": 69,
+    "canonical": "Atovaquone/Proguanil",
+    "patterns": ["atovaquone", "proguanil", "malarone"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Malaria",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg/100mg",
+    "allowed_strengths": [],
+    "bnf_max": "per malaria protocol"
+},
+
+"ATORVASTATIN": {
+    "id": 70,
+    "canonical": "Atorvastatin",
+    "patterns": ["atorvastatin"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Statin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 40mg, 80mg",
+    "allowed_strengths": [10, 20, 40, 80],
+    "bnf_max": "80mg/day"
+},
+
+"ATROPINE": {
+    "id": 71,
+    "canonical": "Atropine",
+    "patterns": ["atropine"],
+    "units": ["mg", "mg/ml"],
+    "class": "Emergency",
+    "subclass": "Antimuscarinic",
+    "forms": ["IV", "IM"],
+    "route": "IV / IM",
+    "depot": False,
+    "strengths": "600mcg, 1mg/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per ALS protocol"
+},
+
+"AVANAFIL": {
+    "id": 72,
+    "canonical": "Avanafil",
+    "patterns": ["avanafil"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "ED agent",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 200mg",
+    "allowed_strengths": [50, 100, 200],
+    "bnf_max": "per guidance"
+},
+
+
+"AVASTIN": {
+    "id": 73,
+    "canonical": "Bevacizumab",
+    "patterns": ["avastin", "bevacizumab"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "VEGF inhibitor",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "100mg, 400mg",
+    "allowed_strengths": [100, 400],
+    "bnf_max": "per oncology"
+},
+
+"AZATHIOPRINE": {
+    "id": 74,
+    "canonical": "Azathioprine",
+    "patterns": ["azathioprine"],
+    "units": ["mg"],
+    "class": "Immunology",
+    "subclass": "Immunosuppressant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "per autoimmune protocol"
+},
+
+"AZELASTINE": {
+    "id": 75,
+    "canonical": "Azelastine",
+    "patterns": ["azelastine"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["nasal spray", "eye drops"],
+    "route": "nasal / ophthalmic",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per allergy guidance"
+},
+
+"AZITHROMYCIN": {
+    "id": 76,
+    "canonical": "Azithromycin",
+    "patterns": ["azithromycin", "zithro"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Macrolide",
+    "forms": ["tablet", "suspension"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"AZTREONAM": {
+    "id": 77,
+    "canonical": "Aztreonam",
+    "patterns": ["aztreonam"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Monobactam",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per infection protocol"
+},
+
+"BACLOFEN": {
+    "id": 78,
+    "canonical": "Baclofen",
+    "patterns": ["baclofen", "lioresal"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Muscle relaxant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 25mg",
+    "allowed_strengths": [5, 10, 25],
+    "bnf_max": "100mg/day"
+},
+
+"BACTRIM": {
+    "id": 79,
+    "canonical": "Co-trimoxazole",
+    "patterns": ["bactrim", "co-trimoxazole"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antibiotic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per infection"
+},
+
+"BARICITINIB": {
+    "id": 80,
+    "canonical": "Baricitinib",
+    "patterns": ["baricitinib", "olumiant"],
+    "units": ["mg"],
+    "class": "Immunology",
+    "subclass": "JAK inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg, 4mg",
+    "allowed_strengths": [2, 4],
+    "bnf_max": "per rheumatology protocol"
+},
+
+"BENDEPINE": {
+    "id": 81,
+    "canonical": "Bendepine",
+    "patterns": ["bendepine"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "CCB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"BENPERIDOL": {
+    "id": 82,
+    "canonical": "Benperidol",
+    "patterns": ["benperidol", "benp"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 2mg",
+    "allowed_strengths": [0.5, 2],
+    "bnf_max": "20mg/day"
+},
+
+"BEROCCA": {
+    "id": 83,
+    "canonical": "Berocca (Vitamin B/C)",
+    "patterns": ["berocca"],
+    "units": ["mg"],
+    "class": "Supplement",
+    "subclass": "Vitamin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"BETAHISTINE": {
+    "id": 84,
+    "canonical": "Betahistine",
+    "patterns": ["betahistine", "betaserc"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Vertigo",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "8mg, 16mg, 24mg",
+    "allowed_strengths": [8, 16, 24],
+    "bnf_max": "per vertigo guidance"
+},
+
+"BETAMETHASONE": {
+    "id": 85,
+    "canonical": "Betamethasone",
+    "patterns": ["betamethasone"],
+    "units": ["mg", "g"],
+    "class": "Dermatology / Endocrine",
+    "subclass": "Steroid",
+    "forms": ["cream", "IM"],
+    "route": "topical / IM",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per steroid protocol"
+},
+
+"BETAXOLOL": {
+    "id": 86,
+    "canonical": "Betaxolol",
+    "patterns": ["betaxolol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg",
+    "allowed_strengths": [10, 20],
+    "bnf_max": "20mg/day"
+},
+
+"BEZAFIBRATE": {
+    "id": 87,
+    "canonical": "Bezafibrate",
+    "patterns": ["bezafibrate"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Lipid-lowering",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg",
+    "allowed_strengths": [200, 400],
+    "bnf_max": "400mg/day"
+},
+
+"BICALUTAMIDE": {
+    "id": 88,
+    "canonical": "Bicalutamide",
+    "patterns": ["bicalutamide", "casodex"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Anti-androgen",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 150mg",
+    "allowed_strengths": [50, 150],
+    "bnf_max": "150mg/day"
+},
+
+"BICARBONATE": {
+    "id": 89,
+    "canonical": "Sodium Bicarbonate",
+    "patterns": ["sodium bicarbonate", "bicarbonate"],
+    "units": ["mg", "mmol"],
+    "class": "Renal / Metabolic",
+    "subclass": "Alkali therapy",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per metabolic acidosis protocol"
+},
+
+"BIMATOPROST": {
+    "id": 90,
+    "canonical": "Bimatoprost",
+    "patterns": ["bimatoprost", "lumigan"],
+    "units": ["mg", "ml"],
+    "class": "Ophthalmology",
+    "subclass": "Glaucoma",
+    "forms": ["eye drops"],
+    "route": "ophthalmic",
+    "depot": False,
+    "strengths": "0.03%",
+    "allowed_strengths": [],
+    "bnf_max": "per glaucoma protocol"
+},
+
+"BISACODYL": {
+    "id": 91,
+    "canonical": "Bisacodyl",
+    "patterns": ["bisacodyl", "dulcolax"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Laxative",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "20mg/day"
+},
+
+"BISOPROLOL": {
+    "id": 92,
+    "canonical": "Bisoprolol",
+    "patterns": ["bisoprolol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1.25mg, 2.5mg, 5mg, 10mg",
+    "allowed_strengths": [1.25, 2.5, 5, 10],
+    "bnf_max": "10mg/day"
+},
+
+"BRIMONIDINE": {
+    "id": 93,
+    "canonical": "Brimonidine",
+    "patterns": ["brimonidine", "alphagan"],
+    "units": ["mg", "ml"],
+    "class": "Ophthalmology",
+    "subclass": "Glaucoma",
+    "forms": ["eye drops"],
+    "route": "ophthalmic",
+    "depot": False,
+    "strengths": "0.2%",
+    "allowed_strengths": [],
+    "bnf_max": "per glaucoma protocol"
+},
+
+"BROMAZEPAM": {
+    "id": 94,
+    "canonical": "Bromazepam",
+    "patterns": ["bromazepam"],
+    "units": ["mg"],
+    "class": "Benzodiazepine",
+    "subclass": "Anxiolytic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "3mg, 6mg",
+    "allowed_strengths": [3, 6],
+    "bnf_max": "per guidance"
+},
+
+"BROMOCRIPTINE": {
+    "id": 95,
+    "canonical": "Bromocriptine",
+    "patterns": ["bromocriptine", "parlodel"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Dopamine agonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1.25mg, 2.5mg, 5mg",
+    "allowed_strengths": [1.25, 2.5, 5],
+    "bnf_max": "30mg/day"
+},
+
+"BUDESONIDE": {
+    "id": 96,
+    "canonical": "Budesonide",
+    "patterns": ["budesonide"],
+    "units": ["mg", "mcg"],
+    "class": "Respiratory",
+    "subclass": "Inhaled steroid",
+    "forms": ["inhaler"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "100mcg, 200mcg, 400mcg",
+    "allowed_strengths": [100, 200, 400],
+    "bnf_max": "per asthma protocol"
+},
+
+"BUPIVACAINE": {
+    "id": 97,
+    "canonical": "Bupivacaine",
+    "patterns": ["bupivacaine"],
+    "units": ["mg", "mg/ml"],
+    "class": "Anaesthetics",
+    "subclass": "Local anaesthetic",
+    "forms": ["injection"],
+    "route": "injection",
+    "depot": False,
+    "strengths": "0.25%, 0.5%",
+    "allowed_strengths": [],
+    "bnf_max": "per anaesthetic protocol"
+},
+
+"BUPRENORPHINE": {
+    "id": 98,
+    "canonical": "Buprenorphine",
+    "patterns": ["buprenorphine", "subutex"],
+    "units": ["mg"],
+    "class": "Addictions",
+    "subclass": "Opioid replacement",
+    "forms": ["tablet", "SL"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg, 8mg",
+    "allowed_strengths": [2, 8],
+    "bnf_max": "per addictions"
+},
+
+"BUPROPION": {
+    "id": 99,
+    "canonical": "Bupropion",
+    "patterns": ["bupropion", "zyban"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "NDRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 300mg",
+    "allowed_strengths": [150, 300],
+    "bnf_max": "300mg/day"
+},
+
+"BUSPIRONE": {
+    "id": 100,
+    "canonical": "Buspirone",
+    "patterns": ["buspirone"],
+    "units": ["mg"],
+    "class": "Anxiolytic",
+    "subclass": "5-HT1A partial agonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "60mg/day"
+},
+
+"CABERGOLINE": {
+    "id": 101,
+    "canonical": "Cabergoline",
+    "patterns": ["cabergoline"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Dopamine agonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.25mg, 0.5mg",
+    "allowed_strengths": [0.25, 0.5],
+    "bnf_max": "per prolactinoma protocol"
+},
+
+"CAFFEINE": {
+    "id": 102,
+    "canonical": "Caffeine",
+    "patterns": ["caffeine"],
+    "units": ["mg"],
+    "class": "Stimulant",
+    "subclass": "Xanthine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "OTC"
+},
+
+"CALCICHEW": {
+    "id": 103,
+    "canonical": "Calcium Carbonate",
+    "patterns": ["calcichew"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Calcium supplement",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg",
+    "allowed_strengths": [500],
+    "bnf_max": "OTC"
+},
+
+"CALCIUM_CARBONATE": {
+    "id": 104,
+    "canonical": "Calcium Carbonate",
+    "patterns": ["calcium carbonate"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Calcium",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg, 1500mg",
+    "allowed_strengths": [500, 1500],
+    "bnf_max": "OTC"
+},
+
+"CALCITRIOL": {
+    "id": 105,
+    "canonical": "Calcitriol",
+    "patterns": ["calcitriol"],
+    "units": ["mcg"],
+    "class": "Endocrine",
+    "subclass": "Vitamin D analogue",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.25mcg, 0.5mcg",
+    "allowed_strengths": [0.25, 0.5],
+    "bnf_max": "per endocrine"
+},
+
+"CALCIUM_D3": {
+    "id": 106,
+    "canonical": "Calcium + Vitamin D3",
+    "patterns": ["calcichew d3", "calcium d3"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Calcium/Vit D",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg/400IU",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"CALPOL": {
+    "id": 107,
+    "canonical": "Paracetamol (Calpol)",
+    "patterns": ["calpol"],
+    "units": ["mg", "mg/5ml"],
+    "class": "Pain",
+    "subclass": "Analgesic",
+    "forms": ["liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "120mg/5ml, 250mg/5ml",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"CALTRATE": {
+    "id": 108,
+    "canonical": "Calcium Supplement (Caltrate)",
+    "patterns": ["caltrate"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Calcium supplement",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "600mg",
+    "allowed_strengths": [600],
+    "bnf_max": "OTC"
+},
+
+"CAMCOLIT": {
+    "id": 109,
+    "canonical": "Lithium Carbonate (Camcolit)",
+    "patterns": ["camcolit"],
+    "units": ["mg"],
+    "class": "Mood Stabiliser",
+    "subclass": "Lithium",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "400mg",
+    "allowed_strengths": [400],
+    "bnf_max": "per serum levels"
+},
+
+"CANAGLIFLOZIN": {
+    "id": 110,
+    "canonical": "Canagliflozin",
+    "patterns": ["canagliflozin"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "SGLT2 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 300mg",
+    "allowed_strengths": [100, 300],
+    "bnf_max": "300mg/day"
+},
+
+"CAPECITABINE": {
+    "id": 111,
+    "canonical": "Capecitabine",
+    "patterns": ["capecitabine", "xeloda"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Pro-drug chemotherapy",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 500mg",
+    "allowed_strengths": [150, 500],
+    "bnf_max": "per oncology"
+},
+
+"CAPSAICIN": {
+    "id": 112,
+    "canonical": "Capsaicin",
+    "patterns": ["capsaicin"],
+    "units": ["mg", "g"],
+    "class": "Pain",
+    "subclass": "Topical analgesic",
+    "forms": ["cream"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "0.025%, 0.075%",
+    "allowed_strengths": [],
+    "bnf_max": "per guidance"
+},
+
+"CAPTOPRIL": {
+    "id": 113,
+    "canonical": "Captopril",
+    "patterns": ["captopril"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ACE inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "12.5mg, 25mg, 50mg",
+    "allowed_strengths": [12.5, 25, 50],
+    "bnf_max": "150mg/day"
+},
+
+"CARBAMAZEPINE": {
+    "id": 114,
+    "canonical": "Carbamazepine",
+    "patterns": ["carbamazepine", "tegretol"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg, 400mg, 600mg, 800mg",
+    "allowed_strengths": [100, 200, 400, 600, 800],
+    "bnf_max": "per seizure protocol"
+},
+
+"CARBAMIDE_PEROXIDE": {
+    "id": 115,
+    "canonical": "Carbamide Peroxide",
+    "patterns": ["carbamide peroxide"],
+    "units": ["%"],
+    "class": "ENT",
+    "subclass": "Ear wax softener",
+    "forms": ["drops"],
+    "route": "otic",
+    "depot": False,
+    "strengths": "5%, 6.5%",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"CARBIMAZOLE": {
+    "id": 116,
+    "canonical": "Carbimazole",
+    "patterns": ["carbimazole"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Thyroid",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 20mg",
+    "allowed_strengths": [5, 10, 15, 20],
+    "bnf_max": "per hyperthyroid protocol"
+},
+
+"CARBOPLATIN": {
+    "id": 117,
+    "canonical": "Carboplatin",
+    "patterns": ["carboplatin"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Platinum chemotherapy",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per AUC protocol"
+},
+
+"CARFILZOMIB": {
+    "id": 118,
+    "canonical": "Carfilzomib",
+    "patterns": ["carfilzomib"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Proteasome inhibitor",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per oncology"
+},
+
+"CARGLUMIC_ACID": {
+    "id": 119,
+    "canonical": "Carglumic Acid",
+    "patterns": ["carglumic acid"],
+    "units": ["mg"],
+    "class": "Metabolic",
+    "subclass": "Urea cycle disorder therapy",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per metabolic protocol"
+},
+
+"CARMEN": {
+    "id": 120,
+    "canonical": "Mefenamic Acid (Carmen)",
+    "patterns": ["carmen", "mefenamic acid"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg",
+    "allowed_strengths": [500],
+    "bnf_max": "per NSAID protocol"
+},
+
+"CARVEDILOL": {
+    "id": 121,
+    "canonical": "Carvedilol",
+    "patterns": ["carvedilol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker / vasodilating",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "3.125mg, 6.25mg, 12.5mg, 25mg",
+    "allowed_strengths": [3.125, 6.25, 12.5, 25],
+    "bnf_max": "50mg/day"
+},
+
+"CEFALEXIN": {
+    "id": 122,
+    "canonical": "Cefalexin",
+    "patterns": ["cefalexin", "cephalexin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Cephalosporin",
+    "forms": ["tablet", "capsule", "suspension"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"CEFOTAXIME": {
+    "id": 123,
+    "canonical": "Cefotaxime",
+    "patterns": ["cefotaxime"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Cephalosporin",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "500mg, 1g, 1.5g, 2g",
+    "allowed_strengths": [500, 1000, 1500, 2000],
+    "bnf_max": "per infection protocol"
+},
+
+"CEFTRIAXONE": {
+    "id": 124,
+    "canonical": "Ceftriaxone",
+    "patterns": ["ceftriaxone", "rocephin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Cephalosporin",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "1g, 2g",
+    "allowed_strengths": [1000, 2000],
+    "bnf_max": "per infection protocol"
+},
+
+"CELECOXIB": {
+    "id": 125,
+    "canonical": "Celecoxib",
+    "patterns": ["celecoxib", "celebrex"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "COX-2 inhibitor",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "400mg/day"
+},
+
+"CEPHALEXIN": {
+    "id": 126,
+    "canonical": "Cephalexin",
+    "patterns": ["cephalexin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Cephalosporin",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"CETIRIZINE": {
+    "id": 127,
+    "canonical": "Cetirizine",
+    "patterns": ["cetirizine", "zirtek"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "10mg/day"
+},
+
+"CHLORAMBUCIL": {
+    "id": 128,
+    "canonical": "Chlorambucil",
+    "patterns": ["chlorambucil", "leukeran"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Chemotherapy",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg",
+    "allowed_strengths": [2],
+    "bnf_max": "per oncology protocol"
+},
+
+"CHLORDIAZEPOXIDE": {
+    "id": 129,
+    "canonical": "Chlordiazepoxide",
+    "patterns": ["chlordiazepoxide", "librium"],
+    "units": ["mg"],
+    "class": "Benzodiazepine",
+    "subclass": "Anxiolytic",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 25mg",
+    "allowed_strengths": [5, 10, 25],
+    "bnf_max": "per protocol"
+},
+
+"CHLORHEXIDINE": {
+    "id": 130,
+    "canonical": "Chlorhexidine",
+    "patterns": ["chlorhexidine", "corsodyl"],
+    "units": ["%"],
+    "class": "ENT / Dental",
+    "subclass": "Antiseptic",
+    "forms": ["mouthwash"],
+    "route": "oral rinse",
+    "depot": False,
+    "strengths": "0.2%",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"CHLOROTHIAZIDE": {
+    "id": 131,
+    "canonical": "Chlorothiazide",
+    "patterns": ["chlorothiazide"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Thiazide diuretic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per hypertension guidance"
+},
+
+"CHLORPROMAZINE": {
+    "id": 132,
+    "canonical": "Chlorpromazine",
+    "patterns": ["chlorpromazine", "cpz"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet", "IM"],
+    "route": "oral / IM",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg,200mg, 225mg, 250mg, 275mg, 300mg, 325mg, 350mg, 375mg, 400mg, 425mg, 450mg, 475mg, 500mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500],
+    "bnf_max": "1000mg/day"
+},
+
+"CHOLECALCIFEROL": {
+    "id": 133,
+    "canonical": "Cholecalciferol",
+    "patterns": ["cholecalciferol", "vitamin d3"],
+    "units": ["IU", "mcg"],
+    "class": "Endocrine",
+    "subclass": "Vitamin D",
+    "forms": ["tablet", "capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "800IU, 1000IU, 2000IU",
+    "allowed_strengths": [800, 1000, 2000],
+    "bnf_max": "per D3 guidance"
+},
+
+"CICLOPIROX": {
+    "id": 134,
+    "canonical": "Ciclopirox",
+    "patterns": ["ciclopirox"],
+    "units": ["%"],
+    "class": "Dermatology",
+    "subclass": "Antifungal",
+    "forms": ["topical"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "1%, 8%",
+    "allowed_strengths": [],
+    "bnf_max": "per dermatology"
+},
+
+"CILAZAPRIL": {
+    "id": 135,
+    "canonical": "Cilazapril",
+    "patterns": ["cilazapril"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ACE inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 2.5mg, 5mg",
+    "allowed_strengths": [1, 2.5, 5],
+    "bnf_max": "5mg/day"
+},
+
+"CILOSTAZOL": {
+    "id": 136,
+    "canonical": "Cilostazol",
+    "patterns": ["cilostazol", "pletal"],
+    "units": ["mg"],
+    "class": "Vascular",
+    "subclass": "Antiplatelet / vasodilator",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "200mg/day"
+},
+
+"CIMETIDINE": {
+    "id": 137,
+    "canonical": "Cimetidine",
+    "patterns": ["cimetidine"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "H2 blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg, 800mg",
+    "allowed_strengths": [200, 400, 800],
+    "bnf_max": "1600mg/day"
+},
+
+"CINACALCET": {
+    "id": 138,
+    "canonical": "Cinacalcet",
+    "patterns": ["cinacalcet", "mimpara"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Calcium regulator",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "30mg, 60mg, 90mg",
+    "allowed_strengths": [30, 60, 90],
+    "bnf_max": "180mg/day"
+},
+
+"CIPROFLOXACIN": {
+    "id": 139,
+    "canonical": "Ciprofloxacin",
+    "patterns": ["ciprofloxacin", "cipro"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Fluoroquinolone",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "250mg, 500mg, 750mg",
+    "allowed_strengths": [250, 500, 750],
+    "bnf_max": "per guidance"
+},
+
+"CITALOPRAM": {
+    "id": 140,
+    "canonical": "Citalopram",
+    "patterns": ["citalopram"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SSRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 30mg, 40mg",
+    "allowed_strengths": [10, 20, 30, 40],
+    "bnf_max": "40mg/day"
+},
+
+"CLARITHROMYCIN": {
+    "id": 141,
+    "canonical": "Clarithromycin",
+    "patterns": ["clarithromycin", "clarithro"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Macrolide",
+    "forms": ["tablet", "suspension"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection"
+},
+
+"CLINDAMYCIN": {
+    "id": 142,
+    "canonical": "Clindamycin",
+    "patterns": ["clindamycin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Lincosamide",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 300mg",
+    "allowed_strengths": [150, 300],
+    "bnf_max": "per infection"
+},
+
+"CLINUVEL": {
+    "id": 143,
+    "canonical": "Afamelanotide (Scenesse)",
+    "patterns": ["afamelanotide", "scenesse", "clinuvel"],
+    "units": ["mg"],
+    "class": "Dermatology",
+    "subclass": "Photoprotection",
+    "forms": ["implant"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "16mg implant",
+    "allowed_strengths": [16],
+    "bnf_max": "per specialist"
+},
+
+"CLOBAZAM": {
+    "id": 144,
+    "canonical": "Clobazam",
+    "patterns": ["clobazam"],
+    "units": ["mg"],
+    "class": "Anticonvulsant / Benzodiazepine",
+    "subclass": "Adjunctive",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "per epilepsy guidance"
+},
+
+"CLOMIPRAMINE": {
+    "id": 145,
+    "canonical": "Clomipramine",
+    "patterns": ["clomipramine", "anafranil"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "TCA",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg",
+    "allowed_strengths": [10, 25, 50],
+    "bnf_max": "250mg/day"
+},
+
+"CLONAZEPAM": {
+    "id": 146,
+    "canonical": "Clonazepam",
+    "patterns": ["clonazepam", "clonaz"],
+    "units": ["mg"],
+    "class": "Benzodiazepine",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 1mg, 2mg, 3mg, 4mg",
+    "allowed_strengths": [0.5, 1, 2, 3, 4],
+    "bnf_max": "per epilepsy / anxiety guidance"
+},
+
+"CLONIDINE": {
+    "id": 147,
+    "canonical": "Clonidine",
+    "patterns": ["clonidine"],
+    "units": ["mcg"],
+    "class": "Hypertension",
+    "subclass": "Alpha-agonist",
+    "forms": ["tablet", "patch"],
+    "route": "oral / transdermal",
+    "depot": False,
+    "strengths": "25mcg, 50mcg, 100mcg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "per guidance"
+},
+
+"CLOPIDOGREL": {
+    "id": 148,
+    "canonical": "Clopidogrel",
+    "patterns": ["clopidogrel", "plavix"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiplatelet",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "75mg, 300mg (loading)",
+    "allowed_strengths": [75, 300],
+    "bnf_max": "75mg/day (maintenance)"
+},
+
+"CLOTRIMAZOLE": {
+    "id": 149,
+    "canonical": "Clotrimazole",
+    "patterns": ["clotrimazole", "canesten"],
+    "units": ["%"],
+    "class": "Dermatology / Gynae",
+    "subclass": "Antifungal",
+    "forms": ["cream", "pessary"],
+    "route": "topical / vaginal",
+    "depot": False,
+    "strengths": "1%, 2%",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"CLOZAPINE": {
+    "id": 150,
+    "canonical": "Clozapine",
+    "patterns": ["clozapine", "cloz"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg,200mg, 225mg, 250mg, 275mg, 300mg, 325mg, 350mg, 375mg, 400mg, 425mg, 450mg, 475mg, 500mg, 525mg, 550mg, 575mg, 600mg, 625mg, 650mg, 675mg, 700mg, 725mg, 750mg, 775mg, 800mg, 825mg, 850mg, 875mg, 900mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900],
+    "bnf_max": "900mg/day"
+},
+"CO-CARELDOPA": {
+    "id": 151,
+    "canonical": "Co-careldopa",
+    "patterns": ["co-careldopa", "levodopa carbidopa"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Parkinson’s",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg/100mg, 25mg/100mg",
+    "allowed_strengths": [],
+    "bnf_max": "per Parkinson’s protocol"
+},
+
+"CO-TRIMOXAZOLE": {
+    "id": 152,
+    "canonical": "Co-trimoxazole",
+    "patterns": ["co-trimoxazole", "septra", "bactrim"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antibiotic",
+    "forms": ["tablet", "suspension"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per infection protocol"
+},
+
+"CODEINE": {
+    "id": 153,
+    "canonical": "Codeine",
+    "patterns": ["codeine"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "15mg, 30mg, 60mg",
+    "allowed_strengths": [15, 30, 60],
+    "bnf_max": "240mg/day"
+},
+
+"CYCLOBENZAPRINE": {
+    "id": 154,
+    "canonical": "Cyclobenzaprine",
+    "patterns": ["cyclobenzaprine"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Muscle relaxant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "per guidance"
+},
+
+"CYCLOPHOSPHAMIDE": {
+    "id": 155,
+    "canonical": "Cyclophosphamide",
+    "patterns": ["cyclophosphamide"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Chemotherapy",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "per oncology"
+},
+
+"CYANOCOBALAMIN": {
+    "id": 156,
+    "canonical": "Cyanocobalamin",
+    "patterns": ["cyanocobalamin", "vitamin b12"],
+    "units": ["mcg"],
+    "class": "Haematology",
+    "subclass": "Vitamin B12",
+    "forms": ["tablet", "injection"],
+    "route": "oral / IM",
+    "depot": False,
+    "strengths": "50mcg, 100mcg, 1000mcg",
+    "allowed_strengths": [50, 100, 1000],
+    "bnf_max": "per protocol"
+},
+
+"CYCLIZINE": {
+    "id": 157,
+    "canonical": "Cyclizine",
+    "patterns": ["cyclizine"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Anti-emetic",
+    "forms": ["tablet", "IM"],
+    "route": "oral / IM",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "150mg/day"
+},
+
+"CYPROTERONE": {
+    "id": 158,
+    "canonical": "Cyproterone",
+    "patterns": ["cyproterone", "androcur"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Anti-androgen",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per specialist"
+},
+
+"DAKLINZA": {
+    "id": 159,
+    "canonical": "Daclatasvir",
+    "patterns": ["daklinza", "daclatasvir"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Hepatitis C",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "30mg, 60mg, 90mg",
+    "allowed_strengths": [30, 60, 90],
+    "bnf_max": "per hepatitis protocol"
+},
+
+"DABIGATRAN": {
+    "id": 160,
+    "canonical": "Dabigatran",
+    "patterns": ["dabigatran", "pradaxa"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "DOAC",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "75mg, 110mg, 150mg",
+    "allowed_strengths": [75, 110, 150],
+    "bnf_max": "per anticoagulation"
+},
+
+"DALTEPARIN": {
+    "id": 161,
+    "canonical": "Dalteparin",
+    "patterns": ["dalteparin"],
+    "units": ["IU"],
+    "class": "Haematology",
+    "subclass": "LMWH",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "2500IU, 5000IU, 10000IU, 18000IU",
+    "allowed_strengths": [2500, 5000, 10000, 18000],
+    "bnf_max": "per weight-based dosing"
+},
+
+"DANAZOL": {
+    "id": 162,
+    "canonical": "Danazol",
+    "patterns": ["danazol"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Gynae modulation",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per guidance"
+},
+
+"DANTROLENE": {
+    "id": 163,
+    "canonical": "Dantrolene",
+    "patterns": ["dantrolene"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Muscle relaxant",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 100mg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "per guidance"
+},
+
+"DARIFENACIN": {
+    "id": 164,
+    "canonical": "Darifenacin",
+    "patterns": ["darifenacin", "emselex"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "Overactive bladder",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "7.5mg, 15mg",
+    "allowed_strengths": [7.5, 15],
+    "bnf_max": "per guidance"
+},
+
+"DARUNAVIR": {
+    "id": 165,
+    "canonical": "Darunavir",
+    "patterns": ["darunavir", "prezista"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "HIV",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "75mg, 150mg, 600mg, 800mg",
+    "allowed_strengths": [75, 150, 600, 800],
+    "bnf_max": "per HIV protocol"
+},
+
+"DEFERASIROX": {
+    "id": 166,
+    "canonical": "Deferasirox",
+    "patterns": ["deferasirox", "exjade"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Iron chelator",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "125mg, 250mg, 500mg",
+    "allowed_strengths": [125, 250, 500],
+    "bnf_max": "per specialist"
+},
+
+"DEFEROXAMINE": {
+    "id": 167,
+    "canonical": "Deferoxamine",
+    "patterns": ["deferoxamine", "desferal"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Iron chelation",
+    "forms": ["IV", "SC"],
+    "route": "IV / SC",
+    "depot": False,
+    "strengths": "500mg",
+    "allowed_strengths": [500],
+    "bnf_max": "per specialist"
+},
+
+"DESMOPRESSIN": {
+    "id": 168,
+    "canonical": "Desmopressin",
+    "patterns": ["desmopressin", "ddavp"],
+    "units": ["mcg"],
+    "class": "Endocrine",
+    "subclass": "ADH analogue",
+    "forms": ["tablet", "nasal"],
+    "route": "oral / nasal",
+    "depot": False,
+    "strengths": "100mcg, 200mcg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per diabetes insipidus protocol"
+},
+
+"DESVENLAFAXINE": {
+    "id": 169,
+    "canonical": "Desvenlafaxine",
+    "patterns": ["desvenlafaxine", "pristiq"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SNRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per antidepressant guidance"
+},
+
+"DEXAMETHASONE": {
+    "id": 170,
+    "canonical": "Dexamethasone",
+    "patterns": ["dexamethasone"],
+    "units": ["mg"],
+    "class": "Endocrine / Oncology",
+    "subclass": "Steroid",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "2mg, 4mg",
+    "allowed_strengths": [2, 4],
+    "bnf_max": "per steroid protocol"
+},
+
+"DIAZEPAM": {
+    "id": 171,
+    "canonical": "Diazepam",
+    "patterns": ["diazepam", "valium"],
+    "units": ["mg"],
+    "class": "Benzodiazepine",
+    "subclass": "Anxiolytic / Anticonvulsant",
+    "forms": ["tablet", "rectal", "IV"],
+    "route": "oral / rectal / IV",
+    "depot": False,
+    "strengths": "1mg, 2mg, 3mg, 4mg, 5mg, 6mg, 7mg, 8mg, 9mg, 10mg, 11mg, 12mg, 13mg, 14mg, 15mg, 16mg, 17mg, 18mg, 19mg, 20mg",
+    "allowed_strengths": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    "bnf_max": "per protocol"
+},
+
+"DICLOFENAC": {
+    "id": 172,
+    "canonical": "Diclofenac",
+    "patterns": ["diclofenac", "voltaren"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["tablet", "gel"],
+    "route": "oral / topical",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150],
+    "bnf_max": "150mg/day"
+},
+
+"DIGOXIN": {
+    "id": 173,
+    "canonical": "Digoxin",
+    "patterns": ["digoxin", "lanoxin"],
+    "units": ["mcg"],
+    "class": "Cardiac",
+    "subclass": "Cardiac glycoside",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "62.5mcg, 125mcg, 250mcg",
+    "allowed_strengths": [62.5, 125, 250],
+    "bnf_max": "per serum level"
+},
+
+"DILTIAZEM": {
+    "id": 174,
+    "canonical": "Diltiazem",
+    "patterns": ["diltiazem"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Calcium channel blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "60mg, 90mg, 120mg",
+    "allowed_strengths": [60, 90, 120],
+    "bnf_max": "360mg/day"
+},
+
+"DIMENHYDRINATE": {
+    "id": 175,
+    "canonical": "Dimenhydrinate",
+    "patterns": ["dimenhydrinate"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Anti-emetic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "per guidance"
+},
+
+"DIMETICONE": {
+    "id": 176,
+    "canonical": "Dimeticone",
+    "patterns": ["dimeticone"],
+    "units": ["mg"],
+    "class": "Dermatology",
+    "subclass": "Anti-lice",
+    "forms": ["lotion"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "4%, 92%",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"DIMETHYL FUMARATE": {
+    "id": 177,
+    "canonical": "Dimethyl Fumarate",
+    "patterns": ["dimethyl fumarate", "tecfidera"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "MS disease-modifying",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "120mg, 240mg",
+    "allowed_strengths": [120, 240],
+    "bnf_max": "per MS protocol"
+},
+
+"DIPHENHYDRAMINE": {
+    "id": 178,
+    "canonical": "Diphenhydramine",
+    "patterns": ["diphenhydramine", "benadryl"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "per guidance"
+},
+
+"DIPHENOXYLATE": {
+    "id": 179,
+    "canonical": "Diphenoxylate",
+    "patterns": ["diphenoxylate", "lomotil"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Antidiarrhoeal",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg",
+    "allowed_strengths": [2.5],
+    "bnf_max": "per guidance"
+},
+
+"DIPYRIDAMOLE": {
+    "id": 180,
+    "canonical": "Dipyridamole",
+    "patterns": ["dipyridamole"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiplatelet",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg (MR)",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per stroke guidance"
+},
+
+"DISOPYRAMIDE": {
+    "id": 181,
+    "canonical": "Disopyramide",
+    "patterns": ["disopyramide"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiarrhythmic",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 150mg",
+    "allowed_strengths": [100, 150],
+    "bnf_max": "per cardiology"
+},
+
+"DISULFIRAM": {
+    "id": 182,
+    "canonical": "Disulfiram",
+    "patterns": ["disulfiram", "antabuse"],
+    "units": ["mg"],
+    "class": "Addictions",
+    "subclass": "Alcohol cessation",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg, 500mg",
+    "allowed_strengths": [200, 400, 500],
+    "bnf_max": "500mg/day"
+},
+
+"DOBUTAMINE": {
+    "id": 183,
+    "canonical": "Dobutamine",
+    "patterns": ["dobutamine"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Inotrope",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per ICU protocol"
+},
+
+"DOCUSATE": {
+    "id": 184,
+    "canonical": "Docusate",
+    "patterns": ["docusate", "dioctyl"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Laxative",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "500mg/day"
+},
+
+"DOLUTEGRAVIR": {
+    "id": 185,
+    "canonical": "Dolutegravir",
+    "patterns": ["dolutegravir", "tivicay"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "HIV",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg",
+    "allowed_strengths": [10, 25, 50],
+    "bnf_max": "per HIV protocol"
+},
+
+"DOMPERIDONE": {
+    "id": 186,
+    "canonical": "Domperidone",
+    "patterns": ["domperidone", "motilium"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Prokinetic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "per MHRA restrictions"
+},
+
+"DONEPEZIL": {
+    "id": 187,
+    "canonical": "Donepezil",
+    "patterns": ["donepezil", "aricept"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Dementia",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "10mg/day"
+},
+
+"DOPAMINE": {
+    "id": 188,
+    "canonical": "Dopamine",
+    "patterns": ["dopamine"],
+    "units": ["mg"],
+    "class": "Cardiac / ICU",
+    "subclass": "Inotrope",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per ICU protocol"
+},
+
+"DORZOLAMIDE": {
+    "id": 189,
+    "canonical": "Dorzolamide",
+    "patterns": ["dorzolamide"],
+    "units": ["%"],
+    "class": "Ophthalmology",
+    "subclass": "Glaucoma",
+    "forms": ["eye drops"],
+    "route": "ocular",
+    "depot": False,
+    "strengths": "2%",
+    "allowed_strengths": [],
+    "bnf_max": "per glaucoma"
+},
+
+"DOXAZOSIN": {
+    "id": 190,
+    "canonical": "Doxazosin",
+    "patterns": ["doxazosin"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Alpha-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 2mg, 4mg, 8mg",
+    "allowed_strengths": [1, 2, 4, 8],
+    "bnf_max": "per hypertension"
+},
+
+"DOXEPIN": {
+    "id": 191,
+    "canonical": "Doxepin",
+    "patterns": ["doxepin"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "TCA",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg",
+    "allowed_strengths": [25, 50, 75],
+    "bnf_max": "per guidance"
+},
+
+"DOXYCYCLINE": {
+    "id": 192,
+    "canonical": "Doxycycline",
+    "patterns": ["doxycycline"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Tetracycline",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg",
+    "allowed_strengths": [100],
+    "bnf_max": "per infection protocol"
+},
+
+"DRONABINOL": {
+    "id": 193,
+    "canonical": "Dronabinol",
+    "patterns": ["dronabinol"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Cannabinoid",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg, 10mg",
+    "allowed_strengths": [2.5, 5, 10],
+    "bnf_max": "per specialist"
+},
+
+"DULOXETINE": {
+    "id": 194,
+    "canonical": "Duloxetine",
+    "patterns": ["duloxetine", "cymbalta"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SNRI",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "30mg, 60mg, 90mg, 120mg",
+    "allowed_strengths": [30, 60, 90, 120],
+    "bnf_max": "120mg/day"
+},
+
+"DUTASTERIDE": {
+    "id": 195,
+    "canonical": "Dutasteride",
+    "patterns": ["dutasteride", "avodart"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "5-alpha reductase inhibitor",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg",
+    "allowed_strengths": [0.5],
+    "bnf_max": "0.5mg/day"
+},
+
+"EBASTINE": {
+    "id": 196,
+    "canonical": "Ebastine",
+    "patterns": ["ebastine"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg",
+    "allowed_strengths": [10, 20],
+    "bnf_max": "per allergy guidance"
+},
+
+"EFAVIRENZ": {
+    "id": 197,
+    "canonical": "Efavirenz",
+    "patterns": ["efavirenz", "sustiva"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "HIV",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 600mg",
+    "allowed_strengths": [200, 600],
+    "bnf_max": "per HIV protocol"
+},
+
+"ELTROMBOPAG": {
+    "id": 198,
+    "canonical": "Eltrombopag",
+    "patterns": ["eltrombopag", "promacta"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "TPO receptor agonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg",
+    "allowed_strengths": [25, 50, 75],
+    "bnf_max": "per specialist"
+},
+
+"EMTRICITABINE": {
+    "id": 199,
+    "canonical": "Emtricitabine",
+    "patterns": ["emtricitabine"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "HIV",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per HIV protocol"
+},
+
+"ENTACAPONE": {
+    "id": 200,
+    "canonical": "Entacapone",
+    "patterns": ["entacapone", "comtess"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Parkinson’s",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per Parkinson’s protocol"
+},
+"ENTECAVIR": {
+    "id": 201,
+    "canonical": "Entecavir",
+    "patterns": ["entecavir", "baraclude"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Hepatitis B",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 1mg",
+    "allowed_strengths": [0.5, 1],
+    "bnf_max": "per hepatitis protocol"
+},
+
+"ENOXAPARIN": {
+    "id": 202,
+    "canonical": "Enoxaparin",
+    "patterns": ["enoxaparin", "clexane"],
+    "units": ["mg", "IU"],
+    "class": "Haematology",
+    "subclass": "LMWH",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "20mg, 40mg, 60mg, 80mg, 100mg",
+    "allowed_strengths": [20, 40, 60, 80, 100],
+    "bnf_max": "per weight-based dosing"
+},
+
+"ENOXIMONE": {
+    "id": 203,
+    "canonical": "Enoximone",
+    "patterns": ["enoximone"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Inotrope",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "10mg/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per ICU protocol"
+},
+
+"ENTRESTO": {
+    "id": 204,
+    "canonical": "Sacubitril/Valsartan",
+    "patterns": ["entresto", "sacubitril", "valsartan"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "ARNI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "24/26mg, 49/51mg, 97/103mg",
+    "allowed_strengths": [],
+    "bnf_max": "per heart failure protocol"
+},
+
+"ENZALUTAMIDE": {
+    "id": 205,
+    "canonical": "Enzalutamide",
+    "patterns": ["enzalutamide", "xtandi"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Prostate cancer",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg",
+    "allowed_strengths": [40],
+    "bnf_max": "per oncology protocol"
+},
+
+"EPERISONE": {
+    "id": 206,
+    "canonical": "Eperisone",
+    "patterns": ["eperisone"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Muscle relaxant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "per guidance"
+},
+
+"EPLERENONE": {
+    "id": 207,
+    "canonical": "Eplerenone",
+    "patterns": ["eplerenone", "inspra"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Mineralocorticoid blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "50mg BD"
+},
+
+"EPOETIN ALFA": {
+    "id": 208,
+    "canonical": "Epoetin Alfa",
+    "patterns": ["epoetin", "epoetin alfa"],
+    "units": ["IU"],
+    "class": "Haematology",
+    "subclass": "Erythropoiesis-stimulating agent",
+    "forms": ["SC", "IV"],
+    "route": "SC / IV",
+    "depot": False,
+    "strengths": "various (1000–40000 IU)",
+    "allowed_strengths": [],
+    "bnf_max": "per renal protocol"
+},
+
+"EPOETIN BETA": {
+    "id": 209,
+    "canonical": "Epoetin Beta",
+    "patterns": ["epoetin beta", "neo-recormon"],
+    "units": ["IU"],
+    "class": "Haematology",
+    "subclass": "ESA",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per renal protocol"
+},
+
+"EPROSARTAN": {
+    "id": 210,
+    "canonical": "Eprosartan",
+    "patterns": ["eprosartan"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ARB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "300mg, 600mg",
+    "allowed_strengths": [300, 600],
+    "bnf_max": "per hypertension"
+},
+
+"ERGOCALCIFEROL": {
+    "id": 211,
+    "canonical": "Ergocalciferol",
+    "patterns": ["ergocalciferol", "vitamin d2"],
+    "units": ["IU"],
+    "class": "Endocrine",
+    "subclass": "Vitamin D",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50000IU",
+    "allowed_strengths": [50000],
+    "bnf_max": "per protocol"
+},
+
+"ERLOTINIB": {
+    "id": 212,
+    "canonical": "Erlotinib",
+    "patterns": ["erlotinib", "tarceva"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "TKI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 100mg, 150mg",
+    "allowed_strengths": [25, 100, 150],
+    "bnf_max": "per specialist"
+},
+
+"ERENUMAB": {
+    "id": 213,
+    "canonical": "Erenumab",
+    "patterns": ["erenumab", "aimovig"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Migraine biologic",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "70mg, 140mg",
+    "allowed_strengths": [70, 140],
+    "bnf_max": "per migraine protocol"
+},
+
+"ERIBULIN": {
+    "id": 214,
+    "canonical": "Eribulin",
+    "patterns": ["eribulin"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Chemotherapy",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "0.44mg/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per oncology protocol"
+},
+
+"ERYTHROMYCIN": {
+    "id": 215,
+    "canonical": "Erythromycin",
+    "patterns": ["erythromycin", "erythro"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Macrolide",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"ESCITALOPRAM": {
+    "id": 216,
+    "canonical": "Escitalopram",
+    "patterns": ["escitalopram", "lexapro"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SSRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 20mg",
+    "allowed_strengths": [5, 10, 15, 20],
+    "bnf_max": "20mg/day"
+},
+
+"ESLICARBAZEPINE": {
+    "id": 217,
+    "canonical": "Eslicarbazepine",
+    "patterns": ["eslicarbazepine", "zebinix"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg, 800mg",
+    "allowed_strengths": [200, 400, 800],
+    "bnf_max": "per epilepsy"
+},
+
+"ESMOLOL": {
+    "id": 218,
+    "canonical": "Esmolol",
+    "patterns": ["esmolol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker (ultrashort)",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per ICU"
+},
+
+"ESOMEPRAZOLE": {
+    "id": 219,
+    "canonical": "Esomeprazole",
+    "patterns": ["esomeprazole", "nexium"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "PPI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg",
+    "allowed_strengths": [20, 40],
+    "bnf_max": "per GERD protocol"
+},
+
+"ESTRADIOL": {
+    "id": 220,
+    "canonical": "Estradiol",
+    "patterns": ["estradiol", "estrogen"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "HRT",
+    "forms": ["tablet", "patch"],
+    "route": "oral / transdermal",
+    "depot": False,
+    "strengths": "1mg, 2mg (oral)",
+    "allowed_strengths": [1, 2],
+    "bnf_max": "per HRT protocol"
+},
+
+"ETHAMBUTOL": {
+    "id": 221,
+    "canonical": "Ethambutol",
+    "patterns": ["ethambutol"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "TB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 400mg",
+    "allowed_strengths": [100, 400],
+    "bnf_max": "per TB protocol"
+},
+
+"ETHINYLESTRADIOL": {
+    "id": 222,
+    "canonical": "Ethinylestradiol",
+    "patterns": ["ethinylestradiol", "ethinyl estradiol"],
+    "units": ["mcg"],
+    "class": "Endocrine",
+    "subclass": "Contraception",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mcg, 30mcg, 35mcg",
+    "allowed_strengths": [20, 30, 35],
+    "bnf_max": "per contraception"
+},
+
+"ETHOSUXIMIDE": {
+    "id": 223,
+    "canonical": "Ethosuximide",
+    "patterns": ["ethosuximide"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["capsule", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg",
+    "allowed_strengths": [250],
+    "bnf_max": "per epilepsy"
+},
+
+"ETANERCEPT": {
+    "id": 224,
+    "canonical": "Etanercept",
+    "patterns": ["etanercept", "enbrel"],
+    "units": ["mg"],
+    "class": "Rheumatology",
+    "subclass": "TNF inhibitor",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "25mg, 50mg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "per biologics protocol"
+},
+
+"ETOPOSIDE": {
+    "id": 225,
+    "canonical": "Etoposide",
+    "patterns": ["etoposide", "vepesid"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Chemotherapy",
+    "forms": ["oral", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "50mg (oral), 100mg (IV)",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per oncology protocol"
+},
+
+"EVOLOCUMAB": {
+    "id": 226,
+    "canonical": "Evolocumab",
+    "patterns": ["evolocumab", "repatha"],
+    "units": ["mg"],
+    "class": "Cardiology",
+    "subclass": "PCSK9 inhibitor",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "140mg",
+    "allowed_strengths": [140],
+    "bnf_max": "per lipid protocol"
+},
+
+"FEBUXOSTAT": {
+    "id": 227,
+    "canonical": "Febuxostat",
+    "patterns": ["febuxostat", "adenuric"],
+    "units": ["mg"],
+    "class": "Rheumatology",
+    "subclass": "Gout",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg, 80mg",
+    "allowed_strengths": [40, 80],
+    "bnf_max": "per gout protocol"
+},
+
+"FELODIPINE": {
+    "id": 228,
+    "canonical": "Felodipine",
+    "patterns": ["felodipine"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Calcium channel blocker",
+    "forms": ["tablet (MR)"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg, 10mg",
+    "allowed_strengths": [2.5, 5, 10],
+    "bnf_max": "per hypertension guidance"
+},
+
+"FENOFIBRATE": {
+    "id": 229,
+    "canonical": "Fenofibrate",
+    "patterns": ["fenofibrate", "lipanthyl"],
+    "units": ["mg"],
+    "class": "Lipid",
+    "subclass": "Fibrate",
+    "forms": ["tablet", "capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "48mg, 145mg",
+    "allowed_strengths": [48, 145],
+    "bnf_max": "per lipid guidance"
+},
+
+"FENTANYL": {
+    "id": 230,
+    "canonical": "Fentanyl",
+    "patterns": ["fentanyl"],
+    "units": ["mcg", "mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["patch", "IV", "lozenge"],
+    "route": "transdermal / IV / buccal",
+    "depot": False,
+    "strengths": "12mcg/hr, 25mcg/hr, 50mcg/hr, 75mcg/hr, 100mcg/hr",
+    "allowed_strengths": [12, 25, 50, 75, 100],
+    "bnf_max": "per opioid protocol"
+},
+
+"FERROUS FUMARATE": {
+    "id": 231,
+    "canonical": "Ferrous Fumarate",
+    "patterns": ["ferrous fumarate"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Iron supplementation",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "210mg",
+    "allowed_strengths": [210],
+    "bnf_max": "per anaemia guidance"
+},
+
+"FERROUS SULFATE": {
+    "id": 232,
+    "canonical": "Ferrous Sulfate",
+    "patterns": ["ferrous sulfate", "feso4"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Iron supplementation",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per anaemia guidance"
+},
+
+"FEXOFENADINE": {
+    "id": 233,
+    "canonical": "Fexofenadine",
+    "patterns": ["fexofenadine", "telfast"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "120mg, 180mg",
+    "allowed_strengths": [120, 180],
+    "bnf_max": "per allergy guidance"
+},
+
+"FILGRASTIM": {
+    "id": 234,
+    "canonical": "Filgrastim",
+    "patterns": ["filgrastim", "g-csf"],
+    "units": ["mcg"],
+    "class": "Haematology",
+    "subclass": "Neutrophil stimulator",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "300mcg, 480mcg",
+    "allowed_strengths": [300, 480],
+    "bnf_max": "per oncology"
+},
+
+"FINASTERIDE": {
+    "id": 235,
+    "canonical": "Finasteride",
+    "patterns": ["finasteride", "propecia", "proscar"],
+    "units": ["mg"],
+    "class": "Urology / Dermatology",
+    "subclass": "5-alpha reductase inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 5mg",
+    "allowed_strengths": [1, 5],
+    "bnf_max": "per BPH/hair loss protocol"
+},
+
+"FLECAINIDE": {
+    "id": 236,
+    "canonical": "Flecainide",
+    "patterns": ["flecainide"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiarrhythmic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 150mg",
+    "allowed_strengths": [50, 100, 150],
+    "bnf_max": "per cardiology"
+},
+
+"FLIXONASE": {
+    "id": 237,
+    "canonical": "Fluticasone nasal",
+    "patterns": ["flixonase", "fluticasone nasal"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "Nasal steroid",
+    "forms": ["spray"],
+    "route": "nasal",
+    "depot": False,
+    "strengths": "50mcg",
+    "allowed_strengths": [50],
+    "bnf_max": "per allergy guidance"
+},
+
+"FLOCTAFENINE": {
+    "id": 238,
+    "canonical": "Floctafenine",
+    "patterns": ["floctafenine"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per guidance"
+},
+
+"FLUCLOXACILLIN": {
+    "id": 239,
+    "canonical": "Flucloxacillin",
+    "patterns": ["flucloxacillin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Penicillin",
+    "forms": ["capsule", "suspension"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"FLUCONAZOLE": {
+    "id": 240,
+    "canonical": "Fluconazole",
+    "patterns": ["fluconazole"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 150mg",
+    "allowed_strengths": [50, 100, 150],
+    "bnf_max": "per antifungal guidance"
+},
+
+"FLUDROCORTISONE": {
+    "id": 241,
+    "canonical": "Fludrocortisone",
+    "patterns": ["fludrocortisone"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Mineralocorticoid",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.1mg",
+    "allowed_strengths": [0.1],
+    "bnf_max": "per Addison’s protocol"
+},
+
+"FLUOROURACIL": {
+    "id": 242,
+    "canonical": "Fluorouracil",
+    "patterns": ["fluorouracil"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Chemotherapy",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per oncology"
+},
+
+"FLUPENTIXOL": {
+    "id": 243,
+    "canonical": "Flupentixol",
+    "patterns": ["flupentixol", "depixol"],
+    "units": ["mg"],
+       "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet", "depot injection"],
+    "route": "oral / IM",
+    "depot": True,
+    "strengths": "0.5mg, 1mg, 1.5mg, 2mg, 2.5mg, 3mg",
+    "allowed_strengths": [0.5, 1, 1.5, 2, 2.5, 3],
+    "bnf_max": "per psychosis guidance"
+},
+
+"FLUPHENAZINE": {
+    "id": 244,
+    "canonical": "Fluphenazine",
+    "patterns": ["fluphenazine", "modecate"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet", "depot"],
+    "route": "oral / IM",
+    "depot": True,
+    "strengths": "1mg, 2.5mg, 5mg",
+    "allowed_strengths": [1, 2.5, 5],
+    "bnf_max": "per psychosis guidance"
+},
+
+"FLUOXETINE": {
+    "id": 245,
+    "canonical": "Fluoxetine",
+    "patterns": ["fluoxetine", "prozac", "fluox"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SSRI",
+    "forms": ["capsule", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg, 60mg",
+    "allowed_strengths": [20, 40, 60],
+    "bnf_max": "60mg/day"
+},
+
+"FLUPENTIXOL DEPOT": {
+    "id": 246,
+    "canonical": "Flupentixol Decanoate",
+    "patterns": ["flupentixol depot", "depixol depot", "flupentixol decanoate"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Depot",
+    "forms": ["IM"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "20mg/ml, 40mg/ml, 60mg/ml, 80mg/ml, 100mg/ml, 120mg/ml, 140mg/ml",
+    "allowed_strengths": [20, 40, 60, 80, 100, 120, 140],
+    "bnf_max": "per depot protocol"
+},
+
+"FLUTICASONE": {
+    "id": 247,
+    "canonical": "Fluticasone",
+    "patterns": ["fluticasone", "flixotide"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "Inhaled steroid",
+    "forms": ["inhaler"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "50mcg, 100mcg, 250mcg",
+    "allowed_strengths": [50, 100, 250],
+    "bnf_max": "per asthma protocol"
+},
+
+"FLUTICASONE/VILANTEROL": {
+    "id": 248,
+    "canonical": "Fluticasone/Vilanterol",
+    "patterns": ["fluticasone vilanterol", "relvar"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "ICS/LABA",
+    "forms": ["inhaler"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "92/22mcg, 184/22mcg",
+    "allowed_strengths": [],
+    "bnf_max": "per asthma/COPD protocol"
+},
+
+"FLUVASTATIN": {
+    "id": 249,
+    "canonical": "Fluvastatin",
+    "patterns": ["fluvastatin"],
+    "units": ["mg"],
+    "class": "Lipid",
+    "subclass": "Statin",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg, 80mg",
+    "allowed_strengths": [20, 40, 80],
+    "bnf_max": "80mg/day"
+},
+
+"FLUVOXAMINE": {
+    "id": 250,
+    "canonical": "Fluvoxamine",
+    "patterns": ["fluvoxamine"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SSRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 150mg, 200mg, 250mg, 300mg",
+    "allowed_strengths": [50, 100, 150, 200, 250, 300],
+    "bnf_max": "300mg/day"
+},
+
+"FOLIC ACID": {
+    "id": 251,
+    "canonical": "Folic Acid",
+    "patterns": ["folic acid", "folate"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Vitamin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg",
+    "allowed_strengths": [5],
+    "bnf_max": "per deficiency protocol"
+},
+
+"FORMOTEROL": {
+    "id": 252,
+    "canonical": "Formoterol",
+    "patterns": ["formoterol", "foradil", "oxis"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "LABA",
+    "forms": ["inhaler"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "12mcg",
+    "allowed_strengths": [12],
+    "bnf_max": "per asthma/COPD guidance"
+},
+
+"FUROSEMIDE": {
+    "id": 253,
+    "canonical": "Furosemide",
+    "patterns": ["furosemide", "frusemide"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Loop diuretic",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "20mg, 40mg, 60mg, 80mg",
+    "allowed_strengths": [20, 40, 60, 80],
+    "bnf_max": "per diuresis protocol"
+},
+
+"GABAPENTIN": {
+    "id": 254,
+    "canonical": "Gabapentin",
+    "patterns": ["gabapentin", "gaba"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant / neuropathic pain",
+    "forms": ["capsule", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg, 300mg, 400mg, 500mg, 600mg, 700mg, 800mg",
+    "allowed_strengths": [100, 200, 300, 400, 500, 600, 700, 800],
+    "bnf_max": "3600mg/day"
+},
+
+"GALANTAMINE": {
+    "id": 255,
+    "canonical": "Galantamine",
+    "patterns": ["galantamine", "razadyne"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Dementia",
+    "forms": ["tablet", "capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "8mg, 16mg, 24mg",
+    "allowed_strengths": [8, 16, 24],
+    "bnf_max": "24mg/day"
+},
+
+"GANCICLOVIR": {
+    "id": 256,
+    "canonical": "Ganciclovir",
+    "patterns": ["ganciclovir"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiviral",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "500mg",
+    "allowed_strengths": [500],
+    "bnf_max": "per CMV protocol"
+},
+
+"GEMFIBROZIL": {
+    "id": 257,
+    "canonical": "Gemfibrozil",
+    "patterns": ["gemfibrozil", "lopid"],
+    "units": ["mg"],
+    "class": "Lipid",
+    "subclass": "Fibrate",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "600mg",
+    "allowed_strengths": [600],
+    "bnf_max": "per lipid guidance"
+},
+
+"GEMCITABINE": {
+    "id": 258,
+    "canonical": "Gemcitabine",
+    "patterns": ["gemcitabine"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Chemotherapy",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per oncology protocol"
+},
+
+"GLICLAZIDE": {
+    "id": 259,
+    "canonical": "Gliclazide",
+    "patterns": ["gliclazide"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Sulfonylurea",
+    "forms": ["tablet (MR and standard)"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg, 80mg",
+    "allowed_strengths": [40, 80],
+    "bnf_max": "320mg/day"
+},
+
+"GLIMEPIRIDE": {
+    "id": 260,
+    "canonical": "Glimepiride",
+    "patterns": ["glimepiride"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Sulfonylurea",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 2mg, 3mg, 4mg",
+    "allowed_strengths": [1, 2, 3, 4],
+    "bnf_max": "per diabetes protocol"
+},
+
+"GLIPIZIDE": {
+    "id": 261,
+    "canonical": "Glipizide",
+    "patterns": ["glipizide"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Sulfonylurea",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "20mg/day"
+},
+
+"GLUCAGON": {
+    "id": 262,
+    "canonical": "Glucagon",
+    "patterns": ["glucagon"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Hypoglycaemia rescue",
+    "forms": ["IM", "SC"],
+    "route": "IM / SC",
+    "depot": False,
+    "strengths": "1mg",
+    "allowed_strengths": [1],
+    "bnf_max": "as needed for rescue"
+},
+
+"GLYCEROL": {
+    "id": 263,
+    "canonical": "Glycerol",
+    "patterns": ["glycerol"],
+    "units": ["g"],
+    "class": "Gastroenterology",
+    "subclass": "Laxative",
+    "forms": ["suppository"],
+    "route": "rectal",
+    "depot": False,
+    "strengths": "2g, 4g",
+    "allowed_strengths": [2, 4],
+    "bnf_max": "OTC"
+},
+
+"GLYCERYL TRINITRATE": {
+    "id": 264,
+    "canonical": "Glyceryl Trinitrate",
+    "patterns": ["glyceryl trinitrate", "nitroglycerin"],
+    "units": ["mg", "mcg"],
+    "class": "Cardiac",
+    "subclass": "Nitrate",
+    "forms": ["spray", "tablet", "patch"],
+    "route": "sublingual / transdermal",
+    "depot": False,
+    "strengths": "300mcg, 400mcg (spray); 5mg patch",
+    "allowed_strengths": [0.3, 0.4, 5],
+    "bnf_max": "per angina protocol"
+},
+
+"GRANISETRON": {
+    "id": 265,
+    "canonical": "Granisetron",
+    "patterns": ["granisetron", "kytril"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Anti-emetic",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "1mg",
+    "allowed_strengths": [1],
+    "bnf_max": "per nausea protocol"
+},
+
+"GUANFACINE": {
+    "id": 266,
+    "canonical": "Guanfacine",
+    "patterns": ["guanfacine", "intuniv"],
+    "units": ["mg"],
+    "class": "Psychiatry",
+    "subclass": "ADHD / Alpha-2 agonist",
+    "forms": ["tablet (XR)"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 2mg, 3mg, 4mg",
+    "allowed_strengths": [1, 2, 3, 4],
+    "bnf_max": "per ADHD guidance"
+},
+
+"HALOPERIDOL": {
+    "id": 267,
+    "canonical": "Haloperidol",
+    "patterns": ["haloperidol", "haldol"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet", "IM", "IV"],
+    "route": "oral / IM / IV",
+    "depot": False,
+    "strengths": "0.5mg, 1mg, 1.5mg, 2mg, 2.5mg, 3mg, 3.5mg, 4mg, 4.5mg, 5mg, 5.5mg, 6mg, 6.5mg, 7mg, 7.5mg, 8mg, 8.5mg, 9mg, 9.5mg, 10mg",
+    "allowed_strengths": [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10],
+    "bnf_max": "per psychosis guidance"
+},
+
+"HALOPERIDOL DEPOT": {
+    "id": 268,
+    "canonical": "Haloperidol Decanoate",
+    "patterns": ["haloperidol depot", "haldol decanoate", "haloperidol decanoate"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Depot",
+    "forms": ["IM"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "50mg/ml, 100mg/ml, 150mg/ml",
+    "allowed_strengths": [50, 100, 150],
+    "bnf_max": "per depot protocol"
+},
+
+"HEPARIN": {
+    "id": 269,
+    "canonical": "Heparin",
+    "patterns": ["heparin"],
+    "units": ["IU"],
+    "class": "Haematology",
+    "subclass": "Anticoagulant",
+    "forms": ["IV", "SC"],
+    "route": "IV / SC",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per anticoagulation"
+},
+
+"HYDRALAZINE": {
+    "id": 270,
+    "canonical": "Hydralazine",
+    "patterns": ["hydralazine"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Vasodilator",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "25mg, 50mg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "per guidance"
+},
+
+"HYDROCHLOROTHIAZIDE": {
+    "id": 271,
+    "canonical": "Hydrochlorothiazide",
+    "patterns": ["hydrochlorothiazide", "hctz"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Thiazide diuretic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "12.5mg, 25mg",
+    "allowed_strengths": [12.5, 25],
+    "bnf_max": "per guidance"
+},
+
+"HYDROCORTISONE": {
+    "id": 272,
+    "canonical": "Hydrocortisone",
+    "patterns": ["hydrocortisone"],
+    "units": ["mg"],
+    "class": "Endocrine / Dermatology",
+    "subclass": "Steroid",
+    "forms": ["tablet", "cream", "IV"],
+    "route": "oral / topical / IV",
+    "depot": False,
+    "strengths": "10mg, 20mg",
+    "allowed_strengths": [10, 20],
+    "bnf_max": "per steroid protocol"
+},
+
+"HYDROMORPHONE": {
+    "id": 273,
+    "canonical": "Hydromorphone",
+    "patterns": ["hydromorphone", "dilaudid"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["tablet", "injection"],
+    "route": "oral / IM / IV",
+    "depot": False,
+    "strengths": "2mg, 4mg, 8mg",
+    "allowed_strengths": [2, 4, 8],
+    "bnf_max": "per opioid protocol"
+},
+
+"HYDROXYZINE": {
+    "id": 274,
+    "canonical": "Hydroxyzine",
+    "patterns": ["hydroxyzine", "atarax", "vistaril"],
+    "units": ["mg"],
+    "class": "Anxiolytic / Allergy",
+    "subclass": "Sedating antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg",
+    "allowed_strengths": [10, 25, 50],
+    "bnf_max": "per anxiety guidance"
+},
+
+"IBANDRONATE": {
+    "id": 275,
+    "canonical": "Ibandronate",
+    "patterns": ["ibandronate", "bonviva"],
+    "units": ["mg"],
+    "class": "Bone Health",
+    "subclass": "Bisphosphonate",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "150mg",
+    "allowed_strengths": [150],
+    "bnf_max": "per osteoporosis protocol"
+},
+
+"IBUPROFEN": {
+    "id": 276,
+    "canonical": "Ibuprofen",
+    "patterns": ["ibuprofen", "nurofen", "brufen"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg, 600mg",
+    "allowed_strengths": [200, 400, 600],
+    "bnf_max": "2400mg/day"
+},
+
+"ICOSAPENT ETHYL": {
+    "id": 277,
+    "canonical": "Icosapent Ethyl",
+    "patterns": ["icosapent", "vascepa"],
+    "units": ["mg"],
+    "class": "Lipid",
+    "subclass": "Omega-3 derivative",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1000mg",
+    "allowed_strengths": [1000],
+    "bnf_max": "per lipid guidance"
+},
+
+"IMATINIB": {
+    "id": 278,
+    "canonical": "Imatinib",
+    "patterns": ["imatinib", "gleevec"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "TKI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 400mg",
+    "allowed_strengths": [100, 400],
+    "bnf_max": "per oncology protocol"
+},
+
+"IMIPRAMINE": {
+    "id": 279,
+    "canonical": "Imipramine",
+    "patterns": ["imipramine", "tofranil"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "TCA",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg",
+    "allowed_strengths": [10, 25, 50],
+    "bnf_max": "per depression protocol"
+},
+
+"INDAPAMIDE": {
+    "id": 280,
+    "canonical": "Indapamide",
+    "patterns": ["indapamide"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Thiazide-like diuretic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1.5mg (MR), 2.5mg",
+    "allowed_strengths": [1.5, 2.5],
+    "bnf_max": "2.5mg/day"
+},
+
+"INDOMETACIN": {
+    "id": 281,
+    "canonical": "Indometacin",
+    "patterns": ["indometacin", "indomethacin"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "200mg/day"
+},
+
+"INSULIN ASPART": {
+    "id": 282,
+    "canonical": "Insulin Aspart",
+    "patterns": ["insulin aspart", "novorapid"],
+    "units": ["units"],
+    "class": "Diabetes",
+    "subclass": "Rapid-acting insulin",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "100 units/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per protocol"
+},
+
+"INSULIN DETEMIR": {
+    "id": 283,
+    "canonical": "Insulin Detemir",
+    "patterns": ["insulin detemir", "levemir"],
+    "units": ["units"],
+    "class": "Diabetes",
+    "subclass": "Long-acting insulin",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "100 units/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per protocol"
+},
+
+"INSULIN GLARGINE": {
+    "id": 284,
+    "canonical": "Insulin Glargine",
+    "patterns": ["insulin glargine", "lantus", "abasaglar"],
+    "units": ["units"],
+    "class": "Diabetes",
+    "subclass": "Long-acting insulin",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "100 units/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per protocol"
+},
+
+"INSULIN LISPRO": {
+    "id": 285,
+    "canonical": "Insulin Lispro",
+    "patterns": ["insulin lispro", "humalog"],
+    "units": ["units"],
+    "class": "Diabetes",
+    "subclass": "Rapid-acting insulin",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "100 units/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per protocol"
+},
+
+"IPRATROPIUM": {
+    "id": 286,
+    "canonical": "Ipratropium",
+    "patterns": ["ipratropium", "atrovent"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "Anticholinergic",
+    "forms": ["inhaler", "nebule"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "20mcg, 40mcg",
+    "allowed_strengths": [20, 40],
+    "bnf_max": "per COPD/asthma protocol"
+},
+
+"IRBESARTAN": {
+    "id": 287,
+    "canonical": "Irbesartan",
+    "patterns": ["irbesartan"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ARB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "75mg, 150mg, 300mg",
+    "allowed_strengths": [75, 150, 300],
+    "bnf_max": "300mg/day"
+},
+
+"ISONIAZID": {
+    "id": 288,
+    "canonical": "Isoniazid",
+    "patterns": ["isoniazid"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "TB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 300mg",
+    "allowed_strengths": [100, 300],
+    "bnf_max": "per TB protocol"
+},
+
+"ISOSORBIDE MONONITRATE": {
+    "id": 289,
+    "canonical": "Isosorbide Mononitrate",
+    "patterns": ["isosorbide mononitrate", "imdur", "ismn"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Nitrate",
+    "forms": ["tablet (MR)"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg, 60mg",
+    "allowed_strengths": [20, 40, 60],
+    "bnf_max": "per angina guidance"
+},
+
+"ITRACONAZOLE": {
+    "id": 290,
+    "canonical": "Itraconazole",
+    "patterns": ["itraconazole", "sporanox"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg",
+    "allowed_strengths": [100],
+    "bnf_max": "per antifungal protocol"
+},
+
+"KETAMINE": {
+    "id": 291,
+    "canonical": "Ketamine",
+    "patterns": ["ketamine"],
+    "units": ["mg"],
+    "class": "Anaesthetic / Psychiatry",
+    "subclass": "NMDA antagonist",
+    "forms": ["IV", "IM"],
+    "route": "IV / IM",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per ketamine protocol"
+},
+
+"KETOPROFEN": {
+    "id": 292,
+    "canonical": "Ketoprofen",
+    "patterns": ["ketoprofen"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["tablet", "gel"],
+    "route": "oral / topical",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per NSAID guidance"
+},
+
+"KETOROLAC": {
+    "id": 293,
+    "canonical": "Ketorolac",
+    "patterns": ["ketorolac"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["IM", "IV"],
+    "route": "IM / IV",
+    "depot": False,
+    "strengths": "30mg, 60mg",
+    "allowed_strengths": [30, 60],
+    "bnf_max": "per guidance"
+},
+
+"LABETALOL": {
+    "id": 294,
+    "canonical": "Labetalol",
+    "patterns": ["labetalol"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per hypertension protocol"
+},
+
+"LACOSAMIDE": {
+    "id": 295,
+    "canonical": "Lacosamide",
+    "patterns": ["lacosamide", "vimpat"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "50mg, 100mg, 150mg, 200mg",
+    "allowed_strengths": [50, 100, 150, 200],
+    "bnf_max": "per epilepsy protocol"
+},
+
+"LAMOTRIGINE": {
+    "id": 296,
+    "canonical": "Lamotrigine",
+    "patterns": ["lamotrigine", "lamictal"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant / Mood stabiliser",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg, 200mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 175, 200],
+    "bnf_max": "400mg/day"
+},
+
+"LANATOSIDE C": {
+    "id": 297,
+    "canonical": "Lanatoside C",
+    "patterns": ["lanatoside c"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Cardiac glycoside",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per digitalis protocol"
+},
+
+"LANSOPRAZOLE": {
+    "id": 298,
+    "canonical": "Lansoprazole",
+    "patterns": ["lansoprazole", "lanso"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "PPI",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "15mg, 30mg",
+    "allowed_strengths": [15, 30],
+    "bnf_max": "30mg/day"
+},
+
+"LATANOPROST": {
+    "id": 299,
+    "canonical": "Latanoprost",
+    "patterns": ["latanoprost"],
+    "units": ["mcg"],
+    "class": "Ophthalmology",
+    "subclass": "Glaucoma",
+    "forms": ["eye drops"],
+    "route": "ocular",
+    "depot": False,
+    "strengths": "50mcg/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per glaucoma protocol"
+},
+
+"LEFLUNOMIDE": {
+    "id": 300,
+    "canonical": "Leflunomide",
+    "patterns": ["leflunomide", "arava"],
+    "units": ["mg"],
+    "class": "Rheumatology",
+    "subclass": "DMARD",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg",
+    "allowed_strengths": [10, 20],
+    "bnf_max": "per rheumatology protocol"
+},
+"LENALIDOMIDE": {
+    "id": 301,
+    "canonical": "Lenalidomide",
+    "patterns": ["lenalidomide", "revlimid"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Immunomodulator",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 25mg",
+    "allowed_strengths": [5, 10, 15, 25],
+    "bnf_max": "per oncology guidance"
+},
+
+"LEUPROLIDE": {
+    "id": 302,
+    "canonical": "Leuprolide",
+    "patterns": ["leuprolide", "lupron"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "GnRH analogue",
+    "forms": ["SC", "IM"],
+    "route": "SC / IM",
+    "depot": True,
+    "strengths": "various",
+    "allowed_strengths": [],
+    "bnf_max": "per urology protocol"
+},
+
+"LEVETIRACETAM": {
+    "id": 303,
+    "canonical": "Levetiracetam",
+    "patterns": ["levetiracetam", "keppra"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "250mg, 500mg, 750mg, 1000mg",
+    "allowed_strengths": [250, 500, 750, 1000],
+    "bnf_max": "per epilepsy protocol"
+},
+
+"LEVOCETIRIZINE": {
+    "id": 304,
+    "canonical": "Levocetirizine",
+    "patterns": ["levocetirizine", "xyzal"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg",
+    "allowed_strengths": [5],
+    "bnf_max": "per allergy protocol"
+},
+
+"LEVODOPA": {
+    "id": 305,
+    "canonical": "Levodopa",
+    "patterns": ["levodopa", "l-dopa"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Parkinson’s",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "various combinations",
+    "allowed_strengths": [],
+    "bnf_max": "per Parkinson’s protocol"
+},
+
+"LEVOTHYROXINE": {
+    "id": 306,
+    "canonical": "Levothyroxine",
+    "patterns": ["levothyroxine", "eltroxin", "thyroxine"],
+    "units": ["mcg"],
+    "class": "Endocrine",
+    "subclass": "Thyroid hormone",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mcg, 50mcg, 75mcg, 100mcg, 125mcg, 150mcg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150],
+    "bnf_max": "per TFT monitoring"
+},
+
+"LINAGLIPTIN": {
+    "id": 307,
+    "canonical": "Linagliptin",
+    "patterns": ["linagliptin", "trajenta"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "DPP-4 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg",
+    "allowed_strengths": [5],
+    "bnf_max": "per diabetes protocol"
+},
+
+"LINEZOLID": {
+    "id": 308,
+    "canonical": "Linezolid",
+    "patterns": ["linezolid", "zyvox"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Oxazolidinone antibiotic",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "600mg",
+    "allowed_strengths": [600],
+    "bnf_max": "per infection protocol"
+},
+
+"LISINOPRIL": {
+    "id": 309,
+    "canonical": "Lisinopril",
+    "patterns": ["lisinopril"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ACE inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg, 7.5mg, 10mg, 12.5mg, 15mg, 17.5mg, 20mg",
+    "allowed_strengths": [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20],
+    "bnf_max": "per BP protocol"
+},
+
+"LITHIUM": {
+    "id": 310,
+    "canonical": "Lithium",
+    "patterns": ["lithium", "priadel", "liskonum"],
+    "units": ["mg"],
+    "class": "Psychiatry",
+    "subclass": "Mood stabiliser",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg, 600mg, 800mg, 1g, 1.2g, 1.4g, 1.6g",
+    "allowed_strengths": [200, 400, 600, 800, 1000, 1200, 1400, 1600],
+    "bnf_max": "per serum levels"
+},
+
+"LOPERAMIDE": {
+    "id": 311,
+    "canonical": "Loperamide",
+    "patterns": ["loperamide", "imodium"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Antidiarrhoeal",
+    "forms": ["capsule", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg",
+    "allowed_strengths": [2],
+    "bnf_max": "16mg/day"
+},
+
+"LORATADINE": {
+    "id": 312,
+    "canonical": "Loratadine",
+    "patterns": ["loratadine", "clarityn"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "per allergy guidance"
+},
+"LORAZEPAM": {
+    "id": 313,
+    "canonical": "Lorazepam",
+    "patterns": ["lorazepam", "ativan", "loraz"],
+    "units": ["mg"],
+    "class": "Anxiolytic",
+    "subclass": "Benzodiazepine",
+    "forms": ["tablet", "IM"],
+    "route": "oral / IM",
+    "depot": False,
+    "strengths": "0.5mg, 1mg, 1.5mg, 2mg",
+    "allowed_strengths": [0.5, 1, 1.5, 2],
+    "bnf_max": "per sedation protocol"
+},
+
+"LOTEPREDNOL": {
+    "id": 314,
+    "canonical": "Loteprednol",
+    "patterns": ["loteprednol"],
+    "units": ["mg"],
+    "class": "Ophthalmology",
+    "subclass": "Steroid",
+    "forms": ["eye drops"],
+    "route": "ocular",
+    "depot": False,
+    "strengths": "0.5%",
+    "allowed_strengths": [],
+    "bnf_max": "per ophthalmology protocol"
+},
+
+"LOSARTAN": {
+    "id": 315,
+    "canonical": "Losartan",
+    "patterns": ["losartan", "cozaar"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ARB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 100mg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "100mg/day"
+},
+
+"LOXAPINE": {
+    "id": 316,
+    "canonical": "Loxapine",
+    "patterns": ["loxapine"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet", "inhaled"],
+    "route": "oral / inhaled",
+    "depot": False,
+    "strengths": "5mg, 10mg, 25mg",
+    "allowed_strengths": [5, 10, 25],
+    "bnf_max": "per psychosis guidance"
+},
+
+"LOXAPINE INHALATION": {
+    "id": 317,
+    "canonical": "Loxapine (Inhaled)",
+    "patterns": ["loxapine inhaled", "adasuve"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Inhaled",
+    "forms": ["inhaled"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "per rapid tranquillisation protocol"
+},
+
+"MACROGOL": {
+    "id": 318,
+    "canonical": "Macrogol",
+    "patterns": ["macrogol", "movicol", "laxido"],
+    "units": ["g"],
+    "class": "Gastroenterology",
+    "subclass": "Osmotic laxative",
+    "forms": ["sachet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "13.7g",
+    "allowed_strengths": [13.7],
+    "bnf_max": "per constipation protocol"
+},
+
+"MAGNESIUM SULFATE": {
+    "id": 319,
+    "canonical": "Magnesium Sulfate",
+    "patterns": ["magnesium sulfate", "mgso4"],
+    "units": ["mg"],
+    "class": "Electrolytes",
+    "subclass": "Supplement",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per electrolyte guidance"
+},
+
+"MELATONIN": {
+    "id": 320,
+    "canonical": "Melatonin",
+    "patterns": ["melatonin", "circadin"],
+    "units": ["mg"],
+    "class": "Sleep",
+    "subclass": "Hormone",
+    "forms": ["tablet (MR)"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg",
+    "allowed_strengths": [2],
+    "bnf_max": "per insomnia guidance"
+},
+
+"MELPHALAN": {
+    "id": 321,
+    "canonical": "Melphalan",
+    "patterns": ["melphalan"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Alkylating agent",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "2mg",
+    "allowed_strengths": [2],
+    "bnf_max": "per oncology protocol"
+},
+
+"METFORMIN": {
+    "id": 322,
+    "canonical": "Metformin",
+    "patterns": ["metformin", "glucophage"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Biguanide",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg, 850mg, 1000mg",
+    "allowed_strengths": [500, 850, 1000],
+    "bnf_max": "2000–3000mg/day depending on formulation"
+},
+
+"METHADONE": {
+    "id": 323,
+    "canonical": "Methadone",
+    "patterns": ["methadone"],
+    "units": ["mg"],
+    "class": "Opioid Substitution",
+    "subclass": "Opioid agonist",
+    "forms": ["liquid", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg/ml, 2mg/ml, 3mg/ml, 4mg/ml, 5mg/ml, 6mg/ml, 7mg/ml, 8mg/ml, 9mg/ml, 10mg/ml, 11mg/ml, 12mg/ml, 13mg/ml, 14mg/ml, 15mg/ml, 16mg/ml, 17mg/ml, 18mg/ml, 19mg/ml, 20mg/ml",
+    "allowed_strengths": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    "bnf_max": "per OST protocol"
+},
+
+"METHENAMINE": {
+    "id": 324,
+    "canonical": "Methenamine",
+    "patterns": ["methenamine", "hiprex"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "UTI prophylaxis",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1g",
+    "allowed_strengths": [1000],
+    "bnf_max": "per UTI guidance"
+},
+
+"METHOTREXATE": {
+    "id": 325,
+    "canonical": "Methotrexate",
+    "patterns": ["methotrexate"],
+    "units": ["mg"],
+    "class": "Rheumatology / Oncology",
+    "subclass": "Antimetabolite",
+    "forms": ["tablet", "SC", "IM"],
+    "route": "oral / SC / IM",
+    "depot": False,
+    "strengths": "2.5mg, 10mg",
+    "allowed_strengths": [2.5, 10],
+    "bnf_max": "per methotrexate monitoring protocol"
+},
+
+"METHYLPHENIDATE": {
+    "id": 326,
+    "canonical": "Methylphenidate",
+    "patterns": ["methylphenidate", "ritalin", "concerta"],
+    "units": ["mg"],
+    "class": "Psychiatry",
+    "subclass": "ADHD stimulant",
+    "forms": ["tablet", "MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 18mg, 27mg, 36mg, 54mg",
+    "allowed_strengths": [5, 10, 18, 27, 36, 54],
+    "bnf_max": "per ADHD protocol"
+},
+
+"METHYLPREDNISOLONE": {
+    "id": 327,
+    "canonical": "Methylprednisolone",
+    "patterns": ["methylprednisolone", "medrone"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Steroid",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "4mg, 16mg, 40mg",
+    "allowed_strengths": [4, 16, 40],
+    "bnf_max": "per steroid protocol"
+},
+
+"METOCLOPRAMIDE": {
+    "id": 328,
+    "canonical": "Metoclopramide",
+    "patterns": ["metoclopramide", "maxolon"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Prokinetic",
+    "forms": ["tablet", "IM", "IV"],
+    "route": "oral / IM / IV",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "30mg/day"
+},
+
+"METOLAZONE": {
+    "id": 329,
+    "canonical": "Metolazone",
+    "patterns": ["metolazone"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Thiazide-like diuretic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg",
+    "allowed_strengths": [2.5, 5],
+    "bnf_max": "per oedema guidance"
+},
+
+"METOPROLOL": {
+    "id": 330,
+    "canonical": "Metoprolol",
+    "patterns": ["metoprolol", "lopressor"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "400mg/day"
+},
+
+"METRONIDAZOLE": {
+    "id": 331,
+    "canonical": "Metronidazole",
+    "patterns": ["metronidazole", "flagyl"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antibiotic",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "200mg, 400mg",
+    "allowed_strengths": [200, 400],
+    "bnf_max": "per infection protocol"
+},
+
+"MICAFUNGIN": {
+    "id": 332,
+    "canonical": "Micafungin",
+    "patterns": ["micafungin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per antifungal protocol"
+},
+
+"MICONAZOLE": {
+    "id": 333,
+    "canonical": "Miconazole",
+    "patterns": ["miconazole", "daktarin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["topical", "oral gel"],
+    "route": "topical / oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "OTC / per fungal guidance"
+},
+
+"MIDAZOLAM": {
+    "id": 334,
+    "canonical": "Midazolam",
+    "patterns": ["midazolam"],
+    "units": ["mg"],
+    "class": "Sedation",
+    "subclass": "Benzodiazepine",
+    "forms": ["IV", "IM", "buccal"],
+    "route": "IV / IM / buccal",
+    "depot": False,
+    "strengths": "5mg/ml, 10mg/2ml",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "per sedation protocol"
+},
+
+"MIFEPRISTONE": {
+    "id": 335,
+    "canonical": "Mifepristone",
+    "patterns": ["mifepristone", "mifegyne"],
+    "units": ["mg"],
+    "class": "Gynaecology",
+    "subclass": "Abortifacient",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per TOP protocol"
+},
+
+"MINOCYCLINE": {
+    "id": 336,
+    "canonical": "Minocycline",
+    "patterns": ["minocycline"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Tetracycline antibiotic",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per infection guidance"
+},
+
+"MIRTAZAPINE": {
+    "id": 337,
+    "canonical": "Mirtazapine",
+    "patterns": ["mirtazapine", "zispin"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "NaSSA",
+    "forms": ["tablet", "ODT"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "15mg, 30mg, 45mg",
+    "allowed_strengths": [15, 30, 45],
+    "bnf_max": "45mg/day"
+},
+
+"MODAFINIL": {
+    "id": 338,
+    "canonical": "Modafinil",
+    "patterns": ["modafinil", "provigil"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Wakefulness-promoting",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "400mg/day"
+},
+
+"MOLSIDOMINE": {
+    "id": 339,
+    "canonical": "Molsidomine",
+    "patterns": ["molsidomine"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Anti-anginal",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg, 4mg",
+    "allowed_strengths": [2, 4],
+    "bnf_max": "per angina protocol"
+},
+
+"MOMETASONE": {
+    "id": 340,
+    "canonical": "Mometasone",
+    "patterns": ["mometasone", "asmanex", "nasonex"],
+    "units": ["mcg"],
+    "class": "Respiratory / ENT",
+    "subclass": "Steroid",
+    "forms": ["inhaler", "nasal spray"],
+    "route": "inhaled / nasal",
+    "depot": False,
+    "strengths": "50mcg, 100mcg, 200mcg",
+    "allowed_strengths": [50, 100, 200],
+    "bnf_max": "per asthma / allergy protocol"
+},
+
+"MONTELUKAST": {
+    "id": 341,
+    "canonical": "Montelukast",
+    "patterns": ["montelukast", "singulair"],
+    "units": ["mg"],
+    "class": "Respiratory",
+    "subclass": "Leukotriene receptor antagonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "4mg, 5mg, 10mg",
+    "allowed_strengths": [4, 5, 10],
+    "bnf_max": "per asthma protocol"
+},
+
+"MORPHINE": {
+    "id": 342,
+    "canonical": "Morphine",
+    "patterns": ["morphine", "oramorph"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["tablet", "oral solution", "IV", "SC"],
+    "route": "oral / IV / SC",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 20mg, 25mg, 30mg",
+    "allowed_strengths": [5, 10, 15, 20, 25, 30],
+    "bnf_max": "per opioid protocol"
+},
+
+"MORPHINE SULFATE": {
+    "id": 343,
+    "canonical": "Morphine Sulfate",
+    "patterns": ["morphine sulfate", "morphine sulphate", "mst"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["tablet MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 30mg, 40mg, 50mg, 60mg, 70mg, 80mg, 90mg, 100mg, 110mg, 120mg, 130mg, 140mg, 150mg, 160mg, 170mg, 180mg, 190mg,  200mg",
+    "allowed_strengths": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190,200],
+    "bnf_max": "per opioid guidance"
+},
+
+"MUPIROCIN": {
+    "id": 344,
+    "canonical": "Mupirocin",
+    "patterns": ["mupirocin", "bactroban"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Topical antibiotic",
+    "forms": ["topical ointment"],
+    "route": "topical",
+    "depot": False,
+    "strengths": "2%",
+    "allowed_strengths": [],
+    "bnf_max": "per MRSA protocol"
+},
+
+"NADOLOL": {
+    "id": 345,
+    "canonical": "Nadolol",
+    "patterns": ["nadolol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg, 80mg",
+    "allowed_strengths": [40, 80],
+    "bnf_max": "per BP/arrhythmia protocol"
+},
+
+"NAPROXEN": {
+    "id": 346,
+    "canonical": "Naproxen",
+    "patterns": ["naproxen", "naprosyn"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "NSAID",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "1000mg/day"
+},
+
+"NATEGLINIDE": {
+    "id": 347,
+    "canonical": "Nateglinide",
+    "patterns": ["nateglinide"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "Meglitinide",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "60mg, 120mg, 180mg",
+    "allowed_strengths": [60, 120, 180],
+    "bnf_max": "per diabetes guidance"
+},
+
+"NEBIVOLOL": {
+    "id": 348,
+    "canonical": "Nebivolol",
+    "patterns": ["nebivolol", "nebiv"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg",
+    "allowed_strengths": [2.5, 5],
+    "bnf_max": "per BP guidance"
+},
+
+"NEFAZODONE": {
+    "id": 349,
+    "canonical": "Nefazodone",
+    "patterns": ["nefazodone"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SARI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 150mg",
+    "allowed_strengths": [50, 100, 150],
+    "bnf_max": "per psychiatric protocol"
+},
+
+"NEOSTIGMINE": {
+    "id": 350,
+    "canonical": "Neostigmine",
+    "patterns": ["neostigmine"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Cholinesterase inhibitor",
+    "forms": ["IV", "IM"],
+    "route": "IV / IM",
+    "depot": False,
+    "strengths": "2.5mg/ml",
+    "allowed_strengths": [2.5],
+    "bnf_max": "per neuromuscular protocol"
+},
+"NEPAFENAC": {
+    "id": 351,
+    "canonical": "Nepafenac",
+    "patterns": ["nepafenac"],
+    "units": ["mg"],
+    "class": "Ophthalmology",
+    "subclass": "NSAID eye drop",
+    "forms": ["eye drops"],
+    "route": "ocular",
+    "depot": False,
+    "strengths": "0.1%",
+    "allowed_strengths": [],
+    "bnf_max": "per ophthalmology guidance"
+},
+
+"NEVIRAPINE": {
+    "id": 352,
+    "canonical": "Nevirapine",
+    "patterns": ["nevirapine"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiretroviral",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per HIV protocol"
+},
+
+"NEXIUM": {
+    "id": 353,
+    "canonical": "Esomeprazole",
+    "patterns": ["nexium", "esomeprazole"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "PPI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg",
+    "allowed_strengths": [20, 40],
+    "bnf_max": "40mg/day"
+},
+
+"NICOTINE": {
+    "id": 354,
+    "canonical": "Nicotine",
+    "patterns": ["nicotine"],
+    "units": ["mg"],
+    "class": "Smoking cessation",
+    "subclass": "NRT",
+    "forms": ["patch", "gum", "lozenge", "spray"],
+    "route": "transdermal / oral",
+    "depot": False,
+    "strengths": "various",
+    "allowed_strengths": [],
+    "bnf_max": "per NRT protocol"
+},
+
+"NIFEDIPINE": {
+    "id": 355,
+    "canonical": "Nifedipine",
+    "patterns": ["nifedipine", "adalat"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Calcium channel blocker",
+    "forms": ["tablet MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg (IR), 20mg MR, 30mg MR, 60mg MR",
+    "allowed_strengths": [10, 20, 30, 60],
+    "bnf_max": "per hypertension protocol"
+},
+
+"NILOTINIB": {
+    "id": 356,
+    "canonical": "Nilotinib",
+    "patterns": ["nilotinib", "tasigna"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "TKI",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 200mg",
+    "allowed_strengths": [150, 200],
+    "bnf_max": "per oncology protocol"
+},
+
+"NIMODIPINE": {
+    "id": 357,
+    "canonical": "Nimodipine",
+    "patterns": ["nimodipine"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Calcium channel blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "30mg",
+    "allowed_strengths": [30],
+    "bnf_max": "per SAH protocol"
+},
+
+"NITRAZEPAM": {
+    "id": 358,
+    "canonical": "Nitrazepam",
+    "patterns": ["nitrazepam"],
+    "units": ["mg"],
+    "class": "Sleep",
+    "subclass": "Benzodiazepine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg",
+    "allowed_strengths": [5],
+    "bnf_max": "per insomnia guidance"
+},
+
+"NITROFURANTOIN": {
+    "id": 359,
+    "canonical": "Nitrofurantoin",
+    "patterns": ["nitrofurantoin", "macrobid"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "UTI antibiotic",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per UTI protocol"
+},
+
+"NITROGLYCERIN": {
+    "id": 360,
+    "canonical": "Nitroglycerin",
+    "patterns": ["nitroglycerin", "glyceryl trinitrate", "gtn"],
+    "units": ["mg", "mcg"],
+    "class": "Cardiac",
+    "subclass": "Nitrate",
+    "forms": ["spray", "patch", "tablet"],
+    "route": "sublingual / transdermal",
+    "depot": False,
+    "strengths": "300mcg, 400mcg, 5mg patch",
+    "allowed_strengths": [0.3, 0.4, 5],
+    "bnf_max": "per angina protocol"
+},
+
+"NIVOLUMAB": {
+    "id": 361,
+    "canonical": "Nivolumab",
+    "patterns": ["nivolumab", "opdivo"],
+    "units": ["mg"],
+    "class": "Oncology",
+    "subclass": "Immunotherapy",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per oncology protocol"
+},
+
+"NORADRENALINE": {
+    "id": 362,
+    "canonical": "Noradrenaline",
+    "patterns": ["noradrenaline", "norepinephrine"],
+    "units": ["mg"],
+    "class": "Critical Care",
+    "subclass": "Vasopressor",
+    "forms": ["IV infusion"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "1mg/ml, 4mg/4ml",
+    "allowed_strengths": [1, 4],
+    "bnf_max": "per ICU protocol"
+},
+
+"NORFLOXACIN": {
+    "id": 363,
+    "canonical": "Norfloxacin",
+    "patterns": ["norfloxacin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Fluoroquinolone",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "400mg",
+    "allowed_strengths": [400],
+    "bnf_max": "per UTI protocol"
+},
+
+"NORTRIPTYLINE": {
+    "id": 364,
+    "canonical": "Nortriptyline",
+    "patterns": ["nortriptyline"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "TCA",
+    "forms": ["capsule", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg",
+    "allowed_strengths": [10, 25, 50],
+    "bnf_max": "per depression protocol"
+},
+
+"NOVORAPID": {
+    "id": 365,
+    "canonical": "Insulin Aspart",
+    "patterns": ["novorapid"],
+    "units": ["units"],
+    "class": "Diabetes",
+    "subclass": "Rapid-acting insulin",
+    "forms": ["SC"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "100 units/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per insulin protocol"
+},
+
+"NYSTATIN": {
+    "id": 366,
+    "canonical": "Nystatin",
+    "patterns": ["nystatin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["oral suspension", "topical"],
+    "route": "oral / topical",
+    "depot": False,
+    "strengths": "100,000 units/ml",
+    "allowed_strengths": [],
+    "bnf_max": "per fungal protocol"
+},
+
+"OFLOXACIN": {
+    "id": 367,
+    "canonical": "Ofloxacin",
+    "patterns": ["ofloxacin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Fluoroquinolone",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 400mg",
+    "allowed_strengths": [200, 400],
+    "bnf_max": "per infection protocol"
+},
+
+"OLANZAPINE": {
+    "id": 368,
+    "canonical": "Olanzapine",
+    "patterns": ["olanzapine", "zyprexa", "olan"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet", "ODT", "IM"],
+    "route": "oral / IM",
+    "depot": False,
+    "strengths": "2.5mg, 5mg, 7.5mg, 10mg, 12.5mg, 15mg, 17.5mg, 20mg",
+    "allowed_strengths": [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20],
+    "bnf_max": "20mg/day"
+},
+
+"OLANZAPINE DEPOT": {
+    "id": 369,
+    "canonical": "Olanzapine Pamoate",
+    "patterns": ["olanzapine depot", "olanzapine pamoate"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Depot",
+    "forms": ["IM"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "210mg, 300mg, 405mg",
+    "allowed_strengths": [210, 300, 405],
+    "bnf_max": "per depot protocol"
+},
+
+"OLMESARTAN": {
+    "id": 370,
+    "canonical": "Olmesartan",
+    "patterns": ["olmesartan"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ARB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 40mg",
+    "allowed_strengths": [10, 20, 40],
+    "bnf_max": "per BP protocol"
+},
+
+"OMEPRAZOLE": {
+    "id": 371,
+    "canonical": "Omeprazole",
+    "patterns": ["omeprazole", "losec"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "PPI",
+    "forms": ["capsule", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 30mg, 40mg",
+    "allowed_strengths": [10, 20, 30, 40],
+    "bnf_max": "40mg/day"
+},
+
+"ONDANSETRON": {
+    "id": 372,
+    "canonical": "Ondansetron",
+    "patterns": ["ondansetron", "zofran"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Anti-emetic",
+    "forms": ["tablet", "ODT", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "4mg, 8mg",
+    "allowed_strengths": [4, 8],
+    "bnf_max": "per nausea/vomiting protocol"
+},
+
+"ORLISTAT": {
+    "id": 373,
+    "canonical": "Orlistat",
+    "patterns": ["orlistat", "xenical"],
+    "units": ["mg"],
+    "class": "Metabolic",
+    "subclass": "Weight loss agent",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "60mg, 120mg",
+    "allowed_strengths": [60, 120],
+    "bnf_max": "per obesity guidelines"
+},
+
+"OSMOLAX": {
+    "id": 374,
+    "canonical": "Polyethylene Glycol",
+    "patterns": ["osmolax"],
+    "units": ["g"],
+    "class": "Gastroenterology",
+    "subclass": "Laxative",
+    "forms": ["powder"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "17g",
+    "allowed_strengths": [17],
+    "bnf_max": "OTC"
+},
+
+"OXAZEPAM": {
+    "id": 375,
+    "canonical": "Oxazepam",
+    "patterns": ["oxazepam", "serax"],
+    "units": ["mg"],
+    "class": "Anxiolytic",
+    "subclass": "Benzodiazepine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 15mg, 30mg",
+    "allowed_strengths": [10, 15, 30],
+    "bnf_max": "per anxiety protocol"
+},
+
+"OXCARBAZEPINE": {
+    "id": 376,
+    "canonical": "Oxcarbazepine",
+    "patterns": ["oxcarbazepine", "trileptal"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 300mg, 450mg, 600mg",
+    "allowed_strengths": [150, 300, 450, 600],
+    "bnf_max": "per epilepsy protocol"
+},
+
+"OXYBUTYNIN": {
+    "id": 377,
+    "canonical": "Oxybutynin",
+    "patterns": ["oxybutynin", "ditropan"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "Anticholinergic",
+    "forms": ["tablet", "patch"],
+    "route": "oral / transdermal",
+    "depot": False,
+    "strengths": "2.5mg, 5mg, 10mg",
+    "allowed_strengths": [2.5, 5, 10],
+    "bnf_max": "per OAB protocol"
+},
+
+"OXYCODONE": {
+    "id": 378,
+    "canonical": "Oxycodone",
+    "patterns": ["oxycodone", "oxycontin", "oxynorm"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["tablet", "capsule", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 20mg, 40mg, 80mg",
+    "allowed_strengths": [5, 10, 20, 40, 80],
+    "bnf_max": "per opioid protocol"
+},
+
+"OXYCODONE/NALOXONE": {
+    "id": 379,
+    "canonical": "Oxycodone/Naloxone",
+    "patterns": ["oxycodone naloxone", "targinact"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid combination",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5/2.5mg, 10/5mg, 20/10mg",
+    "allowed_strengths": [5, 10, 20],
+    "bnf_max": "per opioid protocol"
+},
+
+"PANTOPRAZOLE": {
+    "id": 380,
+    "canonical": "Pantoprazole",
+    "patterns": ["pantoprazole"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "PPI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg",
+    "allowed_strengths": [20, 40],
+    "bnf_max": "40mg/day"
+},
+
+"PARACETAMOL": {
+    "id": 381,
+    "canonical": "Paracetamol",
+    "patterns": ["paracetamol", "acetaminophen", "pcm"],
+    "units": ["mg", "g"],
+    "class": "Pain",
+    "subclass": "Non-opioid analgesic",
+    "forms": ["tablet", "liquid", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "500mg, 1g",
+    "allowed_strengths": [500, 1000],
+    "bnf_max": "4g/day"
+},
+
+"PAROXETINE": {
+    "id": 382,
+    "canonical": "Paroxetine",
+    "patterns": ["paroxetine", "seroxat"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SSRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 30mg, 40mg, 50mg, 60mg",
+    "allowed_strengths": [10, 20, 30, 40, 50, 60],
+    "bnf_max": "50mg/day"
+},
+
+"PALIPERIDONE": {
+    "id": 700,
+    "canonical": "Paliperidone",
+    "patterns": ["paliperidone", "invega", "pali"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet", "ER tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "3mg, 6mg, 9mg, 12mg",
+    "allowed_strengths": [3, 6, 9, 12],
+    "bnf_max": "12mg/day"
+},
+
+"PALIPERIDONE_LAI": {
+    "id": 701,
+    "canonical": "Paliperidone LAI",
+    "patterns": ["paliperidone depot", "paliperidone lai", "invega sustenna", "invega trinza", "trevicta", "xeplion"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical depot",
+    "forms": ["IM depot"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 150mg (monthly); 175mg, 263mg, 350mg, 525mg (3-monthly)",
+    "allowed_strengths": [25, 50, 75, 100, 150, 175, 263, 350, 525],
+    "bnf_max": "150mg monthly / 525mg 3-monthly"
+},
+
+"PEG-ELECTROLYTE": {
+    "id": 383,
+    "canonical": "PEG Electrolyte Solution",
+    "patterns": ["peg electrolyte", "klean prep"],
+    "units": ["g"],
+    "class": "Gastroenterology",
+    "subclass": "Bowel prep",
+    "forms": ["powder"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per bowel prep protocol"
+},
+
+"PENICILLIN V": {
+    "id": 384,
+    "canonical": "Phenoxymethylpenicillin",
+    "patterns": ["penicillin v", "phenoxymethylpenicillin", "pen v"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Penicillin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mg, 500mg",
+    "allowed_strengths": [250, 500],
+    "bnf_max": "per infection protocol"
+},
+
+"PERAMPANEL": {
+    "id": 385,
+    "canonical": "Perampanel",
+    "patterns": ["perampanel", "fycompa"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg, 4mg, 6mg, 8mg, 10mg, 12mg",
+    "allowed_strengths": [2, 4, 6, 8, 10, 12],
+    "bnf_max": "12mg/day"
+},
+
+"PERGOLIDE": {
+    "id": 386,
+    "canonical": "Pergolide",
+    "patterns": ["pergolide"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Dopamine agonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "250mcg, 500mcg",
+    "allowed_strengths": [0.25, 0.5],
+    "bnf_max": "per Parkinson’s protocol"
+},
+
+"PHENELZINE": {
+    "id": 387,
+    "canonical": "Phenelzine",
+    "patterns": ["phenelzine", "nardil"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "MAOI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "15mg",
+    "allowed_strengths": [15],
+    "bnf_max": "per MAOI protocol"
+},
+
+"PHENOBARBITAL": {
+    "id": 388,
+    "canonical": "Phenobarbital",
+    "patterns": ["phenobarbital", "phenobarbitone"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "15mg, 30mg, 60mg",
+    "allowed_strengths": [15, 30, 60],
+    "bnf_max": "per epilepsy protocol"
+},
+
+"PHENYTOIN": {
+    "id": 389,
+    "canonical": "Phenytoin",
+    "patterns": ["phenytoin", "epanutin"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["capsule", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "25mg, 50mg, 100mg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "per seizure protocol"
+},
+
+"PIOGLITAZONE": {
+    "id": 390,
+    "canonical": "Pioglitazone",
+    "patterns": ["pioglitazone", "actos"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "TZD",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "15mg, 30mg, 45mg",
+    "allowed_strengths": [15, 30, 45],
+    "bnf_max": "45mg/day"
+},
+
+"PIPERACILLIN/TAZOBACTAM": {
+    "id": 391,
+    "canonical": "Piperacillin/Tazobactam",
+    "patterns": ["piperacillin tazobactam", "tazocin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Penicillin + beta-lactamase inhibitor",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "4.5g",
+    "allowed_strengths": [4.5],
+    "bnf_max": "per infection protocol"
+},
+
+"POTASSIUM CHLORIDE": {
+    "id": 392,
+    "canonical": "Potassium Chloride",
+    "patterns": ["potassium chloride"],
+    "units": ["mmol"],
+    "class": "Electrolytes",
+    "subclass": "Supplement",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "slow-k, various",
+    "allowed_strengths": [],
+    "bnf_max": "per electrolyte protocol"
+},
+
+"PRAZOSIN": {
+    "id": 393,
+    "canonical": "Prazosin",
+    "patterns": ["prazosin", "minipress"],
+    "units": ["mg"],
+    "class": "Cardiac / PTSD",
+    "subclass": "Alpha-1 blocker",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 2mg, 5mg",
+    "allowed_strengths": [1, 2, 5],
+    "bnf_max": "per PTSD / BP protocol"
+},
+
+"PREDNISOLONE": {
+    "id": 394,
+    "canonical": "Prednisolone",
+    "patterns": ["prednisolone"],
+    "units": ["mg"],
+    "class": "Endocrine / Immunology",
+    "subclass": "Steroid",
+    "forms": ["tablet", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 5mg, 20mg, 25mg",
+    "allowed_strengths": [1, 5, 20, 25],
+    "bnf_max": "per steroid protocol"
+},
+
+"PREGABALIN": {
+    "id": 395,
+    "canonical": "Pregabalin",
+    "patterns": ["pregabalin", "lyrica"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Neuropathic pain / anticonvulsant",
+    "forms": ["capsule", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg, 200mg, 225mg, 250mg, 275mg, 300mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 200, 225, 250, 300],
+    "bnf_max": "600mg/day"
+},
+
+"PROCHLORPERAZINE": {
+    "id": 396,
+    "canonical": "Prochlorperazine",
+    "patterns": ["prochlorperazine", "stemetil"],
+    "units": ["mg"],
+    "class": "Antiemetic / Antipsychotic",
+    "subclass": "Phenothiazine",
+    "forms": ["tablet", "buccal"],
+    "route": "oral / buccal",
+    "depot": False,
+    "strengths": "3mg, 5mg",
+    "allowed_strengths": [3, 5],
+    "bnf_max": "per nausea/vertigo protocol"
+},
+
+"PROGESTERONE": {
+    "id": 397,
+    "canonical": "Progesterone",
+    "patterns": ["progesterone", "utrogestan"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Hormone",
+    "forms": ["capsule"],
+    "route": "oral / vaginal",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per hormone therapy protocol"
+},
+
+"PROCYCLIDINE": {
+    "id": 702,
+    "canonical": "Procyclidine",
+    "patterns": ["procyclidine", "kemadrin"],
+    "units": ["mg"],
+    "class": "Anticholinergic",
+    "subclass": "Antiparkinsonian",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg",
+    "allowed_strengths": [5],
+    "bnf_max": "30mg daily"
+},
+
+"PROMETHAZINE": {
+    "id": 398,
+    "canonical": "Promethazine",
+    "patterns": ["promethazine", "phenergan"],
+    "units": ["mg"],
+    "class": "Allergy / Sleep",
+    "subclass": "Sedating antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 25mg, 50mg",
+    "allowed_strengths": [10, 25, 50],
+    "bnf_max": "per sedation/allergy protocol"
+},
+
+"PROPRANOLOL": {
+    "id": 399,
+    "canonical": "Propranolol",
+    "patterns": ["propranolol", "inderal"],
+    "units": ["mg"],
+    "class": "Cardiac / Anxiety",
+    "subclass": "Beta-blocker",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 40mg, 80mg",
+    "allowed_strengths": [10, 20, 40, 80],
+    "bnf_max": "per BP/anxiety protocol"
+},
+
+"PROPYLTHIOURACIL": {
+    "id": 400,
+    "canonical": "Propylthiouracil",
+    "patterns": ["propylthiouracil", "ptu"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Antithyroid",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "per hyperthyroid protocol"
+},
+
+"PRUCALOPRIDE": {
+    "id": 401,
+    "canonical": "Prucalopride",
+    "patterns": ["prucalopride", "resolor"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Prokinetic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 2mg",
+    "allowed_strengths": [1, 2],
+    "bnf_max": "per constipation protocol"
+},
+
+"QUETIAPINE": {
+    "id": 402,
+    "canonical": "Quetiapine",
+    "patterns": ["quetiapine", "seroquel"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet", "tablet MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg,200mg, 225mg, 250mg, 275mg, 300mg, 325mg, 350mg, 375mg, 400mg, 425mg, 450mg, 475mg, 500mg, 525mg, 550mg, 575mg, 600mg, 625mg, 650mg, 675mg, 700mg, 725mg, 750mg, 775mg, 800mg, 825mg, 850mg, 875mg, 900mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900],
+    "bnf_max": "750mg/day"
+},
+
+"QUINAPRIL": {
+    "id": 403,
+    "canonical": "Quinapril",
+    "patterns": ["quinapril"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ACE inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 20mg, 40mg",
+    "allowed_strengths": [5, 10, 20, 40],
+    "bnf_max": "per BP protocol"
+},
+
+"QUININE": {
+    "id": 404,
+    "canonical": "Quinine",
+    "patterns": ["quinine"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Muscle cramps / antimalarial",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "300mg",
+    "allowed_strengths": [300],
+    "bnf_max": "per cramps protocol"
+},
+
+"RAMIPRIL": {
+    "id": 405,
+    "canonical": "Ramipril",
+    "patterns": ["ramipril"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ACE inhibitor",
+    "forms": ["capsule", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1.25mg, 2.5mg, 5mg, 10mg",
+    "allowed_strengths": [1.25, 2.5, 5, 10],
+    "bnf_max": "10mg/day"
+},
+
+"RANITIDINE": {
+    "id": 406,
+    "canonical": "Ranitidine",
+    "patterns": ["ranitidine", "zantac"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "H2 antagonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 300mg",
+    "allowed_strengths": [150, 300],
+    "bnf_max": "withdrawn in UK"
+},
+
+"RASAGILINE": {
+    "id": 407,
+    "canonical": "Rasagiline",
+    "patterns": ["rasagiline", "azilect"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "MAO-B inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg",
+    "allowed_strengths": [1],
+    "bnf_max": "1mg/day"
+},
+
+"REBOXETINE": {
+    "id": 408,
+    "canonical": "Reboxetine",
+    "patterns": ["reboxetine", "edronax"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "NARI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "4mg",
+    "allowed_strengths": [4],
+    "bnf_max": "per depression protocol"
+},
+
+"RIBAVIRIN": {
+    "id": 409,
+    "canonical": "Ribavirin",
+    "patterns": ["ribavirin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiviral",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg",
+    "allowed_strengths": [200],
+    "bnf_max": "per antiviral protocol"
+},
+
+"RIFAMPICIN": {
+    "id": 410,
+    "canonical": "Rifampicin",
+    "patterns": ["rifampicin", "rifampin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antitubercular",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "150mg, 300mg",
+    "allowed_strengths": [150, 300],
+    "bnf_max": "per TB protocol"
+},
+
+"RISPERIDONE": {
+    "id": 411,
+    "canonical": "Risperidone",
+    "patterns": ["risperidone", "risperdal"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["tablet", "liquid", "ODT"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 1mg, 1.5mg, 2mg, 2.5mg, 3mg, 3.5mg, 4mg, 4.5mg, 5mg, 5.5mg, 6mg",
+    "allowed_strengths": [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6],
+    "bnf_max": "16mg/day"
+},
+
+"RISPERIDONE DEPOT": {
+    "id": 412,
+    "canonical": "Risperidone LAI",
+    "patterns": ["risperidone depot", "risperdal consta"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Depot",
+    "forms": ["IM"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "25mg, 37.5mg, 50mg",
+    "allowed_strengths": [25, 37.5, 50],
+    "bnf_max": "per LAI protocol"
+},
+
+"RIVAROXABAN": {
+    "id": 413,
+    "canonical": "Rivaroxaban",
+    "patterns": ["rivaroxaban", "xarelto"],
+    "units": ["mg"],
+    "class": "Cardiovascular",
+    "subclass": "DOAC",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 10mg, 15mg, 20mg",
+    "allowed_strengths": [2.5, 10, 15, 20],
+    "bnf_max": "per anticoagulation protocol"
+},
+
+"RIZATRIPTAN": {
+    "id": 414,
+    "canonical": "Rizatriptan",
+    "patterns": ["rizatriptan", "maxalt"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Triptan",
+    "forms": ["tablet", "ODT"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "per migraine protocol"
+},
+
+"ROPINIROLE": {
+    "id": 415,
+    "canonical": "Ropinirole",
+    "patterns": ["ropinirole", "requip"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Dopamine agonist",
+    "forms": ["tablet", "prolonged release"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.25mg, 0.5mg, 1mg, 2mg, 4mg, 6mg",
+    "allowed_strengths": [0.25, 0.5, 1, 2, 4, 6],
+    "bnf_max": "per Parkinson's protocol"
+},
+
+"ROSUVASTATIN": {
+    "id": 416,
+    "canonical": "Rosuvastatin",
+    "patterns": ["rosuvastatin", "crestor"],
+    "units": ["mg"],
+    "class": "Cardiovascular",
+    "subclass": "Statin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 20mg, 40mg",
+    "allowed_strengths": [5, 10, 20, 40],
+    "bnf_max": "40mg/day"
+},
+
+"RUPATADINE": {
+    "id": 417,
+    "canonical": "Rupatadine",
+    "patterns": ["rupatadine"],
+    "units": ["mg"],
+    "class": "Allergy",
+    "subclass": "Antihistamine",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg",
+    "allowed_strengths": [10],
+    "bnf_max": "10mg/day"
+},
+
+"SACUBITRIL/VALSARTAN": {
+    "id": 418,
+    "canonical": "Sacubitril/Valsartan",
+    "patterns": ["sacubitril valsartan", "entresto"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "ARNI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "24/26mg, 49/51mg, 97/103mg",
+    "allowed_strengths": [24, 49, 97],
+    "bnf_max": "per HF protocol"
+},
+
+"SALBUTAMOL": {
+    "id": 419,
+    "canonical": "Salbutamol",
+    "patterns": ["salbutamol", "ventolin"],
+    "units": ["mg", "mcg"],
+    "class": "Respiratory",
+    "subclass": "Bronchodilator",
+    "forms": ["inhaler", "nebuliser", "tablet"],
+    "route": "inhaled / oral",
+    "depot": False,
+    "strengths": "100mcg (inhaler), 2mg tablet, 4mg tablet",
+    "allowed_strengths": [2, 4, 0.1],
+    "bnf_max": "per asthma protocol"
+},
+
+"SALMETEROL": {
+    "id": 420,
+    "canonical": "Salmeterol",
+    "patterns": ["salmeterol", "serevent"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "LABA",
+    "forms": ["inhalation"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "25mcg, 50mcg",
+    "allowed_strengths": [25, 50],
+    "bnf_max": "per asthma protocol"
+},
+
+"SAXAGLIPTIN": {
+    "id": 421,
+    "canonical": "Saxagliptin",
+    "patterns": ["saxagliptin", "onglyza"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "DPP-4 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2.5mg, 5mg",
+    "allowed_strengths": [2.5, 5],
+    "bnf_max": "5mg/day"
+},
+
+"SELEGILINE": {
+    "id": 422,
+    "canonical": "Selegiline",
+    "patterns": ["selegiline"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "MAO-B inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "10mg/day"
+},
+
+"SENNA": {
+    "id": 423,
+    "canonical": "Senna",
+    "patterns": ["sennosides"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Stimulant laxative",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "7.5mg, 15mg",
+    "allowed_strengths": [7.5, 15],
+    "bnf_max": "per constipation protocol"
+},
+
+"SERTRALINE": {
+    "id": 424,
+    "canonical": "Sertraline",
+    "patterns": ["sertraline", "zoloft"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SSRI",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg, 200mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 175, 200],
+    "bnf_max": "200mg/day"
+},
+
+"SILDENAFIL": {
+    "id": 425,
+    "canonical": "Sildenafil",
+    "patterns": ["sildenafil", "viagra"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "PDE5 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 100mg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "100mg as required"
+},
+
+"SILODOSIN": {
+    "id": 426,
+    "canonical": "Silodosin",
+    "patterns": ["silodosin"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "Alpha-blocker",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "4mg, 8mg",
+    "allowed_strengths": [4, 8],
+    "bnf_max": "per LUTS protocol"
+},
+
+"SIMETHICONE": {
+    "id": 427,
+    "canonical": "Simethicone",
+    "patterns": ["simethicone"],
+    "units": ["mg"],
+    "class": "Gastroenterology",
+    "subclass": "Antiflatulent",
+    "forms": ["tablet", "liquid"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "OTC"
+},
+
+"SIMVASTATIN": {
+    "id": 428,
+    "canonical": "Simvastatin",
+    "patterns": ["simvastatin", "zocor"],
+    "units": ["mg"],
+    "class": "Cardiovascular",
+    "subclass": "Statin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg, 30mg, 40mg, 50mg, 60mg, 70mg, 80mg",
+    "allowed_strengths": [10, 20, 30, 40, 50, 60, 70, 80],
+    "bnf_max": "80mg/day (restricted use)"
+},
+
+"SITAGLIPTIN": {
+    "id": 429,
+    "canonical": "Sitagliptin",
+    "patterns": ["sitagliptin", "januvia"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "DPP-4 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 100mg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "100mg/day"
+},
+
+"SOFOSBUVIR": {
+    "id": 430,
+    "canonical": "Sofosbuvir",
+    "patterns": ["sofosbuvir"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiviral",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "400mg",
+    "allowed_strengths": [400],
+    "bnf_max": "per hepatitis C protocol"
+},
+
+"SOLIFENACIN": {
+    "id": 431,
+    "canonical": "Solifenacin",
+    "patterns": ["solifenacin", "vesicare"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "Antimuscarinic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg",
+    "allowed_strengths": [5, 10],
+    "bnf_max": "10mg/day"
+},
+
+"SOMATROPIN": {
+    "id": 432,
+    "canonical": "Somatropin",
+    "patterns": ["somatropin"],
+    "units": ["mg"],
+    "class": "Endocrine",
+    "subclass": "Growth hormone",
+    "forms": ["injection"],
+    "route": "SC",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per endocrinology protocol"
+},
+
+"SOTALOL": {
+    "id": 433,
+    "canonical": "Sotalol",
+    "patterns": ["sotalol"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiarrhythmic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg, 80mg, 160mg",
+    "allowed_strengths": [40, 80, 160],
+    "bnf_max": "per arrhythmia protocol"
+},
+
+"SPIRONOLACTONE": {
+    "id": 434,
+    "canonical": "Spironolactone",
+    "patterns": ["spironolactone", "aldactone"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Aldosterone antagonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 100mg",
+    "allowed_strengths": [25, 50, 100],
+    "bnf_max": "per heart failure guidance"
+},
+
+"SULFASALAZINE": {
+    "id": 435,
+    "canonical": "Sulfasalazine",
+    "patterns": ["sulfasalazine", "salazopyrin"],
+    "units": ["mg"],
+    "class": "Rheumatology",
+    "subclass": "DMARD",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg",
+    "allowed_strengths": [500],
+    "bnf_max": "per rheumatology protocol"
+},
+
+"SULTAMICILLIN": {
+    "id": 436,
+    "canonical": "Sultamicillin",
+    "patterns": ["sultamicillin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Penicillin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "375mg, 750mg",
+    "allowed_strengths": [375, 750],
+    "bnf_max": "per infection protocol"
+},
+
+"SUMATRIPTAN": {
+    "id": 437,
+    "canonical": "Sumatriptan",
+    "patterns": ["sumatriptan", "imigran"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Triptan",
+    "forms": ["tablet", "injection", "nasal"],
+    "route": "oral / SC / intranasal",
+    "depot": False,
+    "strengths": "10mg, 20mg (nasal), 50mg, 100mg tablets, 6mg injection",
+    "allowed_strengths": [10, 20, 50, 100, 6],
+    "bnf_max": "per migraine protocol"
+},
+
+"SUNOSI": {
+    "id": 438,
+    "canonical": "Solriamfetol",
+    "patterns": ["solriamfetol", "sunosi"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Wakefulness promoter",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "75mg, 150mg",
+    "allowed_strengths": [75, 150],
+    "bnf_max": "per sleep disorder protocol"
+},
+
+"TACROLIMUS": {
+    "id": 439,
+    "canonical": "Tacrolimus",
+    "patterns": ["tacrolimus", "prograf"],
+    "units": ["mg"],
+    "class": "Immunology",
+    "subclass": "Calcineurin inhibitor",
+    "forms": ["capsule", "ointment"],
+    "route": "oral / topical",
+    "depot": False,
+    "strengths": "0.5mg, 1mg, 5mg",
+    "allowed_strengths": [0.5, 1, 5],
+    "bnf_max": "per transplant protocol"
+},
+
+"TAMSULOSIN": {
+    "id": 440,
+    "canonical": "Tamsulosin",
+    "patterns": ["tamsulosin", "flomax"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "Alpha-blocker",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "400mcg",
+    "allowed_strengths": [0.4],
+    "bnf_max": "per LUTS protocol"
+},
+
+"TEMAZEPAM": {
+    "id": 441,
+    "canonical": "Temazepam",
+    "patterns": ["temazepam"],
+    "units": ["mg"],
+    "class": "Sedative",
+    "subclass": "Benzodiazepine",
+    "forms": ["tablet", "capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "10mg, 20mg",
+    "allowed_strengths": [10, 20],
+    "bnf_max": "per insomnia protocol"
+},
+
+"TERBINAFINE": {
+    "id": 442,
+    "canonical": "Terbinafine",
+    "patterns": ["terbinafine", "lamisil"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["tablet", "cream"],
+    "route": "oral / topical",
+    "depot": False,
+    "strengths": "250mg",
+    "allowed_strengths": [250],
+    "bnf_max": "250mg/day"
+},
+
+"THEOPHYLLINE": {
+    "id": 443,
+    "canonical": "Theophylline",
+    "patterns": ["theophylline"],
+    "units": ["mg"],
+    "class": "Respiratory",
+    "subclass": "Xanthine",
+    "forms": ["tablet MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "200mg, 300mg, 400mg",
+    "allowed_strengths": [200, 300, 400],
+    "bnf_max": "per asthma protocol"
+},
+
+"THYROXINE": {
+    "id": 444,
+    "canonical": "Levothyroxine",
+    "patterns": ["levothyroxine", "thyroxine", "eltroxin"],
+    "units": ["mcg"],
+    "class": "Endocrine",
+    "subclass": "Thyroid hormone",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mcg, 50mcg, 75mcg, 100mcg, 125mcg, 150mcg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150],
+    "bnf_max": "per thyroid protocol"
+},
+
+"TICAGRELOR": {
+    "id": 445,
+    "canonical": "Ticagrelor",
+    "patterns": ["ticagrelor", "brilique"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Antiplatelet",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "60mg, 90mg",
+    "allowed_strengths": [60, 90],
+    "bnf_max": "per ACS protocol"
+},
+
+"TIOTROPIUM": {
+    "id": 446,
+    "canonical": "Tiotropium",
+    "patterns": ["tiotropium", "spiriva"],
+    "units": ["mcg"],
+    "class": "Respiratory",
+    "subclass": "Anticholinergic",
+    "forms": ["inhaler"],
+    "route": "inhaled",
+    "depot": False,
+    "strengths": "18mcg",
+    "allowed_strengths": [18],
+    "bnf_max": "per COPD protocol"
+},
+
+"TOPIRAMATE": {
+    "id": 447,
+    "canonical": "Topiramate",
+    "patterns": ["topiramate", "topamax"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "25mg, 50mg, 75mg, 100mg, 125mg, 150mg, 175mg, 200mg",
+    "allowed_strengths": [25, 50, 75, 100, 125, 150, 175, 200],
+    "bnf_max": "per epilepsy protocol"
+},
+
+"TRAMADOL": {
+    "id": 448,
+    "canonical": "Tramadol",
+    "patterns": ["tramadol", "zamadol"],
+    "units": ["mg"],
+    "class": "Pain",
+    "subclass": "Opioid",
+    "forms": ["tablet", "capsule", "injection"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "50mg, 100mg MR, 150mg MR, 200mg MR",
+    "allowed_strengths": [50, 100, 150, 200],
+    "bnf_max": "400mg/day"
+},
+
+"TRAZODONE": {
+    "id": 449,
+    "canonical": "Trazodone",
+    "patterns": ["trazodone", "molipaxin"],
+    "units": ["mg"],
+    "class": "Antidepressant / Sedative",
+    "subclass": "Serotonin antagonist/reuptake inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg, 150mg, 200mg, 250mg, 300mg",
+    "allowed_strengths": [50, 100, 150, 200, 250, 300],
+    "bnf_max": "per depression protocol"
+},
+
+"TRIHEXYPHENIDYL": {
+    "id": 450,
+    "canonical": "Trihexyphenidyl",
+    "patterns": ["trihexyphenidyl", "benzhexol"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticholinergic (Parkinson's)",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "2mg, 5mg",
+    "allowed_strengths": [2, 5],
+    "bnf_max": "per Parkinson's protocol"
+},
+
+"TRIMETHOPRIM": {
+    "id": 451,
+    "canonical": "Trimethoprim",
+    "patterns": ["trimethoprim"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antibiotic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 200mg",
+    "allowed_strengths": [100, 200],
+    "bnf_max": "per UTI protocol"
+},
+
+"VALACICLOVIR": {
+    "id": 452,
+    "canonical": "Valaciclovir",
+    "patterns": ["valaciclovir", "valtrex"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiviral",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg, 1000mg",
+    "allowed_strengths": [500, 1000],
+    "bnf_max": "per antiviral protocol"
+},
+
+"VALGANCICLOVIR": {
+    "id": 453,
+    "canonical": "Valganciclovir",
+    "patterns": ["valganciclovir"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiviral",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "450mg",
+    "allowed_strengths": [450],
+    "bnf_max": "per CMV protocol"
+},
+
+"VALPROIC ACID": {
+    "id": 454,
+    "canonical": "Valproic Acid",
+    "patterns": ["valproic acid", "valproate"],
+    "units": ["mg"],
+    "class": "Neurology / Psychiatry",
+    "subclass": "Mood stabiliser / anticonvulsant",
+    "forms": ["liquid", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per epilepsy/bipolar protocol"
+},
+
+"SODIUM VALPROATE": {
+    "id": 455,
+    "canonical": "Sodium Valproate",
+    "patterns": ["sodium valproate", "epilim"],
+    "units": ["mg"],
+    "class": "Neurology / Psychiatry",
+    "subclass": "Mood stabiliser / anticonvulsant",
+    "forms": ["tablet", "liquid", "MR", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "200mg, 300mg, 400, 500mg, 600mg, 700mg, 800mg, 900mg, 1g, 1.2g, 1.4g, 1.6g, 1.8g, 2g",
+    "allowed_strengths": [200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000],
+    "bnf_max": "per epilepsy/bipolar protocol"
+},
+
+"VALSARTAN": {
+    "id": 456,
+    "canonical": "Valsartan",
+    "patterns": ["valsartan", "diovan"],
+    "units": ["mg"],
+    "class": "Hypertension",
+    "subclass": "ARB",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg, 80mg, 160mg, 320mg",
+    "allowed_strengths": [40, 80, 160, 320],
+    "bnf_max": "per BP protocol"
+},
+
+"VANCOMYCIN": {
+    "id": 457,
+    "canonical": "Vancomycin",
+    "patterns": ["vancomycin"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Glycopeptide",
+    "forms": ["IV"],
+    "route": "IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per MRSA protocol"
+},
+
+"VARDENAFIL": {
+    "id": 458,
+    "canonical": "Vardenafil",
+    "patterns": ["vardenafil", "levitra"],
+    "units": ["mg"],
+    "class": "Urology",
+    "subclass": "PDE5 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 20mg",
+    "allowed_strengths": [5, 10, 20],
+    "bnf_max": "20mg as required"
+},
+
+"VARENICLINE": {
+    "id": 459,
+    "canonical": "Varenicline",
+    "patterns": ["varenicline", "champix"],
+    "units": ["mg"],
+    "class": "Smoking cessation",
+    "subclass": "Partial nicotinic agonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "0.5mg, 1mg",
+    "allowed_strengths": [0.5, 1],
+    "bnf_max": "per smoking cessation protocol"
+},
+
+"VENLAFAXINE": {
+    "id": 460,
+    "canonical": "Venlafaxine",
+    "patterns": ["venlafaxine", "efexor"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "SNRI",
+    "forms": ["tablet", "tablet MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "37.5mg, 75mg, 100mg, 137.5mg, 150mg, 187.5mg, 200mg, 225mg, 250mg, 275mg, 300mg",
+    "allowed_strengths": [37.5, 75, 100, 137.5, 150, 187.5, 200, 225, 250, 275, 300],
+    "bnf_max": "375mg/day"
+},
+
+"VERAPAMIL": {
+    "id": 461,
+    "canonical": "Verapamil",
+    "patterns": ["verapamil"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Calcium channel blocker",
+    "forms": ["tablet", "MR"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "40mg, 80mg, 240mg MR",
+    "allowed_strengths": [40, 80, 240],
+    "bnf_max": "per arrhythmia protocol"
+},
+
+"VIGABATRIN": {
+    "id": 462,
+    "canonical": "Vigabatrin",
+    "patterns": ["vigabatrin", "sabril"],
+    "units": ["mg"],
+    "class": "Neurology",
+    "subclass": "Anticonvulsant",
+    "forms": ["granules", "tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "500mg",
+    "allowed_strengths": [500],
+    "bnf_max": "per epilepsy protocol"
+},
+
+"VILDAGLIPTIN": {
+    "id": 463,
+    "canonical": "Vildaglipitin",
+    "patterns": ["vildagliptin", "galvus"],
+    "units": ["mg"],
+    "class": "Diabetes",
+    "subclass": "DPP-4 inhibitor",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg",
+    "allowed_strengths": [50],
+    "bnf_max": "100mg/day"
+},
+
+"VITAMIN B1": {
+    "id": 464,
+    "canonical": "Vitamin B1 (Thiamine)",
+    "patterns": ["thiamine", "vitamin b1"],
+    "units": ["mg"],
+    "class": "Supplement",
+    "subclass": "B vitamin",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "50mg, 100mg",
+    "allowed_strengths": [50, 100],
+    "bnf_max": "per deficiency protocol"
+},
+
+"VITAMIN B12": {
+    "id": 465,
+    "canonical": "Hydroxocobalamin",
+    "patterns": ["hydroxocobalamin", "vitamin b12"],
+    "units": ["mg"],
+    "class": "Supplement",
+    "subclass": "B vitamin",
+    "forms": ["IM injection"],
+    "route": "IM",
+    "depot": False,
+    "strengths": "1mg",
+    "allowed_strengths": [1],
+    "bnf_max": "per B12 deficiency protocol"
+},
+
+"VITAMIN D": {
+    "id": 466,
+    "canonical": "Colecalciferol",
+    "patterns": ["colecalciferol", "vitamin d"],
+    "units": ["units", "mcg"],
+    "class": "Supplement",
+    "subclass": "Vitamin",
+    "forms": ["tablet", "drops"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per deficiency protocol"
+},
+
+"VITAMIN K": {
+    "id": 467,
+    "canonical": "Phytomenadione",
+    "patterns": ["phytomenadione", "vitamin k"],
+    "units": ["mg"],
+    "class": "Haematology",
+    "subclass": "Reversal agent",
+    "forms": ["IV", "oral"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "varies",
+    "allowed_strengths": [],
+    "bnf_max": "per anticoagulation protocol"
+},
+
+"VORICONAZOLE": {
+    "id": 468,
+    "canonical": "Voriconazole",
+    "patterns": ["voriconazole"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antifungal",
+    "forms": ["tablet", "IV"],
+    "route": "oral / IV",
+    "depot": False,
+    "strengths": "50mg, 200mg",
+    "allowed_strengths": [50, 200],
+    "bnf_max": "per fungal protocol"
+},
+
+"WARFARIN": {
+    "id": 469,
+    "canonical": "Warfarin",
+    "patterns": ["warfarin"],
+    "units": ["mg"],
+    "class": "Cardiac",
+    "subclass": "Anticoagulant",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "1mg, 3mg, 5mg",
+    "allowed_strengths": [1, 3, 5],
+    "bnf_max": "per INR"
+},
+
+"ZAFIRLUKAST": {
+    "id": 470,
+    "canonical": "Zafirlukast",
+    "patterns": ["zafirlukast"],
+    "units": ["mg"],
+    "class": "Respiratory",
+    "subclass": "Leukotriene antagonist",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg",
+    "allowed_strengths": [20],
+    "bnf_max": "per asthma protocol"
+},
+
+"ZIDOVUDINE": {
+    "id": 471,
+    "canonical": "Zidovudine",
+    "patterns": ["zidovudine"],
+    "units": ["mg"],
+    "class": "Infectious Disease",
+    "subclass": "Antiretroviral",
+    "forms": ["tablet", "capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "100mg, 250mg, 300mg",
+    "allowed_strengths": [100, 250, 300],
+    "bnf_max": "per HIV protocol"
+},
+
+"ZIPRASIDONE": {
+    "id": 472,
+    "canonical": "Ziprasidone",
+    "patterns": ["ziprasidone", "geodon"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Atypical",
+    "forms": ["capsule"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "20mg, 40mg, 60mg, 80mg",
+    "allowed_strengths": [20, 40, 60, 80],
+    "bnf_max": "per antipsychotic protocol"
+},
+
+"VORTIOXETINE": {
+    "id": 473,
+    "canonical": "Vortioxetine",
+    "patterns": ["vortioxetine", "brintellix", "trintellix", "vorti"],
+    "units": ["mg"],
+    "class": "Antidepressant",
+    "subclass": "Serotonin modulator",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 20mg",
+    "allowed_strengths": [5, 10, 15, 20],
+    "bnf_max": "20mg/day"
+},
+
+"ZOPICLONE": {
+    "id": 474,
+    "canonical": "Zopiclone",
+    "patterns": ["zopiclone", "zimovane", "zopi"],
+    "units": ["mg"],
+    "class": "Sedative",
+    "subclass": "Hypnotic",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "3.75mg, 7.5mg, 15mg",
+    "allowed_strengths": [3.75, 7.5, 15],
+    "bnf_max": "7.5mg nocte"
+},
+
+"ZUCLOPENTHIXOL": {
+    "id": 475,
+    "canonical": "Zuclopenthixol",
+    "patterns": ["zuclopenthixol", "clopixol"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Typical",
+    "forms": ["tablet"],
+    "route": "oral",
+    "depot": False,
+    "strengths": "5mg, 10mg, 15mg, 20mg, 25mg, 30mg, 35mg, 40mg",
+    "allowed_strengths": [5, 10, 15, 20, 25, 30, 35, 40],
+    "bnf_max": "50mg/day"
+},
+
+"ZUCLOPENTHIXOL DECANOATE": {
+    "id": 476,
+    "canonical": "Zuclopenthixol Decanoate",
+    "patterns": ["zuclopenthixol decanoate", "zuclopenthixol depot", "clopixol depot", "clopixol decanoate"],
+    "units": ["mg"],
+    "class": "Antipsychotic",
+    "subclass": "Depot",
+    "forms": ["IM"],
+    "route": "IM",
+    "depot": True,
+    "strengths": "100mg, 200mg, 300mg, 400mg, 500mg, 600mg",
+    "allowed_strengths": [100, 200, 300, 400, 500, 600],
+    "frequency": ["weekly", "2 weekly", "3 weekly", "4 weekly", "5 weekly", "6 weekly", "7 weekly", "8 weekly"],
+    "bnf_max": "600mg weekly"
+},
+
+}

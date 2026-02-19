@@ -1,0 +1,1046 @@
+3; Abuse of non-dependence-producing substances - Analgesics | F55.2
+3; Abuse of non-dependence-producing substances - Antacids | F55.3
+3; Abuse of non-dependence-producing substances - Antidepressants | F55.0
+3; Abuse of non-dependence-producing substances - Laxatives | F55.1
+3; Abuse of non-dependence-producing substances - Other substances that do not produce dependence | F55.8
+3; Abuse of non-dependence-producing substances - Specific herbal or folk remedies | F55.6
+3; Abuse of non-dependence-producing substances - Steroids or hormones | F55.5
+3; Abuse of non-dependence-producing substances - Unspecified | F55.9
+3; Abuse of non-dependence-producing substances - Vitamins | F55.4
+3; Acquire aphasia - epilepsy [Landau-Kleffner syndrome] | F80.3
+4; Acute and transient psychotic disorder, unspecified - associated acute stress | F23.91
+4; Acute and transient psychotic disorder, unspecified - no associated acute stress | F23.90
+4; Acute polymorphic psychotic disorder - no symptoms of schizophrenia - associated acute stress | F23.01
+4; Acute polymorphic psychotic disorder - no symptoms of schizophrenia - no associated acute stress | F23.00
+4; Acute polymorphic psychotic disorder - symptoms of schizophrenia - associated acute stress | F23.11
+4; Acute polymorphic psychotic disorder - symptoms of schizophrenia - no associated acute stress | F23.10
+4; Acute schizophrenia-like psychotic disorder - associated acute stress | F23.21
+4; Acute schizophrenia-like psychotic disorder - no associated acute stress | F23.20
+3; Acute stress reaction - mild | F43.00
+3; Acute stress reaction - moderate | F43.01
+3; Acute stress reaction - severe | F43.02
+3; Adjustment disorders - Mixed anxiety and depressive reaction | F43.22
+3; Adjustment disorders - mixed disturbance of emotions and conduct | F43.25
+3; Adjustment disorders - other specified predominant symptoms | F43.28
+3; Adjustment disorders - predominant disturbance of conduct | F43.24
+3; Adjustment disorders - predominant disturbance of other emotions | F43.23
+3; Adjustment disorders - Prolonged depressive reaction | F43.21
+3; Adjustment disorders -Brief depressive reaction | F43.20
+3; Agoraphobia - no panic disorder | F40.00
+3; Agoraphobia - panic disorder | F40.01
+3; Anankastic personality disorder | F60.5
+3; Anorexia nervosa | F50.0
+3; Anxiety disorder, unspecified | F41.9
+3; Anxious [avoidant] personality disorder | F60.6
+3; Asperger's syndrome | F84.5
+3; Atypical anorexia nervosa | F50.1
+3; Atypical autism - Atypicality in age of onset | F84.10
+3; Atypical autism - Atypicality in both age of onset and symptomatology | F84.12
+3; Atypical autism - Atypicality in symptomatology | F84.11
+3; Atypical bulimia nervosa | F50.3
+4; Bipolar affective disorder | F31
+4; Bipolar affective disorder - hypomanic | F31.0
+4; Bipolar affective disorder - in remission | F31.7
+4; Bipolar affective disorder - manic  - mood-congruent psychotic symptoms | F31.20
+4; Bipolar affective disorder - manic - mood-incongruent psychotic symptoms | F31.21
+4; Bipolar affective disorder - manic - no psychotic symptoms | F31.1
+4; Bipolar affective disorder - mild or moderate depression - no somatic syndrome | F31.30
+4; Bipolar affective disorder - mild or moderate depression - somatic syndrome | F31.31
+4; Bipolar affective disorder - mixed | F31.6
+4; Bipolar affective disorder - severe depression - mood-congruent psychotic symptoms | F31.50
+4; Bipolar affective disorder - severe depression - mood-incongruent psychotic symptoms | F31.51
+4; Bipolar affective disorder - severe depression - no psychotic symptoms | F31.4
+4; Bipolar affective disorder, unspecified | F31.9
+3; Bulimia nervosa | F50.2
+4; Catatonic schizophrenia - Complete remission | F20.25
+4; Catatonic schizophrenia - Course uncertain, period of observation too short | F20.29
+4; Catatonic schizophrenia - Episodic - stable deficit | F20.22
+4; Catatonic schizophrenia - Episodic remittent | F20.24
+4; Catatonic schizophrenia- continuous | F20.20
+4; Catatonic schizophrenia Episodic - progressive deficit | F20.21
+4; Catatonic schizophrenia Other | F20.28
+3; Childhood autism | F84.0
+1; Childhood disorder of social functioning, unspecified | F94.9
+1; Childhood emotional disorder, unspecified | F93.9
+1; Chronic motor or vocal tic disorder | F95.1
+1; Cluttering | F98.6
+1; Combined motor and vocal tic disorder [de la Tourette's syndrome] | F95.2
+3; Conduct disorder confined to the family context | F91.0
+3; Conduct disorder, unspecified | F91.9
+2; Cyclothymia | F34.0
+3; Delirium, not superimposed on dementia, so described | F05.0 
+3; Delirium, superimposed on dementia | F05.1 
+3; Delirium, unspecified | F05.9 
+4; Delusional disorder | F22.0
+3; Dementia in HIV - delusional - Mild | F2.410
+3; Dementia in HIV - delusional - Moderate | F2.411
+3; Dementia in HIV - delusional - Severe | F2.412
+3; Dementia in HIV - depressive - Mild | F2.430
+3; Dementia in HIV - depressive - Moderate | F2.431
+3; Dementia in HIV - depressive - Severe | F2.432
+3; Dementia in HIV - hallucinatory - Mild | F2.420
+3; Dementia in HIV - hallucinatory - Moderate | F2.421
+3; Dementia in HIV - hallucinatory - Severe | F2.422
+3; Dementia in HIV - mixed symptoms - Mild | F2.440
+3; Dementia in HIV - mixed symptoms - Moderate | F2.441
+3; Dementia in HIV - mixed symptoms - Severe | F2.442
+3; Dementia in HIV - no additional symptoms - Mild | F2.400
+3; Dementia in HIV - no additional symptoms - Moderate | F2.401
+3; Dementia in HIV - no additional symptoms - Severe | F2.402
+3; Dementia in other specified diseases - delusional - Mild | F2.810
+3; Dementia in other specified diseases - delusional - Moderate | F2.811
+3; Dementia in other specified diseases - delusional - Severe | F2.812
+3; Dementia in other specified diseases - depressive - Mild | F2.830
+3; Dementia in other specified diseases - depressive - Moderate | F2.831
+3; Dementia in other specified diseases - depressive - Severe | F2.832
+3; Dementia in other specified diseases - hallucinatory - Mild | F2.820
+3; Dementia in other specified diseases - hallucinatory - Moderate | F2.821
+3; Dementia in other specified diseases - hallucinatory - Severe | F2.822
+3; Dementia in other specified diseases - mixed symptoms - Mild | F2.840
+3; Dementia in other specified diseases - mixed symptoms - Moderate | F2.841
+3; Dementia in other specified diseases - mixed symptoms - Severe | F2.842
+3; Dementia in other specified diseases - no additional symptoms - Mild | F2.800
+3; Dementia in other specified diseases - no additional symptoms - Moderate | F2.801
+3; Dementia in other specified diseases - no additional symptoms - Severe | F2.802
+3; Dementia: Alzheimer's - early onset - delusional - Mild | F0.010
+3; Dementia: Alzheimer's - early onset - delusional - Moderate | F0.011
+3; Dementia: Alzheimer's - early onset - delusional - Severe | F0.012
+3; Dementia: Alzheimer's - early onset - depressive - Mild | F0.030
+3; Dementia: Alzheimer's - early onset - depressive - Moderate | F0.031
+3; Dementia: Alzheimer's - early onset - depressive - Severe | F0.032
+3; Dementia: Alzheimer's - early onset - hallucinatory - Mild | F0.020
+3; Dementia: Alzheimer's - early onset - hallucinatory - Moderate | F0.021
+3; Dementia: Alzheimer's - early onset - hallucinatory - Severe | F0.022
+3; Dementia: Alzheimer's - early onset - mixed symptoms - Moderate | F0.041
+3; Dementia: Alzheimer's - early onset - mixed symptoms - Severe | F0.042
+3; Dementia: Alzheimer's - early onset - no additional symptoms - Mild | F0.000
+3; Dementia: Alzheimer's - early onset - no additional symptoms - Moderate | F0.001
+3; Dementia: Alzheimer's - early onset - no additional symptoms - Severe | F0.002
+3; Dementia: Alzheimer's - early onset- mixed symptoms - Mild | F0.040
+3; Dementia: Alzheimer's - late onset - delusional - Mild | F0.110
+3; Dementia: Alzheimer's - late onset - delusional - Moderate | F0.111
+3; Dementia: Alzheimer's - late onset - delusional - Severe | F0.112
+3; Dementia: Alzheimer's - late onset - depressive - Mild | F0.130
+3; Dementia: Alzheimer's - late onset - depressive - Moderate | F0.131
+3; Dementia: Alzheimer's - late onset - depressive - Severe | F0.132
+3; Dementia: Alzheimer's - late onset - hallucinatory - Mild | F0.120
+3; Dementia: Alzheimer's - late onset - hallucinatory - Moderate | F0.121
+3; Dementia: Alzheimer's - late onset - hallucinatory - Severe | F0.122
+3; Dementia: Alzheimer's - late onset - mixed symptoms - Mild | F0.140
+3; Dementia: Alzheimer's - late onset - mixed symptoms - Moderate | F0.141
+3; Dementia: Alzheimer's - late onset - mixed symptoms - Severe | F0.142
+3; Dementia: Alzheimer's - late onset - no additional symptoms - Mild | F0.100
+3; Dementia: Alzheimer's - late onset - no additional symptoms - Moderate | F0.101
+3; Dementia: Alzheimer's - late onset - no additional symptoms - Severe | F0.102
+3; Dementia: Alzheimer's, atypical/mixed type - delusional - Mild | F0.210
+3; Dementia: Alzheimer's, atypical/mixed type - delusional - Moderate | F0.211
+3; Dementia: Alzheimer's, atypical/mixed type - delusional - Severe | F0.212
+3; Dementia: Alzheimer's, atypical/mixed type - depressive - Mild | F0.230
+3; Dementia: Alzheimer's, atypical/mixed type - depressive - Moderate | F0.231
+3; Dementia: Alzheimer's, atypical/mixed type - depressive - Severe | F0.232
+3; Dementia: Alzheimer's, atypical/mixed type - hallucinatory - Mild | F0.220
+3; Dementia: Alzheimer's, atypical/mixed type - hallucinatory - Moderate | F0.221
+3; Dementia: Alzheimer's, atypical/mixed type - hallucinatory - Severe | F0.222
+3; Dementia: Alzheimer's, atypical/mixed type - mixed symptoms - Mild | F0.240
+3; Dementia: Alzheimer's, atypical/mixed type - mixed symptoms - Moderate | F0.241
+3; Dementia: Alzheimer's, atypical/mixed type - mixed symptoms - Severe | F0.242
+3; Dementia: Alzheimer's, atypical/mixed type - no additional symptoms - Mild | F0.200
+3; Dementia: Alzheimer's, atypical/mixed type - no additional symptoms - Moderate | F0.201
+3; Dementia: Alzheimer's, atypical/mixed type - no additional symptoms - Severe | F0.202
+3; Dementia: Alzheimer's, unspecified - delusional - Mild | F0.810
+3; Dementia: Alzheimer's, unspecified - delusional - Moderate | F0.811
+3; Dementia: Alzheimer's, unspecified - delusional - Severe | F0.812
+3; Dementia: Alzheimer's, unspecified - depressive - Mild | F0.830
+3; Dementia: Alzheimer's, unspecified - depressive - Moderate | F0.831
+3; Dementia: Alzheimer's, unspecified - depressive - Severe | F0.832
+3; Dementia: Alzheimer's, unspecified - hallucinatory - Mild | F0.820
+3; Dementia: Alzheimer's, unspecified - hallucinatory - Moderate | F0.821
+3; Dementia: Alzheimer's, unspecified - hallucinatory - Severe | F0.822
+3; Dementia: Alzheimer's, unspecified - mixed symptoms - Mild | F0.840
+3; Dementia: Alzheimer's, unspecified - mixed symptoms - Moderate | F0.841
+3; Dementia: Alzheimer's, unspecified - mixed symptoms - Severe | F0.842
+3; Dementia: Alzheimer's, unspecified - no additional symptoms - Mild | F0.800
+3; Dementia: Alzheimer's, unspecified - no additional symptoms - Moderate | F0.801
+3; Dementia: Alzheimer's, unspecified - no additional symptoms - Severe | F0.802
+3; Dementia: CJD - delusional - Mild | F2.110
+3; Dementia: CJD - delusional - Moderate | F2.111
+3; Dementia: CJD - delusional - Severe | F2.112
+3; Dementia: CJD - depressive - Mild | F2.130
+3; Dementia: CJD - depressive - Moderate | F2.131
+3; Dementia: CJD - depressive - Severe | F2.132
+3; Dementia: CJD - hallucinatory - Mild | F2.120
+3; Dementia: CJD - hallucinatory - Moderate | F2.121
+3; Dementia: CJD - hallucinatory - Severe | F2.122
+3; Dementia: CJD - mixed symptoms - Mild | F2.140
+3; Dementia: CJD - mixed symptoms - Moderate | F2.141
+3; Dementia: CJD - mixed symptoms - Severe | F2.142
+3; Dementia: CJD - no additional symptoms - Mild | F2.100
+3; Dementia: CJD - no additional symptoms - Moderate | F2.101
+3; Dementia: CJD - no additional symptoms - Severe | F2.102
+3; Dementia: Huntington's - delusional - Mild | F2.210
+3; Dementia: Huntington's - delusional - Moderate | F2.211
+3; Dementia: Huntington's - delusional - Severe | F2.212
+3; Dementia: Huntington's - depressive - Mild | F2.230
+3; Dementia: Huntington's - depressive - Moderate | F2.231
+3; Dementia: Huntington's - depressive - Severe | F2.232
+3; Dementia: Huntington's - hallucinatory - Mild | F2.220
+3; Dementia: Huntington's - hallucinatory - Moderate | F2.221
+3; Dementia: Huntington's - hallucinatory - Severe | F2.222
+3; Dementia: Huntington's - mixed symptoms - Mild | F2.240
+3; Dementia: Huntington's - mixed symptoms - Moderate | F2.241
+3; Dementia: Huntington's - mixed symptoms - Severe | F2.242
+3; Dementia: Huntington's - no additional symptoms - Mild | F2.200
+3; Dementia: Huntington's - no additional symptoms - Moderate | F2.201
+3; Dementia: Huntington's - no additional symptoms - Severe | F2.202
+3; Dementia: Parkinson's - delusional - Mild | F2.310
+3; Dementia: Parkinson's - delusional - Moderate | F2.311
+3; Dementia: Parkinson's - delusional - Severe | F2.312
+3; Dementia: Parkinson's - depressive - Mild | F2.330
+3; Dementia: Parkinson's - depressive - Moderate | F2.331
+3; Dementia: Parkinson's - depressive - Severe | F2.332
+3; Dementia: Parkinson's - hallucinatory - Mild | F2.320
+3; Dementia: Parkinson's - hallucinatory - Moderate | F2.321
+3; Dementia: Parkinson's - hallucinatory - Severe | F2.322
+3; Dementia: Parkinson's - mixed symptoms - Mild | F2.340
+3; Dementia: Parkinson's - mixed symptoms - Moderate | F2.341
+3; Dementia: Parkinson's - mixed symptoms - Severe | F2.342
+3; Dementia: Parkinson's - no additional symptoms - Mild | F2.300
+3; Dementia: Parkinson's - no additional symptoms - Moderate | F2.301
+3; Dementia: Parkinson's - no additional symptoms - Severe | F2.302
+3; Dementia: Pick's disease - delusional - Mild | F2.010
+3; Dementia: Pick's disease - delusional - Moderate | F2.011
+3; Dementia: Pick's disease - delusional - Severe | F2.012
+3; Dementia: Pick's disease - depressive - Mild | F2.030
+3; Dementia: Pick's disease - depressive - Moderate | F2.031
+3; Dementia: Pick's disease - depressive - Severe | F2.032
+3; Dementia: Pick's disease - hallucinatory - Mild | F2.020
+3; Dementia: Pick's disease - hallucinatory - Moderate | F2.021
+3; Dementia: Pick's disease - hallucinatory - Severe | F2.022
+3; Dementia: Pick's disease - mixed symptoms - Mild | F2.040
+3; Dementia: Pick's disease - mixed symptoms - Moderate | F2.041
+3; Dementia: Pick's disease - mixed symptoms - Severe | F2.042
+3; Dementia: Pick's disease - no additional symptoms - Mild | F2.000
+3; Dementia: Pick's disease - no additional symptoms - Moderate | F2.001
+3; Dementia: Pick's disease - no additional symptoms - Severe | F2.002
+3; Depersonalization-derealization syndrome | F48.1
+3; Depressive conduct disorder | F92.0
+3; Depressive episode, unspecified | F32.9
+3; Developmental disorder of scholastic skills, unspecified | F81.9
+3; Developmental disorder of speech and language, unspecified | F80.9
+1; Disinhibited attachment disorder of childhood | F94.2
+3; Disorder of sexual preference, unspecified | F65.9
+3; Dissocial personality disorder | F60.2 
+3; Dissociate anaesthesia and sensory loss | F44.6
+3; Dissociate motor disorders | F44.4
+3; Dissociative amnesia | F44.0
+3; Dissociative convulsions | F44.5
+3; Dissociative fugue | F44.1
+3; Dissociative stupor | F44.2
+3; Dissociative/conversion disorder, unspecified | F44.9
+1; Diurnal enuresis only | F98.01
+3; Dual-role transvestism | F64.1
+2; Dysthymia | F34.1
+3; Eating disorder, unspecified | F50.9
+3; Ego dystonic sexual orientation | F66.1
+3; Elaboration of physical symptoms for psychological reasons | F68.0
+1; Elective mutism | F94.0
+3; Emotionally unstable personality disorder - Borderline type | F60.31
+3; Emotionally unstable personality disorder - Impulsive type | F60.30
+3; Enduring personality change after catastrophic experience | F62.0
+3; Enduring personality change after psychiatric illness | F62.1
+3; Enduring personality change, unspecified | F62.9
+3; Excessive sexual drive | F52.7
+3; Exhibitionism | F65.2
+3; Expressive language disorder | F80.1
+3; Failure of genital response | F52.2
+1; Feeding disorder of infancy and childhood | F98.2
+3; Fetishism | F65.0
+3; Fetishistic transvestism | F65.1
+3; Gender identity disorder of childhood | F64.2
+3; Gender identity disorder, unspecified | F64.9
+3; Generalized anxiety disorder | F41.1
+3; Habit and impulse disorder, unspecified | F63.9
+4; Hebephrenic schizophrenia - Complete remission | F20.15
+4; Hebephrenic schizophrenia - continuous | F20.10
+4; Hebephrenic schizophrenia - Course uncertain, period of observation too short | F20.19
+4; Hebephrenic schizophrenia - Episodic - stable deficit | F20.12
+4; Hebephrenic schizophrenia - Episodic remittent | F20.14
+4; Hebephrenic schizophrenia Episodic - progressive deficit | F20.11
+4; Hebephrenic schizophrenia Other | F20.18
+3; Histrionic personality disorder | F60.4
+3; Hyperkinetic conduct disorder | F90.1
+3; Hyperkinetic disorder - Disturbance of activity and attention | F90.0
+3; Hyperkinetic disorder, unspecified | F90.9
+3; Hypochondriacal disorders | F45.2
+4; Hypomania | F30.0
+4; Induced delusional disorder | F24
+3; Intentional production or feigning of symptoms or disabilities, either physical or psychological [factitious disorder] | F68.1
+3; Lack of sexual enjoyment | F52.11
+3; Lack or loss of sexual desire | F52.0
+2; M&BD - alcohol active dependence - Continuous use | F10.25
+2; M&BD - alcohol active dependence - Episodic use | F10.26
+2; M&BD - alcohol active dependence - with physical features | F10.241
+2; M&BD - alcohol active dependence - without physical features | F10.240
+2; M&BD - alcohol Acute intoxication - coma | F10.05
+2; M&BD - alcohol Acute intoxication - convulsions | F10.06
+2; M&BD - alcohol Acute intoxication - delirium | F10.03
+2; M&BD - alcohol Acute intoxication - other medical complications | F10.02
+2; M&BD - alcohol Acute intoxication - perceptual distortions | F10.04
+2; M&BD - alcohol Acute intoxication - trauma or other bodily injury | F10.01
+2; M&BD - alcohol Acute intoxication Pathological intoxication | F10.07
+2; M&BD - alcohol Acute intoxication: Uncomplicated | F10.00
+2; M&BD - alcohol Amnesic syndrome | F10.6
+2; M&BD - alcohol Dependence - abstinent - Early remission | F10.200
+2; M&BD - alcohol Dependence - abstinent - Full remission | F10.202
+2; M&BD - alcohol Dependence - abstinent - Partial remission | F10.201
+2; M&BD - alcohol Dependence - abstinent, but in a protected environment | F10.21
+2; M&BD - alcohol Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F10.23
+2; M&BD - alcohol Dependence: controlled dependence | F10.22
+2; M&BD - alcohol Harmful use | F10.1
+2; M&BD - alcohol Other M&BD | F10.8
+2; M&BD - alcohol Psychotic disorder: delusional | F10.51
+2; M&BD - alcohol Psychotic disorder: depressive psychotic symptoms | F10.54 
+2; M&BD - alcohol Psychotic disorder: hallucinatory | F10.52
+2; M&BD - alcohol Psychotic disorder: manic psychotic symptoms | F10.55
+2; M&BD - alcohol Psychotic disorder: Mixed | F10.56
+2; M&BD - alcohol Psychotic disorder: polymorphic | F10.53
+2; M&BD - alcohol Psychotic disorder: Schizophrenia | F10.5
+2; M&BD - alcohol Residual disorders and late-onset psychotic disorder - Dementia | F10.73
+2; M&BD - alcohol Residual disorders and late-onset psychotic disorder-  Flashbacks | F10.70
+2; M&BD - alcohol Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F10.75 
+2; M&BD - alcohol Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F10.74
+2; M&BD - alcohol Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F10.71 
+2; M&BD - alcohol Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F10.72
+2; M&BD - alcohol Unspecified M&BD | F10.9
+2; M&BD - alcohol withdrawal state - convulsions | F10.31
+2; M&BD - alcohol withdrawal state - delirium - convulsions | F10.41
+2; M&BD - alcohol withdrawal state - delirium - no convulsions | F10.40
+2; M&BD - alcohol withdrawal state: Uncomplicated | F10.30
+2; M&BD - cannabinoids active dependence - Continuous use | F12.25
+2; M&BD - cannabinoids active dependence - Episodic use | F12.26
+2; M&BD - cannabinoids active dependence - with physical features | F12.241
+2; M&BD - cannabinoids active dependence - without physical features | F12.240
+2; M&BD - cannabinoids Acute intoxication - coma | F12.05
+2; M&BD - cannabinoids Acute intoxication - convulsions | F12.06
+2; M&BD - cannabinoids Acute intoxication - delirium | F12.03
+2; M&BD - cannabinoids Acute intoxication - other medical complications | F12.02
+2; M&BD - cannabinoids Acute intoxication - perceptual distortions | F12.04
+2; M&BD - cannabinoids Acute intoxication - trauma or other bodily injury | F12.01
+2; M&BD - cannabinoids Acute intoxication Pathological intoxication | F12.07
+2; M&BD - cannabinoids Acute intoxication: Uncomplicated | F12.00
+2; M&BD - cannabinoids Amnesic syndrome | F12.6
+2; M&BD - cannabinoids Dependence - abstinent - Early remission | F12.200
+2; M&BD - cannabinoids Dependence - abstinent-  Full remission | F12.202
+2; M&BD - cannabinoids Dependence - abstinent - Partial remission | F12.201
+2; M&BD - cannabinoids Dependence - abstinent, but in a protected environment | F12.21
+2; M&BD - cannabinoids Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F12.23
+2; M&BD - cannabinoids Dependence: controlled dependence | F12.22
+2; M&BD - cannabinoids Harmful use | F12.1
+2; M&BD - cannabinoids Other M&BD | F12.8
+2; M&BD - cannabinoids Psychotic disorder: delusional | F12.51
+2; M&BD - cannabinoids Psychotic disorder: depressive psychotic symptoms | F12.54 
+2; M&BD - cannabinoids Psychotic disorder: hallucinatory | F12.52
+2; M&BD - cannabinoids Psychotic disorder: manic psychotic symptoms | F12.55
+2; M&BD - cannabinoids Psychotic disorder: Mixed | F12.56
+2; M&BD - cannabinoids Psychotic disorder: polymorphic | F12.53
+2; M&BD - cannabinoids Psychotic disorder: Schizophrenia | F12.5
+2; M&BD - cannabinoids Residual disorders and late-onset psychotic disorder - Dementia | F12.73
+2; M&BD - cannabinoids Residual disorders and late-onset psychotic disorder - Flashbacks | F12.70
+2; M&BD - cannabinoids Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F12.75 
+2; M&BD - cannabinoids Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F12.74
+2; M&BD - cannabinoids Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F12.71 
+2; M&BD - cannabinoids Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F12.72
+2; M&BD - cannabinoids Unspecified M&BD | F12.9
+2; M&BD - cannabinoids withdrawal state - convulsions | F12.31
+2; M&BD - cannabinoids withdrawal state - delirium - convulsions | F12.41
+2; M&BD - cannabinoids withdrawal state - delirium - no convulsions | F12.40
+2; M&BD - cannabinoids withdrawal state: Uncomplicated | F12.30
+2; M&BD - cocaine active dependence - Continuous use | F14.25
+2; M&BD - cocaine active dependence - Episodic use | F14.26
+2; M&BD - cocaine active dependence - with physical features | F14.241
+2; M&BD - cocaine active dependence - without physical features | F14.240
+2; M&BD - cocaine Acute intoxication - coma | F14.05
+2; M&BD - cocaine Acute intoxication - convulsions | F14.06
+2; M&BD - cocaine Acute intoxication - delirium | F14.03
+2; M&BD - cocaine Acute intoxication - other medical complications | F14.02
+2; M&BD - cocaine Acute intoxication - perceptual distortions | F14.04
+2; M&BD - cocaine Acute intoxication - trauma or other bodily injury | F14.01
+2; M&BD - cocaine Acute intoxication Pathological intoxication | F14.07
+2; M&BD - cocaine Acute intoxication: Uncomplicated | F14.00
+2; M&BD - cocaine Amnesic syndrome | F14.6
+2; M&BD - cocaine Dependence - abstinent - Early remission | F14.200
+2; M&BD - cocaine Dependence - abstinent - Full remission | F14.202
+2; M&BD - cocaine Dependence - abstinent - Partial remission - abstinent | F14.201
+2; M&BD - cocaine Dependence - abstinent, but in a protected environment | F14.21
+2; M&BD - cocaine Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F14.23
+2; M&BD - cocaine Dependence: controlled dependence | F14.22
+2; M&BD - cocaine Harmful use | F14.1
+2; M&BD - cocaine Other M&BD | F14.8
+2; M&BD - cocaine Psychotic disorder: delusional | F14.51
+2; M&BD - cocaine Psychotic disorder: depressive psychotic symptoms | F14.54 
+2; M&BD - cocaine Psychotic disorder: hallucinatory | F14.52
+2; M&BD - cocaine Psychotic disorder: manic psychotic symptoms | F14.55
+2; M&BD - cocaine Psychotic disorder: Mixed | F14.56
+2; M&BD - cocaine Psychotic disorder: polymorphic | F14.53
+2; M&BD - cocaine Psychotic disorder: Schizophrenia | F14.5
+2; M&BD - cocaine Residual disorders and late-onset psychotic disorder - Dementia | F14.73
+2; M&BD - cocaine Residual disorders and late-onset psychotic disorder -  Flashbacks | F14.70
+2; M&BD - cocaine Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F14.75 
+2; M&BD - cocaine Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F14.74
+2; M&BD - cocaine Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F14.71 
+2; M&BD - cocaine Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F14.72
+2; M&BD - cocaine Unspecified M&BD | F14.9
+2; M&BD - cocaine withdrawal state - convulsions | F14.31
+2; M&BD - cocaine withdrawal state - delirium - convulsions | F14.41
+2; M&BD - cocaine withdrawal state - delirium - no convulsions | F14.40
+2; M&BD - cocaine withdrawal state: Uncomplicated | F14.30
+2; M&BD - hallucinogenics Residual disorders and late-onset psychotic disorder - Dementia | F16.73
+2; M&BD - hallucinogenics Residual disorders and late-onset psychotic disorder-  Flashbacks | F16.70
+2; M&BD - hallucinogenics Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F16.75 
+2; M&BD - hallucinogenics Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F16.74
+2; M&BD - hallucinogenics Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F16.71 
+2; M&BD - hallucinogenics Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F16.72
+2; M&BD - hallucinogens active dependence - Continuous use | F16.25
+2; M&BD - hallucinogens active dependence - Episodic use | F16.26
+2; M&BD - hallucinogens active dependence - with physical features | F16.241
+2; M&BD - hallucinogens active dependence - without physical features | F16.240
+2; M&BD - hallucinogens Acute intoxication - coma | F16.05
+2; M&BD - hallucinogens Acute intoxication - convulsions | F16.06
+2; M&BD - hallucinogens Acute intoxication - delirium | F16.03
+2; M&BD - hallucinogens Acute intoxication - other medical complications | F16.02
+2; M&BD - hallucinogens Acute intoxication - perceptual distortions | F16.04
+2; M&BD - hallucinogens Acute intoxication - trauma or other bodily injury | F16.01
+2; M&BD - hallucinogens Acute intoxication Pathological intoxication | F16.07
+2; M&BD - hallucinogens Acute intoxication: Uncomplicated | F16.00
+2; M&BD - hallucinogens Amnesic syndrome | F16.6
+2; M&BD - hallucinogens Dependence - abstinent - Early remission | F16.200
+2; M&BD - hallucinogens Dependence - abstinent-  Full remission | F16.202
+2; M&BD - hallucinogens Dependence - abstinent - Partial remission | F16.201
+2; M&BD - hallucinogens Dependence - abstinent, but in a protected environment | F16.21
+2; M&BD - hallucinogens Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F16.23
+2; M&BD - hallucinogens Dependence: controlled dependence | F16.22
+2; M&BD - hallucinogens Harmful use | F16.1
+2; M&BD - hallucinogens Other M&BD | F16.8
+2; M&BD - hallucinogens Psychotic disorder: delusional | F16.51
+2; M&BD - hallucinogens Psychotic disorder: depressive psychotic symptoms | F16.54 
+2; M&BD - hallucinogens Psychotic disorder: hallucinatory | F16.52
+2; M&BD - hallucinogens Psychotic disorder: manic psychotic symptoms | F16.55
+2; M&BD - hallucinogens Psychotic disorder: Mixed | F16.56
+2; M&BD - hallucinogens Psychotic disorder: polymorphic | F16.53
+2; M&BD - hallucinogens Psychotic disorder: Schizophrenia | F16.5
+2; M&BD - hallucinogens Unspecified M&BD | F16.9
+2; M&BD - hallucinogens withdrawal state - convulsions | F16.31
+2; M&BD - hallucinogens withdrawal state - delirium - convulsions | F16.41
+2; M&BD - hallucinogens withdrawal state - delirium - no convulsions | F16.40
+2; M&BD - hallucinogens withdrawal state: Uncomplicated | F16.30
+2; M&BD - multiple drug/other psychoactive: active dependence - Continuous use | F19.25
+2; M&BD - multiple drug/other psychoactive: active dependence - Episodic use | F19.26
+2; M&BD - multiple drug/other psychoactive: active dependence - with physical features | F19.241
+2; M&BD - multiple drug/other psychoactive: active dependence - without physical features | F19.240
+2; M&BD - multiple drug/other psychoactive: Acute intoxication - coma | F19.05
+2; M&BD - multiple drug/other psychoactive: Acute intoxication - convulsions | F19.06
+2; M&BD - multiple drug/other psychoactive: Acute intoxication - delirium | F19.03
+2; M&BD - multiple drug/other psychoactive: Acute intoxication - other medical complications | F19.02
+2; M&BD - multiple drug/other psychoactive: Acute intoxication - perceptual distortions | F19.04
+2; M&BD - multiple drug/other psychoactive: Acute intoxication - trauma or other bodily injury | F19.01
+2; M&BD - multiple drug/other psychoactive: Acute intoxication Pathological intoxication | F19.07
+2; M&BD - multiple drug/other psychoactive: Acute intoxication: Uncomplicated | F19.00
+2; M&BD - multiple drug/other psychoactive: Amnesic syndrome | F19.6
+2; M&BD - multiple drug/other psychoactive: Dependence - abstinent-  Full remission | F19.202
+2; M&BD - multiple drug/other psychoactive: Dependence - abstinent - Partial remission | F19.201
+2; M&BD - multiple drug/other psychoactive: Dependence - abstinent Early remission | F19.200
+2; M&BD - multiple drug/other psychoactive: Dependence - abstinent, but in a protected environment | F19.21
+2; M&BD - multiple drug/other psychoactive: Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F19.23
+2; M&BD - multiple drug/other psychoactive: Dependence: controlled dependence | F19.22
+2; M&BD - multiple drug/other psychoactive: Harmful use | F19.1
+2; M&BD - multiple drug/other psychoactive: Other M&BD | F19.8
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: delusional | F19.51
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: depressive psychotic symptoms | F19.54 
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: hallucinatory | F19.52
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: manic psychotic symptoms | F19.55
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: Mixed | F19.56
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: polymorphic | F19.53
+2; M&BD - multiple drug/other psychoactive: Psychotic disorder: Schizophrenia | F19.5
+2; M&BD - multiple drug/other psychoactive: Residual disorders and late-onset psychotic disorder - Dementia | F19.73
+2; M&BD - multiple drug/other psychoactive: Residual disorders and late-onset psychotic disorder-  Flashbacks | F19.70
+2; M&BD - multiple drug/other psychoactive: Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F19.75 
+2; M&BD - multiple drug/other psychoactive: Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F19.74
+2; M&BD - multiple drug/other psychoactive: Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F19.71 
+2; M&BD - multiple drug/other psychoactive: Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F19.72
+2; M&BD - multiple drug/other psychoactive: Unspecified M&BD | F19.9
+2; M&BD - multiple drug/other psychoactive: withdrawal state - convulsions | F19.31
+2; M&BD - multiple drug/other psychoactive: withdrawal state - delirium - convulsions | F19.41
+2; M&BD - multiple drug/other psychoactive: withdrawal state - delirium - no convulsions | F19.40
+2; M&BD - multiple drug/other psychoactive: withdrawal state: Uncomplicated | F19.30
+2; M&BD - opiods Residual disorders and late-onset psychotic disorder - Dementia | F11.73
+2; M&BD - opiods Residual disorders and late-onset psychotic disorder-  Flashbacks | F11.70
+2; M&BD - opiods Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F11.75 
+2; M&BD - opiods Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F11.74
+2; M&BD - opiods Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F11.71 
+2; M&BD - opiods Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F11.72
+2; M&BD - opioids active dependence - Continuous use | F11.25
+2; M&BD - opioids active dependence - Episodic use | F11.26
+2; M&BD - opioids active dependence - with physical features | F11.241
+2; M&BD - opioids active dependence - without physical features | F11.240
+2; M&BD - opioids Acute intoxication - coma | F11.05
+2; M&BD - opioids Acute intoxication - convulsions | F11.06
+2; M&BD - opioids Acute intoxication - delirium | F11.03
+2; M&BD - opioids Acute intoxication - other medical complications | F11.02
+2; M&BD - opioids Acute intoxication - perceptual distortions | F11.04
+2; M&BD - opioids Acute intoxication - trauma or other bodily injury | F11.01
+2; M&BD - opioids Acute intoxication Pathological intoxication | F11.07
+2; M&BD - opioids Acute intoxication: Uncomplicated | F11.00
+2; M&BD - opioids Amnesic syndrome | F11.6
+2; M&BD - opioids Dependence - abstinent - Early remission | F11.200
+2; M&BD - opioids Dependence - abstinent-  Full remission | F11.202
+2; M&BD - opioids Dependence - abstinent - Partial remission | F11.201
+2; M&BD - opioids Dependence - abstinent, but in a protected environment | F11.21
+2; M&BD - opioids Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F11.23
+2; M&BD - opioids Dependence: controlled dependence | F11.22
+2; M&BD - opioids Harmful use | F11.1
+2; M&BD - opioids Other M&BD | F11.8
+2; M&BD - opioids Psychotic disorder: delusional | F11.51
+2; M&BD - opioids Psychotic disorder: depressive psychotic symptoms | F11.54 
+2; M&BD - opioids Psychotic disorder: hallucinatory | F11.52
+2; M&BD - opioids Psychotic disorder: manic psychotic symptoms | F11.55
+2; M&BD - opioids Psychotic disorder: Mixed | F11.56
+2; M&BD - opioids Psychotic disorder: polymorphic | F11.53
+2; M&BD - opioids Psychotic disorder: Schizophrenia | F11.5
+2; M&BD - opioids Unspecified M&BD | F11.9
+2; M&BD - opioids withdrawal state - convulsions | F11.31
+2; M&BD - opioids withdrawal state - delirium - convulsions | F11.41
+2; M&BD - opioids withdrawal state - delirium - no convulsions | F11.40
+2; M&BD - opioids withdrawal state: Uncomplicated | F11.30
+2; M&BD - other stimulants (incl. caffeine) active dependence - Continuous use | F15.25
+2; M&BD - other stimulants (incl. caffeine) active dependence - Episodic use | F15.26
+2; M&BD - other stimulants (incl. caffeine) active dependence - with physical features | F15.241
+2; M&BD - other stimulants (incl. caffeine) active dependence - without physical features | F15.240
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication - coma | F15.05
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication - convulsions | F15.06
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication - delirium | F15.03
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication - other medical complications | F15.02
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication - perceptual distortions | F15.04
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication - trauma or other bodily injury | F15.01
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication Pathological intoxication | F15.07
+2; M&BD - other stimulants (incl. caffeine) Acute intoxication: Uncomplicated | F15.00
+2; M&BD - other stimulants (incl. caffeine) Amnesic syndrome | F15.6
+2; M&BD - other stimulants (incl. caffeine) Dependence - abstinent - Early remission | F15.200
+2; M&BD - other stimulants (incl. caffeine) Dependence - abstinent-  Full remission | F15.202
+2; M&BD - other stimulants (incl. caffeine) Dependence - abstinent - Partial remission | F15.201
+2; M&BD - other stimulants (incl. caffeine) Dependence - abstinent, but in a protected environment | F15.21
+2; M&BD - other stimulants (incl. caffeine) Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F15.23
+2; M&BD - other stimulants (incl. caffeine) Dependence: controlled dependence | F15.22
+2; M&BD - other stimulants (incl. caffeine) Harmful use | F15.1
+2; M&BD - other stimulants (incl. caffeine) Other M&BD | F15.8
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: delusional | F15.51
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: depressive psychotic symptoms | F15.54 
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: hallucinatory | F15.52
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: manic psychotic symptoms | F15.55
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: Mixed | F15.56
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: polymorphic | F15.53
+2; M&BD - other stimulants (incl. caffeine) Psychotic disorder: Schizophrenia | F15.5
+2; M&BD - other stimulants (incl. caffeine) Residual disorders and late-onset psychotic disorder - Dementia | F15.73
+2; M&BD - other stimulants (incl. caffeine) Residual disorders and late-onset psychotic disorder-  Flashbacks | F15.70
+2; M&BD - other stimulants (incl. caffeine) Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F15.75 
+2; M&BD - other stimulants (incl. caffeine) Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F15.74
+2; M&BD - other stimulants (incl. caffeine) Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F15.71 
+2; M&BD - other stimulants (incl. caffeine) Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F15.72
+2; M&BD - other stimulants (incl. caffeine) Unspecified M&BD | F15.9
+2; M&BD - other stimulants (incl. caffeine) withdrawal state - convulsions | F15.31
+2; M&BD - other stimulants (incl. caffeine) withdrawal state - delirium - convulsions | F15.41
+2; M&BD - other stimulants (incl. caffeine) withdrawal state - delirium - no convulsions | F15.40
+2; M&BD - other stimulants (incl. caffeine) withdrawal state: Uncomplicated | F15.30
+2; M&BD - sedatives or hypnotics active dependence - Continuous use | F13.25
+2; M&BD - sedatives or hypnotics active dependence - Episodic use | F13.26
+2; M&BD - sedatives or hypnotics active dependence - with physical features | F13.241
+2; M&BD - sedatives or hypnotics active dependence - without physical features | F13.240
+2; M&BD - sedatives or hypnotics Acute intoxication - coma | F13.05
+2; M&BD - sedatives or hypnotics Acute intoxication - convulsions | F13.06
+2; M&BD - sedatives or hypnotics Acute intoxication - delirium | F13.03
+2; M&BD - sedatives or hypnotics Acute intoxication - other medical complications | F13.02
+2; M&BD - sedatives or hypnotics Acute intoxication - perceptual distortions | F13.04
+2; M&BD - sedatives or hypnotics Acute intoxication - trauma or other bodily injury | F13.01
+2; M&BD - sedatives or hypnotics Acute intoxication Pathological intoxication | F13.07
+2; M&BD - sedatives or hypnotics Acute intoxication: Uncomplicated | F13.00
+2; M&BD - sedatives or hypnotics Amnesic syndrome | F13.6
+2; M&BD - sedatives or hypnotics Dependence - abstinent - Early remission | F13.200
+2; M&BD - sedatives or hypnotics Dependence - abstinent-  Full remission | F13.202
+2; M&BD - sedatives or hypnotics Dependence - abstinent - Partial remission | F13.201
+2; M&BD - sedatives or hypnotics Dependence - abstinent, but in a protected environment | F13.21
+2; M&BD - sedatives or hypnotics Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F13.23
+2; M&BD - sedatives or hypnotics Dependence: controlled dependence | F13.22
+2; M&BD - sedatives or hypnotics Harmful use | F13.1
+2; M&BD - sedatives or hypnotics Other M&BD | F13.8
+2; M&BD - sedatives or hypnotics Psychotic disorder: delusional | F13.51
+2; M&BD - sedatives or hypnotics Psychotic disorder: depressive psychotic symptoms | F13.54 
+2; M&BD - sedatives or hypnotics Psychotic disorder: hallucinatory | F13.52
+2; M&BD - sedatives or hypnotics Psychotic disorder: manic psychotic symptoms | F13.55
+2; M&BD - sedatives or hypnotics Psychotic disorder: Mixed | F13.56
+2; M&BD - sedatives or hypnotics Psychotic disorder: polymorphic | F13.53
+2; M&BD - sedatives or hypnotics Psychotic disorder: Schizophrenia | F13.5
+2; M&BD - sedatives or hypnotics Residual disorders and late-onset psychotic disorder - Dementia | F13.73
+2; M&BD - sedatives or hypnotics Residual disorders and late-onset psychotic disorder-  Flashbacks | F13.70
+2; M&BD - sedatives or hypnotics Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F13.75 
+2; M&BD - sedatives or hypnotics Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F13.74
+2; M&BD - sedatives or hypnotics Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F13.71 
+2; M&BD - sedatives or hypnotics Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F13.72
+2; M&BD - sedatives or hypnotics Unspecified M&BD | F13.9
+2; M&BD - sedatives or hypnotics withdrawal state - convulsions | F13.31
+2; M&BD - sedatives or hypnotics withdrawal state - delirium - convulsions | F13.41
+2; M&BD - sedatives or hypnotics withdrawal state - delirium - no convulsions | F13.40
+2; M&BD - sedatives or hypnotics withdrawal state: Uncomplicated | F13.30
+2; M&BD - tobacco active dependence - Continuous use | F17.25
+2; M&BD - tobacco active dependence - Episodic use | F17.26
+2; M&BD - tobacco active dependence - with physical features | F17.241
+2; M&BD - tobacco active dependence - without physical features | F17.240
+2; M&BD - tobacco Acute intoxication - coma | F17.05
+2; M&BD - tobacco Acute intoxication - convulsions | F17.06
+2; M&BD - tobacco Acute intoxication - delirium | F17.03
+2; M&BD - tobacco Acute intoxication - other medical complications | F17.02
+2; M&BD - tobacco Acute intoxication - perceptual distortions | F17.04
+2; M&BD - tobacco Acute intoxication - trauma or other bodily injury | F17.01
+2; M&BD - tobacco Acute intoxication Pathological intoxication | F17.07
+2; M&BD - tobacco Acute intoxication: Uncomplicated | F17.00
+2; M&BD - tobacco Amnesic syndrome | F17.6
+2; M&BD - tobacco Dependence - abstinent  - Partial remission | F17.201
+2; M&BD - tobacco Dependence - abstinent - Early remission | F17.200
+2; M&BD - tobacco Dependence - abstinent -Full remission | F17.202
+2; M&BD - tobacco Dependence - abstinent, but in a protected environment | F17.21
+2; M&BD - tobacco Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F17.23
+2; M&BD - tobacco Dependence: controlled dependence | F17.22
+2; M&BD - tobacco Harmful use | F17.1
+2; M&BD - tobacco Other M&BD | F17.8
+2; M&BD - tobacco Psychotic disorder: delusional | F17.51
+2; M&BD - tobacco Psychotic disorder: depressive psychotic symptoms | F17.54 
+2; M&BD - tobacco Psychotic disorder: hallucinatory | F17.52
+2; M&BD - tobacco Psychotic disorder: manic psychotic symptoms | F17.55
+2; M&BD - tobacco Psychotic disorder: Mixed | F17.56
+2; M&BD - tobacco Psychotic disorder: polymorphic | F17.53
+2; M&BD - tobacco Psychotic disorder: Schizophrenia -like | F17.5
+2; M&BD - tobacco Residual disorders and late-onset psychotic disorder - Dementia | F17.73
+2; M&BD - tobacco Residual disorders and late-onset psychotic disorder-  Flashbacks | F17.70
+2; M&BD - tobacco Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F17.75 
+2; M&BD - tobacco Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F17.74
+2; M&BD - tobacco Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F17.71 
+2; M&BD - tobacco Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F17.72
+2; M&BD - tobacco Unspecified M&BD | F17.9
+2; M&BD - tobacco withdrawal state - convulsions | F17.31
+2; M&BD - tobacco withdrawal state - delirium - convulsions | F17.41
+2; M&BD - tobacco withdrawal state - delirium - no convulsions | F17.40
+2; M&BD - tobacco withdrawal state: Uncomplicated | F17.30
+2; M&BD - volatile solvents active dependence - Continuous use | F18.25
+2; M&BD - volatile solvents active dependence - Episodic use | F18.26
+2; M&BD - volatile solvents active dependence - with physical features | F18.241
+2; M&BD - volatile solvents active dependence - without physical features | F18.240
+2; M&BD - volatile solvents Acute intoxication - coma | F18.05
+2; M&BD - volatile solvents Acute intoxication - convulsions | F18.06
+2; M&BD - volatile solvents Acute intoxication - delirium | F18.03
+2; M&BD - volatile solvents Acute intoxication - other medical complications | F18.02
+2; M&BD - volatile solvents Acute intoxication - perceptual distortions | F18.04
+2; M&BD - volatile solvents Acute intoxication - trauma or other bodily injury | F18.01
+2; M&BD - volatile solvents Acute intoxication Pathological intoxication | F18.07
+2; M&BD - volatile solvents Acute intoxication: Uncomplicated | F18.00
+2; M&BD - volatile solvents Amnesic syndrome | F18.6
+2; M&BD - volatile solvents Dependence - abstinent - Early remission | F18.200
+2; M&BD - volatile solvents Dependence - abstinent-  Full remission | F18.202
+2; M&BD - volatile solvents Dependence - abstinent - Partial remission | F18.201
+2; M&BD - volatile solvents Dependence - abstinent, but in a protected environment | F18.21
+2; M&BD - volatile solvents Dependence - abstinent, but receiving treatment - aversive or blocking drugs | F18.23
+2; M&BD - volatile solvents Dependence: controlled dependence | F18.22
+2; M&BD - volatile solvents Harmful use | F18.1
+2; M&BD - volatile solvents Other M&BD | F18.8
+2; M&BD - volatile solvents Psychotic disorder: delusional | F18.51
+2; M&BD - volatile solvents Psychotic disorder: depressive psychotic symptoms | F18.54 
+2; M&BD - volatile solvents Psychotic disorder: hallucinatory | F18.52
+2; M&BD - volatile solvents Psychotic disorder: manic psychotic symptoms | F18.55
+2; M&BD - volatile solvents Psychotic disorder: Mixed | F18.56
+2; M&BD - volatile solvents Psychotic disorder: polymorphic | F18.53
+2; M&BD - volatile solvents Psychotic disorder: Schizophrenia | F18.5
+2; M&BD - volatile solvents Residual disorders and late-onset psychotic disorder - Dementia | F18.73
+2; M&BD - volatile solvents Residual disorders and late-onset psychotic disorder-  Flashbacks | F18.70
+2; M&BD - volatile solvents Residual disorders and late-onset psychotic disorder - Late-onset Psychosis | F18.75 
+2; M&BD - volatile solvents Residual disorders and late-onset psychotic disorder - Other persisting cognitive disorder | F18.74
+2; M&BD - volatile solvents Residual disorders and late-onset psychotic disorder - Personality or behaviour disorder | F18.71 
+2; M&BD - volatile solvents Residual disorders and late-onset psychotic disorder - Residual Affective Disorder | F18.72
+2; M&BD - volatile solvents Unspecified M&BD | F18.9
+2; M&BD - volatile solvents withdrawal state - convulsions | F18.31
+2; M&BD - volatile solvents withdrawal state - delirium - convulsions | F18.41
+2; M&BD - volatile solvents withdrawal state - delirium - no convulsions | F18.40
+2; M&BD - volatile solvents withdrawal state: Uncomplicated | F18.30
+4; Mania - mood-congruent psychotic symptoms | F30.20
+4; Mania - mood-incongruent psychotic symptoms | F30.21
+4; Mania - no psychotic symptoms | F30.1
+4; Manic episode | F30
+4; Manic episode, unspecified | F30.9
+1; Mental disorder, not otherwise specified | F99
+3; Mild cognitive disorder Associated - a physical disorder | F06.7-
+3; Mild cognitive disorder Not associated - a physical disorder | F06.70
+3; Mild depressive episode - no somatic syndrome | F32.00
+3; Mild depressive episode - somatic syndrome | F32.01
+3; Mild mental and behavioural disorders associated - the puerperium | F53.0
+3; Mild mental retardation - no mention of impairment of behaviour | F70.3
+3; Mild mental retardation - No, or minimal, impairment of behaviour | F70.0
+3; Mild mental retardation - Other impairments of behaviour | F70.2
+3; Mild mental retardation - Significant impairment of behaviour requiring attention or treatment | F70.1
+2; Mixed affective episode | F38.00
+3; Mixed and other personality disorders | F61 
+3; Mixed anxiety and depressive disorder | F41.2
+3; Mixed cortical/subcortical vascular dementia - delusional - Mild | F1.310
+3; Mixed cortical/subcortical vascular dementia - delusional - Moderate | F1.311
+3; Mixed cortical/subcortical vascular dementia - delusional - Severe | F1.312
+3; Mixed cortical/subcortical vascular dementia - depressive - Mild | F1.330
+3; Mixed cortical/subcortical vascular dementia - depressive - Moderate | F1.331
+3; Mixed cortical/subcortical vascular dementia - depressive - Severe | F1.332
+3; Mixed cortical/subcortical vascular dementia - hallucinatory - Mild | F1.320
+3; Mixed cortical/subcortical vascular dementia - hallucinatory - Moderate | F1.321
+3; Mixed cortical/subcortical vascular dementia - hallucinatory - Severe | F1.322
+3; Mixed cortical/subcortical vascular dementia - mixed symptoms - Mild | F1.340
+3; Mixed cortical/subcortical vascular dementia - mixed symptoms - Moderate | F1.341
+3; Mixed cortical/subcortical vascular dementia - mixed symptoms - Severe | F1.342
+3; Mixed cortical/subcortical vascular dementia - no additional symptoms - Mild | F1.30
+3; Mixed cortical/subcortical vascular dementia - no additional symptoms - Moderate | F1.31
+3; Mixed cortical/subcortical vascular dementia - no additional symptoms - Severe | F1.32
+3; Mixed disorder of conduct and emotions, unspecified | F92.9
+3; Mixed disorder of scholastic skills | F81.3
+3; Mixed dissociative [conversion] disorders | F44.7
+3; Mixed obsessional thoughts and acts | F42.2 
+3; Mixed personality disorder | F61.0
+3; Mixed specific developmental disorder | F83
+4; Moderate depressive episode - no somatic syndrome | F32.10
+4; Moderate depressive episode - no somatic syndrome - somatic syndrome | F32.11
+3; Moderate mental retardation - no mention of impairment of behaviour | F71.3
+3; Moderate mental retardation - No, or minimal, impairment of behaviour | F71.0
+3; Moderate mental retardation - Other impairments of behaviour | F71.2
+3; Moderate mental retardation - Significant impairment of behaviour requiring attention or treatment | F71.1
+3; Multi-infarct dementia - delusional - Mild | F1.110
+3; Multi-infarct dementia - delusional - Moderate | F1.111
+3; Multi-infarct dementia - delusional - Severe | F1.112
+3; Multi-infarct dementia - depressive - Mild | F1.130
+3; Multi-infarct dementia - depressive - Moderate | F1.131
+3; Multi-infarct dementia - depressive - Severe | F1.132
+3; Multi-infarct dementia - hallucinatory - Mild | F1.120
+3; Multi-infarct dementia - hallucinatory - Moderate | F1.121
+3; Multi-infarct dementia - hallucinatory - Severe | F1.122
+3; Multi-infarct dementia - mixed symptoms - Mild | F1.140
+3; Multi-infarct dementia - mixed symptoms - Moderate | F1.141
+3; Multi-infarct dementia - mixed symptoms - Severe | F1.142
+3; Multi-infarct dementia - no additional symptoms - Mild | F1.100
+3; Multi-infarct dementia - no additional symptoms - Moderate | F1.101
+3; Multi-infarct dementia - no additional symptoms - Severe | F1.102
+3; Multiple disorders of sexual preference | F65.6
+3; Neurasthenia | F48.0
+3; Neurotic disorder, unspecified | F48.9
+3; Nightmares | F51.5
+1; Nocturnal and diurnal enureses | F98.02
+1; Nocturnal enuresis only | F98.00
+3; Nonorganic disorder of the sleep-wake schedule | F51.2
+3; Nonorganic dyspareunia | F52.6
+1; Nonorganic encopresis - Adequate bowel control - normal faeces deposited in inappropriate places | F98.11
+1; Nonorganic encopresis - Failure to acquire physiological bowel control | F98.10
+1; Nonorganic encopresis - Soiling that is associated - excessively fluid faeces such as - retention - overflow | F98.12
+1; Nonorganic enuresis | F98.0
+3; Nonorganic hypersomnia | F51.1
+3; Nonorganic insomnia | F51.0
+3; Nonorganic sleep disorder, unspecified | F51.9
+3; Nonorganic vaginismus | F52.5
+3; Obsessive-compulsive disorder, unspecified | F42.9    
+3; Oppositional defiant disorder | F91.3
+3; Organic amnesic syndrome, not induced by alcohol and other psychoactive substances | F04 
+3; Organic anxiety disorder | F06.4 
+3; Organic bipolar disorder | F06.31
+3; Organic catatonic disorder | F06.1 
+3; Organic delusional [schizophrenia-like] disorder | F06.2 
+3; Organic depressive disorder | F06.32
+3; Organic dissociative disorder | F06.5 
+3; Organic emotionally labile [asthenic] disorder | F06.6 
+3; Organic hallucinosis | F06.0 
+3; Organic manic disorder | F06.30
+3; Organic mixed affective disorder | F06.33
+3; Organic personality disorder | F07.0
+3; Orgasmic dysfunction | F52.3
+4; Other acute and transient psychotic disorders - associated acute stress | F23.81
+4; Other acute and transient psychotic disorders - no associated acute stress | F23.80
+4; Other acute delusional psychotic disorder - associated acute stress | F23.31
+4; Other acute delusional psychotic disorder - no associated acute stress | F23.30
+4; Other bipolar affective disorders | F31.8
+3; Other childhood disintegrative disorder | F84.3
+1; Other childhood disorders of social functioning | F94.8
+1; Other childhood emotional disorders | F93.8
+3; Other conduct disorders | F91.8
+3; Other delirium | F05.8 
+3; Other depressive episodes | F32.8
+3; Other developmental disorders of scholastic skills | F81.8
+3; Other developmental disorders of speech and language | F80.8
+3; Other disorders of psychological development | F88
+3; Other disorders of sexual preference | F65.8
+3; Other dissociative/conversion disorders - Ganser's syndrome | F44.80
+3; Other dissociative/conversion disorders - Other specified | F44.88
+3; Other dissociative/conversion disorders -Multiple personality disorder | F44.81
+3; Other dissociative/conversion disorders -Transient - occurring in childhood and adolescence | F44.82
+3; Other eating disorders | F50.8
+3; Other enduring personality changes | F62.8
+3; Other gender identity disorders | F64.8
+3; Other habit and impulse disorders | F63.8
+3; Other hyperkinetic disorders | F90.8
+3; Other M&BD associated - the puerperium | F53.8
+4; Other manic episodes | F30.8
+3; Other mental retardation - no mention of impairment of behaviour | F78.3
+3; Other mental retardation - No, or minimal, impairment of behaviour | F78.0
+3; Other mental retardation - Other impairments of behaviour | F78.2
+3; Other mental retardation - Significant impairment of behaviour requiring attention or treatment | F78.1
+3; Other mixed anxiety disorders | F41.3
+3; Other mixed disorders of conduct and emotions | F92.8
+4; Other nonorganic psychotic disorders | F28
+3; Other nonorganic sleep disorders | F51.8
+3; Other obsessive-compulsive disorders | F42.8    
+3; Other organic personality and behavioural disorders due to brain disease, damage and dysfunction | F07.8
+4; Other persistent delusional disorders | F22.8
+2; Other persistent mood [affective] disorders | F34.8
+3; Other pervasive developmental disorders | F84.8
+3; Other phobic anxiety disorders | F40.8
+3; Other psychosexual development disorders | F66.8
+3; Other reactions to severe stress | F43.8
+2; Other recurrent depressive disorders | F33.8 
+2; Other recurrent mood [affective] disorders | F38.1
+4; Other schizoaffective disorders - Concurrent affective and schizophrenic symptoms only | F25.80
+4; Other schizoaffective disorders - Concurrent affective/schizophrenic & persistence of schizophrenic symptoms beyond duration of affective symptoms | F25.81
+4; Other schizophrenia - Complete remission | F20.85
+4; Other schizophrenia - Course uncertain, period of observation too short | F20.89
+4; Other schizophrenia - Episodic - stable deficit | F20.82
+4; Other schizophrenia - Episodic remittent | F20.84
+4; Other schizophrenia - Other | F20.88
+4; Other schizophrenia- continuous | F20.80
+4; Other schizophrenia Episodic - progressive deficit | F20.81
+3; Other sexual dysfunction, not caused by organic disorder or disease | F52.8
+2; Other single mood [affective] disorders | F38.0
+3; Other somatoform disorders | F45.8
+3; Other specific personality disorders | F60.8
+3; Other specified anxiety disorders | F41.8
+1; Other specified behavioural and emotional disorders - onset usually occurring in childhood and adolescence | F98.8
+3; Other specified disorders of adult personality and behaviour | F68.8
+3; Other specified mental disorders due to brain damage and dysfunction and to physical disease | F06.8
+3; Other specified mood [affective] disorders | F38.8
+3; Other specified neurotic disorders | F48.8
+1; Other tic disorders | F95.8
+3; Other vascular dementia - delusional - Mild | F1.810
+3; Other vascular dementia - delusional - Moderate | F1.811
+3; Other vascular dementia - delusional - Severe | F1.812
+3; Other vascular dementia - depressive - Mild | F1.830
+3; Other vascular dementia - depressive - Moderate | F1.831
+3; Other vascular dementia - depressive - Severe | F1.832
+3; Other vascular dementia - hallucinatory - Mild | F1.820
+3; Other vascular dementia - hallucinatory - Moderate | F1.821
+3; Other vascular dementia - hallucinatory - Severe | F1.822
+3; Other vascular dementia - mixed symptoms - Mild | F1.840
+3; Other vascular dementia - mixed symptoms - Moderate | F1.841
+3; Other vascular dementia - mixed symptoms - Severe | F1.842
+3; Other vascular dementia - no additional symptoms - Mild | F1.800
+3; Other vascular dementia - no additional symptoms - Moderate | F1.801
+3; Other vascular dementia - no additional symptoms - Severe | F1.802
+3; Overactive disorder associated - mental retardation and stereotyped movements | F84.4
+3; Overeating associated - other psychological disturbances | F50.4
+3; Paedophilia | F65.4
+3; Panic disorder [episodic paroxysmal anxiety] Moderate | F41.00
+3; Panic disorder [episodic paroxysmal anxiety] Severe | F41.01
+3; Paranoid personality disorder | F60.0 
+4; Paranoid schizophrenia - Complete remission | F20.05
+4; Paranoid schizophrenia - continuous | F20.00
+4; Paranoid schizophrenia - Course uncertain, period of observation too short | F20.09
+4; Paranoid schizophrenia - Episodic - stable deficit | F20.02
+4; Paranoid schizophrenia - Episodic remittent | F20.04
+4; Paranoid schizophrenia Episodic - progressive deficit | F20.01
+4; Paranoid schizophrenia Other | F20.08
+3; Pathological fire-setting [pyromania] | F63.1
+3; Pathological gambling | F63.0
+3; Pathological stealing [kleptomania] | F63.2
+4; Persistent delusional disorder, unspecified | F22.9
+4; Persistent delusional disorders | F22
+2; Persistent mood [affective] disorder, unspecified | F34.9
+3; Persistent somatoform pain disorder | F45.4
+3; Personality disorder, unspecified | F60.9
+3; Pervasive developmental disorder, unspecified | F84.9
+3; Pervasive developmental disorders | F84
+3; Phobic anxiety disorder of childhood | F93.1
+3; Phobic anxiety disorder, unspecified | F40.9
+3; Phobic anxiety disorders | F40
+1; Pica of infancy and childhood | F98.3
+3; Postconcussional syndrome | F07.2
+3; Postencephalitic syndrome | F07.1
+4; Post-schizophrenic depression - Complete remission | F20.4 5
+4; Post-schizophrenic depression - continuous | F20.4 0
+4; Post-schizophrenic depression - Course uncertain, period of observation too short | F20.4 9
+4; Post-schizophrenic depression - Episodic - stable deficit | F20.4 2
+4; Post-schizophrenic depression - Episodic remittent | F20.4 4
+4; Post-schizophrenic depression Episodic - progressive deficit | F20.4 1
+4; Post-schizophrenic depression Other | F20.4 8
+3; Post-traumatic stress disorder | F43.1
+3; Predominantly compulsive acts [obsessional rituals] | F42.1 
+3; Predominantly obsessional thoughts or ruminations | F42.0 
+3; Premature ejaculation | F52.4
+3; Profound mental retardation - no mention of impairment of behaviour | F73.3
+3; Profound mental retardation - No, or minimal, impairment of behaviour | F73.0
+3; Profound mental retardation - Other impairments of behaviour | F73.2
+3; Profound mental retardation - Significant impairment of behaviour requiring attention or treatment | F73.1
+3; Psychological and behavioural factors associated - disorders or diseases | F54
+3; Psychosexual development disorder, unspecified | F66.9
+3; Puerperal mental disorder, unspecified | F53.9
+3; Reaction to severe stress, unspecified | F43.9
+1; Reactive attachment disorder of childhood | F94.1
+3; Receptive language disorder | F80.2
+2; Recurrent brief depressive disorder | F38.10
+3; Recurrent depressive disorder | F33
+2; Recurrent depressive disorder - in remission | F33.4 
+3; Recurrent depressive disorder - mild - no somatic syndrome | F33.00
+3; Recurrent depressive disorder - mild - somatic syndrome | F33.01
+4; Recurrent depressive disorder - moderate - no somatic syndrome | F33.10
+4; Recurrent depressive disorder - moderate - somatic syndrome | F33.11
+4; Recurrent depressive disorder - severe - mood-congruent psychotic symptoms | F33.30
+4; Recurrent depressive disorder - severe - mood-incongruent psychotic symptoms | F33.31
+4; Recurrent depressive disorder - severe - no psychotic symptoms | F33.2 
+2; Recurrent depressive disorder, unspecified | F33.9 
+4; Residual schizophrenia - Complete remission | F20.5 5
+4; Residual schizophrenia - Course uncertain, period of observation too short | F20.5 9
+4; Residual schizophrenia - Episodic - stable deficit | F20.5 2
+4; Residual schizophrenia - Episodic remittent | F20.5 4
+4; Residual schizophrenia- continuous | F20.5 0
+4; Residual schizophrenia Episodic - progressive deficit | F20.5 1
+4; Residual schizophreniaOther | F20.5 8
+3; Rett's syndrome | F84.2
+3; Sadomasochism | F65.5
+4; Schizoaffective disorder, depressive type - Concurrent affective and schizophrenic symptoms only | F25.10
+4; Schizoaffective disorder, depressive type - Concurrent affective/schizophrenic & persistence of schizophrenic symptoms beyond duration of affective symptoms | F25.11
+4; Schizoaffective disorder, manic type - Concurrent affective and schizophrenic symptoms only | F25.00
+4; Schizoaffective disorder, manic type - Concurrent affective/schizophrenic & persistence of schizophrenic symptoms beyond duration of affective symptoms | F25.01
+4; Schizoaffective disorder, mixed type - Concurrent affective and schizophrenic symptoms only | F25.20
+4; Schizoaffective disorder, mixed type - Concurrent affective/schizophrenic & persistence of schizophrenic symptoms beyond duration of affective symptoms | F25.21
+4; Schizoaffective disorder, unspecified - Concurrent affective and schizophrenic symptoms only | F25.90
+4; Schizoaffective disorder, unspecified - Concurrent affective/schizophrenic & persistence of schizophrenic symptoms beyond duration of affective symptoms | F25.91
+3; Schizoid personality disorder | F60.1 
+4; Schizophrenia, unspecified - Complete remission | F20.95
+4; Schizophrenia, unspecified - Course uncertain, period of observation too short | F20.99
+4; Schizophrenia, unspecified - Episodic - stable deficit | F20.92
+4; Schizophrenia, unspecified - Episodic remittent | F20.94
+4; Schizophrenia, unspecified | F20.9
+4; Schizophrenia, unspecified - Other | F20.98
+4; Schizophrenia, unspecified- continuous | F20.90
+4; Schizophrenia, unspecified Episodic - progressive deficit | F20.91
+4; Schizotypal disorder | F21
+3; Separation anxiety disorder of childhood | F93.0
+4; Severe depressive episode - mood-congruent psychotic symptoms | F32.30
+4; Severe depressive episode - mood-incongruent psychotic symptoms | F32.31
+4; Severe depressive episode - no psychotic symptoms | F32.2
+3; Severe mental and behavioural disorders associated - the puerperium | F53.1
+3; Severe mental retardation - no mention of impairment of behaviour | F72.3
+3; Severe mental retardation - No, or minimal, impairment of behaviour | F72.0
+3; Severe mental retardation - Other impairments of behaviour | F72.2
+3; Severe mental retardation - Significant impairment of behaviour requiring attention or treatment | F72.1
+3; Sexual aversion | F52.10
+3; Sexual maturation disorder | F66.0
+3; Sexual relationship disorder | F66.2
+1; Sibling rivalry disorder | F93.3
+4; Simple schizophrenia - Complete remission | F20.65
+4; Simple schizophrenia - continuous | F20.60
+4; Simple schizophrenia - Course uncertain, period of observation too short | F20.69
+4; Simple schizophrenia - Episodic - stable deficit | F20.62
+4; Simple schizophrenia - Episodic remittent | F20.64
+4; Simple schizophrenia Episodic - progressive deficit | F20.61
+4; Simple schizophrenia Other | F20.68
+3; Sleep terrors [night terrors] | F51.4
+3; Sleepwalking [somnambulism] | F51.3
+3; Social anxiety disorder of childhood | F93.2
+3; Social phobias | F40.1
+3; Socialized conduct disorder | F91.2
+3; Somatization disorder | F45.0
+3; Somatoform autonomic dysfunction - Genitourinary system | F45.34
+3; Somatoform autonomic dysfunction - Heart and cardiovascular system | F45.30
+3; Somatoform autonomic dysfunction - Lower gastrointestinal tract | F45.32
+3; Somatoform autonomic dysfunction - Other organ or system | F45.38
+3; Somatoform autonomic dysfunction - Upper gastrointestinal tract | F45.31
+3; Somatoform disorder, unspecified | F45.9
+3; Specific (isolated) phobias | F40.2
+3; Specific developmental disorder of motor function | F82
+3; Specific disorder of arithmetical skills | F81.2
+3; Specific reading disorder | F81.0
+3; Specific speech articulation disorder | F80.0
+3; Specific spelling disorder | F81.1
+1; Stereotyped movement disorders - Mixed | F98.42
+1; Stereotyped movement disorders - Non-self-injurious | F98.40
+1; Stereotyped movement disorders - Self-injurious | F98.41
+1; Stuttering [stammering] | F98.5
+3; Subcortical vascular dementia - delusional - Mild | F1.210
+3; Subcortical vascular dementia - delusional - Moderate | F1.211
+3; Subcortical vascular dementia - delusional - Severe | F1.212
+3; Subcortical vascular dementia - depressive - Mild | F1.230
+3; Subcortical vascular dementia - depressive - Moderate | F1.231
+3; Subcortical vascular dementia - depressive - Severe | F1.232
+3; Subcortical vascular dementia - hallucinatory - Mild | F1.220
+3; Subcortical vascular dementia - hallucinatory - Moderate | F1.221
+3; Subcortical vascular dementia - hallucinatory - Severe | F1.222
+3; Subcortical vascular dementia - mixed symptoms - Mild | F1.240
+3; Subcortical vascular dementia - mixed symptoms - Moderate | F1.241
+3; Subcortical vascular dementia - mixed symptoms - Severe | F1.242
+3; Subcortical vascular dementia - no additional symptoms - Mild | F1.200
+3; Subcortical vascular dementia - no additional symptoms - Moderate | F1.201
+3; Subcortical vascular dementia - no additional symptoms - Severe | F1.202
+1; Tic disorder, unspecified | F95.9
+3; Trance and possession disorders | F44.3
+1; Transient tic disorders | F95.0
+3; Transsexualism | F64.0
+3; Trichotillomania | F63.3
+3; Troublesome personality changes | F61.1
+4; Undifferentiated schizophrenia - Complete remission | F20.3 5
+4; Undifferentiated schizophrenia - continuous | F20.3 0
+4; Undifferentiated schizophrenia - Course uncertain, period of observation too short | F20.3 9
+4; Undifferentiated schizophrenia - Episodic - stable deficit | F20.3 2
+4; Undifferentiated schizophrenia - Episodic remittent | F20.3 4
+4; Undifferentiated schizophrenia Episodic - progressive deficit | F20.3 1
+4; Undifferentiated schizophrenia Other | F20.3 8
+3; Undifferentiated somatoform disorder | F45.1
+3; Unsocialized conduct disorder | F91.1
+1; Unspecified behavioural and emotional disorders - onset usually occurring in childhood and adolescence | F98.9
+3; Unspecified behavioural syndromes associated - physiological disturbances and physical factors | F59
+3; Unspecified disorder of adult personality and behaviour | F69
+3; Unspecified disorder of psychological development | F89
+1; Unspecified mental disorder | F99
+3; Unspecified mental disorder due to brain damage and dysfunction and to physical disease | F06.9
+3; Unspecified mental disorder due to brain disease, damage and dysfunction | F07.9
+3; Unspecified mental retardation - no mention of impairment of behaviour | F79.3
+3; Unspecified mental retardation - No, or minimal, impairment of behaviour | F79.0
+3; Unspecified mental retardation - Other impairments of behaviour | F79.2
+3; Unspecified mental retardation - Significant impairment of behaviour requiring attention or treatment | F79.1
+3; Unspecified mood [affective] disorder | F39
+4; Unspecified nonorganic psychosis | F29
+3; Unspecified organic or symptomatic mental disorder | F09
+3; Unspecified sexual dysfunction, not caused by organic disorder or disease | F52.9
+3; Vascular dementia, unspecified - delusional - Mild | F1.910
+3; Vascular dementia, unspecified - delusional - Moderate | F1.911
+3; Vascular dementia, unspecified - delusional - Severe | F1.912
+3; Vascular dementia, unspecified - depressive - Mild | F1.930
+3; Vascular dementia, unspecified - depressive - Moderate | F1.931
+3; Vascular dementia, unspecified - depressive - Severe | F1.932
+3; Vascular dementia, unspecified - hallucinatory - Mild | F1.920
+3; Vascular dementia, unspecified - hallucinatory - Moderate | F1.921
+3; Vascular dementia, unspecified - hallucinatory - Severe | F1.922
+3; Vascular dementia, unspecified - mixed symptoms - Mild | F1.940
+3; Vascular dementia, unspecified - mixed symptoms - Moderate | F1.941
+3; Vascular dementia, unspecified - mixed symptoms - Severe | F1.942
+3; Vascular dementia, unspecified - no additional symptoms - Mild | F1.900
+3; Vascular dementia, unspecified - no additional symptoms - Moderate | F1.901
+3; Vascular dementia, unspecified - no additional symptoms - Severe | F1.902
+3; Vascular dementia: acute - delusional - Mild | F1.010
+3; Vascular dementia: acute - delusional - Moderate | F1.011
+3; Vascular dementia: acute - delusional - Severe | F1.012
+3; Vascular dementia: acute - depressive - Mild | F1.030
+3; Vascular dementia: acute - depressive - Moderate | F1.031
+3; Vascular dementia: acute - depressive - Severe | F1.032
+3; Vascular dementia: acute - hallucinatory - Mild | F1.020
+3; Vascular dementia: acute - hallucinatory - Moderate | F1.021
+3; Vascular dementia: acute - hallucinatory - Severe | F1.022
+3; Vascular dementia: acute - mixed symptoms - Mild | F1.040
+3; Vascular dementia: acute - mixed symptoms - Moderate | F1.041
+3; Vascular dementia: acute - mixed symptoms - Severe | F1.042
+3; Vascular dementia: acute - no additional symptoms - Mild | F1.000
+3; Vascular dementia: acute - no additional symptoms - Moderate | F1.001
+3; Vascular dementia: acute - no additional symptoms - Severe | F1.002
+3; Vomiting associated - other psychological disturbances | F50.5
+3; Voyeurism | F65.3

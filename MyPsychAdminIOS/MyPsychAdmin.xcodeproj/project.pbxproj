@@ -1,0 +1,807 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F0AB2925B6D5 /* MHAFormViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4845B6F7E19 /* MHAFormViews.swift */; };
+		F3F8856AB2E5 /* CTOFormViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBBFB7482D37 /* CTOFormViews.swift */; };
+		F3A1DF5867ED /* OtherFormViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A1145BE108 /* OtherFormViews.swift */; };
+		F001000001 /* MyPsychAdminApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000001 /* MyPsychAdminApp.swift */; };
+		F001000002 /* PatientInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000002 /* PatientInfo.swift */; };
+		F001000003 /* ClinicalNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000003 /* ClinicalNote.swift */; };
+		F001000004 /* SectionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000004 /* SectionType.swift */; };
+		F001000005 /* SectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000005 /* SectionState.swift */; };
+		F001000006 /* ClinicianDetailsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000006 /* ClinicianDetailsModel.swift */; };
+		F001000007 /* FormDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000007 /* FormDefinition.swift */; };
+		F001000008 /* SharedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000008 /* SharedDataStore.swift */; };
+		F001000009 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000009 /* AppStore.swift */; };
+		F001000010 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000010 /* TabBarView.swift */; };
+		F001000011 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000011 /* HomeView.swift */; };
+		F001000012 /* MyDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000012 /* MyDetailsView.swift */; };
+		F001000013 /* LetterWriterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000013 /* LetterWriterView.swift */; };
+		F001000014 /* PatientNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000014 /* PatientNotesView.swift */; };
+		F001000015 /* DocumentImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000015 /* DocumentImportView.swift */; };
+		F001000016 /* A2FormData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000016 /* A2FormData.swift */; };
+		F001000017 /* A3FormData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000017 /* A3FormData.swift */; };
+		F001000018 /* MHAFormModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000018 /* MHAFormModels.swift */; };
+		F001000019 /* CTOFormModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000019 /* CTOFormModels.swift */; };
+		F001000020 /* OtherFormModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000020 /* OtherFormModels.swift */; };
+		F001000021 /* FormComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000021 /* FormComponents.swift */; };
+		F001000022 /* A2FormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000022 /* A2FormView.swift */; };
+		F001000023 /* A3FormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000023 /* A3FormView.swift */; };
+		F001000024 /* MOJLeaveFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000024 /* MOJLeaveFormView.swift */; };
+		F001000098 /* MOJASRFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000098 /* MOJASRFormView.swift */; };
+		F001000100 /* HCR20FormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000100 /* HCR20FormView.swift */; };
+		F001000025 /* FormRouterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000025 /* FormRouterView.swift */; };
+		F001000026 /* FormsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000026 /* FormsListView.swift */; };
+		F001000027 /* AffectPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000027 /* AffectPopupView.swift */; };
+		F001000028 /* AnxietyPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000028 /* AnxietyPopupView.swift */; };
+		F001000029 /* PsychosisPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000029 /* PsychosisPopupView.swift */; };
+		F001000030 /* MentalStateExamPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000030 /* MentalStateExamPopupView.swift */; };
+		F001000031 /* BackgroundHistoryPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000031 /* BackgroundHistoryPopupView.swift */; };
+		F001000032 /* RemainingPopupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000032 /* RemainingPopupViews.swift */; };
+		F001000033 /* SectionPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000033 /* SectionPopupView.swift */; };
+		F001000034 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F000000034 /* Assets.xcassets */; };
+		F001000035 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000035 /* ReportsView.swift */; };
+		F001000052 /* ReportsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000052 /* ReportsListView.swift */; };
+		F001000053 /* ReportModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000053 /* ReportModels.swift */; };
+		F001000054 /* GeneralPsychReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000054 /* GeneralPsychReportView.swift */; };
+		F001000055 /* PsychiatricTribunalReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000055 /* PsychiatricTribunalReportView.swift */; };
+		F001000056 /* NursingTribunalReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000056 /* NursingTribunalReportView.swift */; };
+		F001000057 /* SocialTribunalReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000057 /* SocialTribunalReportView.swift */; };
+		F001000036 /* DocumentProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000036 /* DocumentProcessor.swift */; };
+		F001000037 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000037 /* NotesView.swift */; };
+		F001000038 /* AdmissionsTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000038 /* AdmissionsTimelineView.swift */; };
+		F001000039 /* PatientHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000039 /* PatientHistoryView.swift */; };
+		F001000040 /* PhysicalHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000040 /* PhysicalHealthView.swift */; };
+		F001000041 /* MedicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000041 /* MedicationsView.swift */; };
+		F001000042 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000042 /* ProgressView.swift */; };
+		F001000043 /* PhysicalHealthExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000043 /* PhysicalHealthExtractor.swift */; };
+		F001000044 /* MedicationExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000044 /* MedicationExtractor.swift */; };
+		F001000045 /* HistoryExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000045 /* HistoryExtractor.swift */; };
+		F001000046 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000046 /* SettingsView.swift */; };
+		F001000047 /* RiskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000047 /* RiskView.swift */; };
+		F001000048 /* RiskExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000048 /* RiskExtractor.swift */; };
+		F001000049 /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000049 /* LicenseManager.swift */; };
+		F001000050 /* ActivationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000050 /* ActivationView.swift */; };
+		F001000051 /* DOCXExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000000051 /* DOCXExporter.swift */; };
+		FTPL000001 /* Templates in Resources */ = {isa = PBXBuildFile; fileRef = FTPL000002 /* Templates */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F4845B6F7E19 /* MHAFormViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MHAFormViews.swift; sourceTree = "<group>"; };
+		FBBFB7482D37 /* CTOFormViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTOFormViews.swift; sourceTree = "<group>"; };
+		F3A1145BE108 /* OtherFormViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherFormViews.swift; sourceTree = "<group>"; };
+		F000000001 /* MyPsychAdminApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyPsychAdminApp.swift; sourceTree = "<group>"; };
+		F000000002 /* PatientInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientInfo.swift; sourceTree = "<group>"; };
+		F000000003 /* ClinicalNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClinicalNote.swift; sourceTree = "<group>"; };
+		F000000004 /* SectionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionType.swift; sourceTree = "<group>"; };
+		F000000005 /* SectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionState.swift; sourceTree = "<group>"; };
+		F000000006 /* ClinicianDetailsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClinicianDetailsModel.swift; sourceTree = "<group>"; };
+		F000000007 /* FormDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormDefinition.swift; sourceTree = "<group>"; };
+		F000000008 /* SharedDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDataStore.swift; sourceTree = "<group>"; };
+		F000000009 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		F000000010 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		F000000011 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		F000000012 /* MyDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyDetailsView.swift; sourceTree = "<group>"; };
+		F000000013 /* LetterWriterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterWriterView.swift; sourceTree = "<group>"; };
+		F000000014 /* PatientNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientNotesView.swift; sourceTree = "<group>"; };
+		F000000015 /* DocumentImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentImportView.swift; sourceTree = "<group>"; };
+		F000000016 /* A2FormData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A2FormData.swift; sourceTree = "<group>"; };
+		F000000017 /* A3FormData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A3FormData.swift; sourceTree = "<group>"; };
+		F000000018 /* MHAFormModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MHAFormModels.swift; sourceTree = "<group>"; };
+		F000000019 /* CTOFormModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTOFormModels.swift; sourceTree = "<group>"; };
+		F000000020 /* OtherFormModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherFormModels.swift; sourceTree = "<group>"; };
+		F000000021 /* FormComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormComponents.swift; sourceTree = "<group>"; };
+		F000000022 /* A2FormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A2FormView.swift; sourceTree = "<group>"; };
+		F000000023 /* A3FormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A3FormView.swift; sourceTree = "<group>"; };
+		F000000024 /* MOJLeaveFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOJLeaveFormView.swift; sourceTree = "<group>"; };
+		F000000098 /* MOJASRFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOJASRFormView.swift; sourceTree = "<group>"; };
+		F000000100 /* HCR20FormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HCR20FormView.swift; sourceTree = "<group>"; };
+		F000000025 /* FormRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormRouterView.swift; sourceTree = "<group>"; };
+		F000000026 /* FormsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormsListView.swift; sourceTree = "<group>"; };
+		F000000027 /* AffectPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffectPopupView.swift; sourceTree = "<group>"; };
+		F000000028 /* AnxietyPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnxietyPopupView.swift; sourceTree = "<group>"; };
+		F000000029 /* PsychosisPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PsychosisPopupView.swift; sourceTree = "<group>"; };
+		F000000030 /* MentalStateExamPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentalStateExamPopupView.swift; sourceTree = "<group>"; };
+		F000000031 /* BackgroundHistoryPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundHistoryPopupView.swift; sourceTree = "<group>"; };
+		F000000032 /* RemainingPopupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemainingPopupViews.swift; sourceTree = "<group>"; };
+		F000000033 /* SectionPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionPopupView.swift; sourceTree = "<group>"; };
+		F000000034 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F000000035 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
+		F000000052 /* ReportsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsListView.swift; sourceTree = "<group>"; };
+		F000000053 /* ReportModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportModels.swift; sourceTree = "<group>"; };
+		F000000054 /* GeneralPsychReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralPsychReportView.swift; sourceTree = "<group>"; };
+		F000000055 /* PsychiatricTribunalReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PsychiatricTribunalReportView.swift; sourceTree = "<group>"; };
+		F000000056 /* NursingTribunalReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NursingTribunalReportView.swift; sourceTree = "<group>"; };
+		F000000057 /* SocialTribunalReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialTribunalReportView.swift; sourceTree = "<group>"; };
+		F000000036 /* DocumentProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentProcessor.swift; sourceTree = "<group>"; };
+		F000000037 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesView.swift; sourceTree = "<group>"; };
+		F000000038 /* AdmissionsTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdmissionsTimelineView.swift; sourceTree = "<group>"; };
+		F000000039 /* PatientHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientHistoryView.swift; sourceTree = "<group>"; };
+		F000000040 /* PhysicalHealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysicalHealthView.swift; sourceTree = "<group>"; };
+		F000000041 /* MedicationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationsView.swift; sourceTree = "<group>"; };
+		F000000042 /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
+		F000000043 /* PhysicalHealthExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysicalHealthExtractor.swift; sourceTree = "<group>"; };
+		F000000044 /* MedicationExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationExtractor.swift; sourceTree = "<group>"; };
+		F000000045 /* HistoryExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryExtractor.swift; sourceTree = "<group>"; };
+		F000000046 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F000000047 /* RiskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskView.swift; sourceTree = "<group>"; };
+		F000000048 /* RiskExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskExtractor.swift; sourceTree = "<group>"; };
+		F000000049 /* LicenseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
+		F000000050 /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
+		F000000051 /* DOCXExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXExporter.swift; sourceTree = "<group>"; };
+		F000000099 /* MyPsychAdmin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyPsychAdmin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FTPL000002 /* Templates */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Templates; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F00F000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F00G000001 = {
+			isa = PBXGroup;
+			children = (
+				F00G000002 /* MyPsychAdmin */,
+				F00G000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F00G000002 /* MyPsychAdmin */ = {
+			isa = PBXGroup;
+			children = (
+				F000000001 /* MyPsychAdminApp.swift */,
+				F000000034 /* Assets.xcassets */,
+				FTPL000002 /* Templates */,
+				F00G000004 /* Core */,
+				F00G000005 /* Models */,
+				F00G000006 /* Features */,
+				F00G000007 /* Navigation */,
+			);
+			path = MyPsychAdmin;
+			sourceTree = "<group>";
+		};
+		F00G000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F000000099 /* MyPsychAdmin.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F00G000004 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				F00G000008 /* AppState */,
+				F00G000029 /* Services */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		F00G000005 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F00G000009 /* Domain */,
+				F00G000010 /* LetterWriter */,
+				F00G000011 /* SwiftData */,
+				F00G000012 /* Forms */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		F00G000006 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				F00G000013 /* Home */,
+				F00G000014 /* MyDetails */,
+				F00G000015 /* LetterWriter */,
+				F00G000016 /* PatientNotes */,
+				F00G000017 /* DocumentImport */,
+				F00G000018 /* Forms */,
+				F00G000028 /* Reports */,
+				F00G000030 /* Notes */,
+				F00G000031 /* Settings */,
+				F00G000032 /* Activation */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		F00G000032 /* Activation */ = {
+			isa = PBXGroup;
+			children = (
+				F000000050 /* ActivationView.swift */,
+			);
+			path = Activation;
+			sourceTree = "<group>";
+		};
+		F00G000031 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				F000000046 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		F00G000007 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				F000000010 /* TabBarView.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		F00G000008 /* AppState */ = {
+			isa = PBXGroup;
+			children = (
+				F000000008 /* SharedDataStore.swift */,
+				F000000009 /* AppStore.swift */,
+			);
+			path = AppState;
+			sourceTree = "<group>";
+		};
+		F00G000009 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				F000000002 /* PatientInfo.swift */,
+				F000000003 /* ClinicalNote.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		F00G000010 /* LetterWriter */ = {
+			isa = PBXGroup;
+			children = (
+				F000000004 /* SectionType.swift */,
+				F000000005 /* SectionState.swift */,
+			);
+			path = LetterWriter;
+			sourceTree = "<group>";
+		};
+		F00G000011 /* SwiftData */ = {
+			isa = PBXGroup;
+			children = (
+				F000000006 /* ClinicianDetailsModel.swift */,
+			);
+			path = SwiftData;
+			sourceTree = "<group>";
+		};
+		F00G000012 /* Forms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000007 /* FormDefinition.swift */,
+				F00G000019 /* MHAForms */,
+				F00G000020 /* CTOForms */,
+				F00G000021 /* OtherForms */,
+			);
+			path = Forms;
+			sourceTree = "<group>";
+		};
+		F00G000013 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				F000000011 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		F00G000014 /* MyDetails */ = {
+			isa = PBXGroup;
+			children = (
+				F000000012 /* MyDetailsView.swift */,
+			);
+			path = MyDetails;
+			sourceTree = "<group>";
+		};
+		F00G000015 /* LetterWriter */ = {
+			isa = PBXGroup;
+			children = (
+				F00G000022 /* Views */,
+				F00G000023 /* Popups */,
+			);
+			path = LetterWriter;
+			sourceTree = "<group>";
+		};
+		F00G000016 /* PatientNotes */ = {
+			isa = PBXGroup;
+			children = (
+				F000000014 /* PatientNotesView.swift */,
+			);
+			path = PatientNotes;
+			sourceTree = "<group>";
+		};
+		F00G000017 /* DocumentImport */ = {
+			isa = PBXGroup;
+			children = (
+				F000000015 /* DocumentImportView.swift */,
+			);
+			path = DocumentImport;
+			sourceTree = "<group>";
+		};
+		F00G000018 /* Forms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000026 /* FormsListView.swift */,
+				F00G000024 /* Views */,
+				F00G000025 /* Components */,
+				F00G000026 /* MHAForms */,
+				F00G000027 /* OtherForms */,
+			);
+			path = Forms;
+			sourceTree = "<group>";
+		};
+		F00G000019 /* MHAForms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000016 /* A2FormData.swift */,
+				F000000017 /* A3FormData.swift */,
+				F000000018 /* MHAFormModels.swift */,
+				F4845B6F7E19 /* MHAFormViews.swift */,
+			);
+			path = MHAForms;
+			sourceTree = "<group>";
+		};
+		F00G000020 /* CTOForms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000019 /* CTOFormModels.swift */,
+				FBBFB7482D37 /* CTOFormViews.swift */,
+			);
+			path = CTOForms;
+			sourceTree = "<group>";
+		};
+		F00G000021 /* OtherForms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000020 /* OtherFormModels.swift */,
+				F3A1145BE108 /* OtherFormViews.swift */,
+			);
+			path = OtherForms;
+			sourceTree = "<group>";
+		};
+		F00G000022 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F000000013 /* LetterWriterView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F00G000023 /* Popups */ = {
+			isa = PBXGroup;
+			children = (
+				F000000027 /* AffectPopupView.swift */,
+				F000000028 /* AnxietyPopupView.swift */,
+				F000000029 /* PsychosisPopupView.swift */,
+				F000000030 /* MentalStateExamPopupView.swift */,
+				F000000031 /* BackgroundHistoryPopupView.swift */,
+				F000000032 /* RemainingPopupViews.swift */,
+				F000000033 /* SectionPopupView.swift */,
+			);
+			path = Popups;
+			sourceTree = "<group>";
+		};
+		F00G000024 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F000000025 /* FormRouterView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F00G000025 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				F000000021 /* FormComponents.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		F00G000026 /* MHAForms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000022 /* A2FormView.swift */,
+				F000000023 /* A3FormView.swift */,
+			);
+			path = MHAForms;
+			sourceTree = "<group>";
+		};
+		F00G000027 /* OtherForms */ = {
+			isa = PBXGroup;
+			children = (
+				F000000024 /* MOJLeaveFormView.swift */,
+				F000000098 /* MOJASRFormView.swift */,
+				F000000100 /* HCR20FormView.swift */,
+			);
+			path = OtherForms;
+			sourceTree = "<group>";
+		};
+		F00G000028 /* Reports */ = {
+			isa = PBXGroup;
+			children = (
+				F000000035 /* ReportsView.swift */,
+				F000000052 /* ReportsListView.swift */,
+				F000000053 /* ReportModels.swift */,
+				F000000054 /* GeneralPsychReportView.swift */,
+				F000000055 /* PsychiatricTribunalReportView.swift */,
+				F000000056 /* NursingTribunalReportView.swift */,
+				F000000057 /* SocialTribunalReportView.swift */,
+			);
+			path = Reports;
+			sourceTree = "<group>";
+		};
+		F00G000029 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F000000036 /* DocumentProcessor.swift */,
+				F000000043 /* PhysicalHealthExtractor.swift */,
+				F000000044 /* MedicationExtractor.swift */,
+				F000000045 /* HistoryExtractor.swift */,
+				F000000048 /* RiskExtractor.swift */,
+				F000000049 /* LicenseManager.swift */,
+				F000000051 /* DOCXExporter.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		F00G000030 /* Notes */ = {
+			isa = PBXGroup;
+			children = (
+				F000000037 /* NotesView.swift */,
+				F000000038 /* AdmissionsTimelineView.swift */,
+				F000000039 /* PatientHistoryView.swift */,
+				F000000040 /* PhysicalHealthView.swift */,
+				F000000041 /* MedicationsView.swift */,
+				F000000042 /* ProgressView.swift */,
+				F000000047 /* RiskView.swift */,
+			);
+			path = Notes;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F00N000001 /* MyPsychAdmin */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F00C000003 /* Build configuration list for PBXNativeTarget "MyPsychAdmin" */;
+			buildPhases = (
+				F00S000001 /* Sources */,
+				F00F000001 /* Frameworks */,
+				F00R000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MyPsychAdmin;
+			productName = MyPsychAdmin;
+			productReference = F000000099 /* MyPsychAdmin.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F00P000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					F00N000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = F00C000001 /* Build configuration list for PBXProject "MyPsychAdmin" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F00G000001;
+			productRefGroup = F00G000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F00N000001 /* MyPsychAdmin */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F00R000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F001000034 /* Assets.xcassets in Resources */,
+				FTPL000001 /* Templates in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F00S000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0AB2925B6D5 /* MHAFormViews.swift in Sources */,
+				F3F8856AB2E5 /* CTOFormViews.swift in Sources */,
+				F3A1DF5867ED /* OtherFormViews.swift in Sources */,
+				F001000001 /* MyPsychAdminApp.swift in Sources */,
+				F001000002 /* PatientInfo.swift in Sources */,
+				F001000003 /* ClinicalNote.swift in Sources */,
+				F001000004 /* SectionType.swift in Sources */,
+				F001000005 /* SectionState.swift in Sources */,
+				F001000006 /* ClinicianDetailsModel.swift in Sources */,
+				F001000007 /* FormDefinition.swift in Sources */,
+				F001000008 /* SharedDataStore.swift in Sources */,
+				F001000009 /* AppStore.swift in Sources */,
+				F001000010 /* TabBarView.swift in Sources */,
+				F001000011 /* HomeView.swift in Sources */,
+				F001000012 /* MyDetailsView.swift in Sources */,
+				F001000013 /* LetterWriterView.swift in Sources */,
+				F001000014 /* PatientNotesView.swift in Sources */,
+				F001000015 /* DocumentImportView.swift in Sources */,
+				F001000016 /* A2FormData.swift in Sources */,
+				F001000017 /* A3FormData.swift in Sources */,
+				F001000018 /* MHAFormModels.swift in Sources */,
+				F001000019 /* CTOFormModels.swift in Sources */,
+				F001000020 /* OtherFormModels.swift in Sources */,
+				F001000021 /* FormComponents.swift in Sources */,
+				F001000022 /* A2FormView.swift in Sources */,
+				F001000023 /* A3FormView.swift in Sources */,
+				F001000024 /* MOJLeaveFormView.swift in Sources */,
+				F001000098 /* MOJASRFormView.swift in Sources */,
+				F001000100 /* HCR20FormView.swift in Sources */,
+				F001000025 /* FormRouterView.swift in Sources */,
+				F001000026 /* FormsListView.swift in Sources */,
+				F001000027 /* AffectPopupView.swift in Sources */,
+				F001000028 /* AnxietyPopupView.swift in Sources */,
+				F001000029 /* PsychosisPopupView.swift in Sources */,
+				F001000030 /* MentalStateExamPopupView.swift in Sources */,
+				F001000031 /* BackgroundHistoryPopupView.swift in Sources */,
+				F001000032 /* RemainingPopupViews.swift in Sources */,
+				F001000033 /* SectionPopupView.swift in Sources */,
+				F001000035 /* ReportsView.swift in Sources */,
+				F001000052 /* ReportsListView.swift in Sources */,
+				F001000053 /* ReportModels.swift in Sources */,
+				F001000054 /* GeneralPsychReportView.swift in Sources */,
+				F001000055 /* PsychiatricTribunalReportView.swift in Sources */,
+				F001000056 /* NursingTribunalReportView.swift in Sources */,
+				F001000057 /* SocialTribunalReportView.swift in Sources */,
+				F001000036 /* DocumentProcessor.swift in Sources */,
+				F001000037 /* NotesView.swift in Sources */,
+				F001000038 /* AdmissionsTimelineView.swift in Sources */,
+				F001000039 /* PatientHistoryView.swift in Sources */,
+				F001000040 /* PhysicalHealthView.swift in Sources */,
+				F001000041 /* MedicationsView.swift in Sources */,
+				F001000042 /* ProgressView.swift in Sources */,
+				F001000043 /* PhysicalHealthExtractor.swift in Sources */,
+				F001000044 /* MedicationExtractor.swift in Sources */,
+				F001000045 /* HistoryExtractor.swift in Sources */,
+				F001000046 /* SettingsView.swift in Sources */,
+				F001000047 /* RiskView.swift in Sources */,
+				F001000048 /* RiskExtractor.swift in Sources */,
+				F001000049 /* LicenseManager.swift in Sources */,
+				F001000050 /* ActivationView.swift in Sources */,
+				F001000051 /* DOCXExporter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F00B000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F00B000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F00B000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U838Z5U3JY;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mypsychadmin.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F00B000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U838Z5U3JY;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mypsychadmin.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F00C000001 /* Build configuration list for PBXProject "MyPsychAdmin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00B000001 /* Debug */,
+				F00B000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F00C000003 /* Build configuration list for PBXNativeTarget "MyPsychAdmin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00B000003 /* Debug */,
+				F00B000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F00P000001 /* Project object */;
+}

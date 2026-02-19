@@ -1,0 +1,95 @@
+# ============================
+# STRUCTURAL HEADINGS ONLY
+# term;category;category_number
+# ============================
+
+# --- FRONT / CONTEXT ---
+reason for referral;Presenting Complaint;2
+referral reason;Presenting Complaint;2
+presenting complaint;Presenting Complaint;2
+referred because;Presenting Complaint;2
+
+# --- HISTORY OF PRESENTING COMPLAINT ---
+history of presenting complaint;History of Presenting Complaint;3
+current presentation;History of Presenting Complaint;3
+recent presentation;History of Presenting Complaint;3
+current difficulties;History of Presenting Complaint;3
+onset of symptoms;History of Presenting Complaint;3
+
+# --- PSYCHIATRIC HISTORY ---
+psychiatric history;Psychiatric History;7
+past psychiatric history;Psychiatric History;7
+mental health history;Psychiatric History;7
+previous admissions;Psychiatric History;7
+previous diagnosis;Psychiatric History;7
+community mental health;Psychiatric History;7
+
+# --- BACKGROUND ---
+background history;Background History;8
+personal history;Background History;8
+family background;Background History;8
+developmental history;Background History;8
+early life;Background History;8
+
+# --- DRUG & ALCOHOL ---
+drug history;Drug and Alcohol History;9
+alcohol history;Drug and Alcohol History;9
+substance misuse;Drug and Alcohol History;9
+illicit drug use;Drug and Alcohol History;9
+
+# --- SOCIAL ---
+social history;Social History;10
+relationships;Social History;10
+employment history;Social History;10
+education history;Social History;10
+accommodation;Social History;10
+housing;Social History;10
+
+# --- FORENSIC ---
+forensic history;Forensic History;11
+offending history;Forensic History;11
+index offence;Forensic History;11
+criminal history;Forensic History;11
+police involvement;Forensic History;11
+court proceedings;Forensic History;11
+
+# --- PHYSICAL HEALTH ---
+physical health;Physical Health;12
+medical history;Physical Health;12
+past medical history;Physical Health;12
+physical examination;Physical Health;12
+long term conditions;Physical Health;12
+
+# --- FUNCTION ---
+functioning;Function;13
+activities of daily living;Function;13
+occupational functioning;Function;13
+self care;Function;13
+
+# --- MENTAL STATE ---
+mental state examination;Mental State Examination;14
+mental state;Mental State Examination;14
+appearance and behaviour;Mental State Examination;14
+speech;Mental State Examination;14
+mood and affect;Mental State Examination;14
+thought form;Mental State Examination;14
+thought content;Mental State Examination;14
+perception;Mental State Examination;14
+cognition;Mental State Examination;14
+insight;Mental State Examination;14
+
+# --- SUMMARY / OPINION ---
+summary;Summary;15
+clinical summary;Summary;15
+opinion;Summary;15
+in my opinion;Summary;15
+overall assessment;Summary;15
+conclusion;Summary;15
+
+# --- PLAN / RECOMMENDATIONS ---
+plan;Plan;16
+care plan;Plan;16
+recommendations;Plan;16
+proposed plan;Plan;16
+treatment plan;Plan;16
+risk management plan;Plan;16
