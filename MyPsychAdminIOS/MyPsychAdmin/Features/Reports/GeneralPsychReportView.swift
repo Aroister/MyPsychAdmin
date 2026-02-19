@@ -38,6 +38,7 @@ struct GeneralPsychReportView: View {
     @State private var importStatusMessage: String?
     @State private var hasPopulatedFromSharedData = false
     @State private var isPopulatingNotes = false
+    @State private var isReportMode = false
 
     // 14 Sections matching desktop General Psychiatric Report order
     enum GPRSection: String, CaseIterable, Identifiable {
@@ -160,13 +161,13 @@ struct GeneralPsychReportView: View {
         .onAppear {
             prefillFromSharedData()
             initializeCardTexts()
-            if !hasPopulatedFromSharedData && !sharedData.notes.isEmpty {
+            if !hasPopulatedFromSharedData && !sharedData.notes.isEmpty && !isReportMode {
                 populateFromClinicalNotesAsync(sharedData.notes)
                 hasPopulatedFromSharedData = true
             }
         }
         .onReceive(sharedData.notesDidChange) { notes in
-            if !notes.isEmpty {
+            if !notes.isEmpty && !isReportMode {
                 populateFromClinicalNotesAsync(notes)
             }
         }
@@ -320,14 +321,9 @@ struct GeneralPsychReportView: View {
                     let extractedDoc = try await DocumentProcessor.shared.processDocument(at: tempURL)
 
                     await MainActor.run {
-                        if !extractedDoc.notes.isEmpty {
-                            sharedData.setNotes(extractedDoc.notes, source: "gpr_import")
-                        }
-
+                        // Patient info (always, regardless of report vs notes)
                         if !extractedDoc.patientInfo.fullName.isEmpty {
-                            // Set in SharedDataStore so other views get notified
                             sharedData.setPatientInfo(extractedDoc.patientInfo, source: "gpr_import")
-                            // Also set locally for immediate display
                             formData.patientName = extractedDoc.patientInfo.fullName
                             if let dob = extractedDoc.patientInfo.dateOfBirth {
                                 formData.patientDOB = dob
@@ -335,12 +331,25 @@ struct GeneralPsychReportView: View {
                             formData.patientGender = extractedDoc.patientInfo.gender
                         }
 
-                        populateFromClinicalNotes(extractedDoc.notes)
+                        // Report detection gate
+                        let sections = Self.isGPRReport(extractedDoc)
+                            ? parseGPRReportSections(from: extractedDoc.text)
+                            : [:]
+
+                        if !sections.isEmpty {
+                            // REPORT PATH — imported document is a previous report
+                            populateFromReport(sections)
+                            importStatusMessage = "Imported report (\(sections.count) sections)"
+                        } else {
+                            // NOTES PATH — imported document is clinical notes
+                            if !extractedDoc.notes.isEmpty {
+                                sharedData.setNotes(extractedDoc.notes, source: "gpr_import")
+                            }
+                            populateFromClinicalNotes(extractedDoc.notes)
+                            importStatusMessage = "Imported \(extractedDoc.notes.count) notes"
+                        }
 
                         isImporting = false
-                        let noteCount = extractedDoc.notes.count
-                        importStatusMessage = "Imported \(noteCount) notes"
-
                         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                             importStatusMessage = nil
                         }
@@ -366,6 +375,10 @@ struct GeneralPsychReportView: View {
     /// Async wrapper to run population on background thread for better UI responsiveness
     private func populateFromClinicalNotesAsync(_ notes: [ClinicalNote]) {
         guard !notes.isEmpty else { return }
+        guard !isReportMode else {
+            print("[GPR iOS] Report mode active, skipping notes population")
+            return
+        }
         guard !isPopulatingNotes else {
             print("[GPR iOS] Already populating, skipping")
             return
@@ -1087,6 +1100,7 @@ struct GeneralPsychReportView: View {
 
     private func populateFromClinicalNotes(_ notes: [ClinicalNote]) {
         guard !notes.isEmpty else { return }
+        guard !isReportMode else { return }
 
         print("[GPR iOS] Populating from \(notes.count) clinical notes (sync)")
 
@@ -1890,6 +1904,653 @@ struct GeneralPsychReportView: View {
 
         // Only return if we have meaningful content (more than 20 chars)
         return sectionContent.count > 20 ? sectionContent : nil
+    }
+
+    // MARK: - GPR Report Detection & Parsing
+
+    /// Multi-word phrases that distinguish a psychiatric report from clinical notes
+    private static let gprReportFingerprints: [String] = [
+        // T131-specific
+        "mental health tribunal", "responsible clinician", "nature or degree",
+        // Generic report headings
+        "past psychiatric history", "forensic history", "mental state examination",
+        "risk assessment", "legal criteria", "statutory criteria",
+        "sources of information", "circumstances of admission",
+        "history of substance use", "past medical history",
+        "background information", "strengths and positive factors",
+    ]
+
+    /// Maps heading text patterns to GPR section enum values.
+    /// Ordered most-specific to least-specific per section.
+    private static let gprHeadingPatterns: [(pattern: String, section: GPRSection)] = [
+        // Patient details
+        ("patient details", .patientDetails),
+        ("patient information", .patientDetails),
+        ("personal details", .patientDetails),
+        // Report based on
+        ("sources of information", .reportBasedOn),
+        ("report based on", .reportBasedOn),
+        ("documents reviewed", .reportBasedOn),
+        ("informant", .reportBasedOn),
+        // Circumstances
+        ("circumstances of admission", .circumstances),
+        ("circumstances to this admission", .circumstances),
+        ("presenting complaint", .circumstances),
+        ("history of presenting complaint", .circumstances),
+        ("current admission", .circumstances),
+        ("current episode", .circumstances),
+        // Background
+        ("background information", .background),
+        ("background history", .background),
+        ("personal history", .background),
+        ("family history", .background),
+        ("social history", .background),
+        ("developmental history", .background),
+        ("early history", .background),
+        // Medical history (before generic "history")
+        ("past medical history", .medicalHistory),
+        ("medical history", .medicalHistory),
+        ("physical health", .medicalHistory),
+        // Psychiatric history
+        ("past psychiatric history", .psychiatricHistory),
+        ("psychiatric history", .psychiatricHistory),
+        ("mental health history", .psychiatricHistory),
+        ("previous psychiatric history", .psychiatricHistory),
+        // Risk
+        ("risk assessment", .risk),
+        ("risk management", .risk),
+        ("risk factors", .risk),
+        ("risk to self", .risk),
+        ("risk to others", .risk),
+        ("incidents of harm", .risk),
+        // Substance use
+        ("history of substance use", .substanceUse),
+        ("substance use", .substanceUse),
+        ("substance misuse", .substanceUse),
+        ("drug and alcohol", .substanceUse),
+        ("drugs and alcohol", .substanceUse),
+        ("alcohol use", .substanceUse),
+        // Forensic history
+        ("forensic history", .forensicHistory),
+        ("offending history", .forensicHistory),
+        ("index offence", .forensicHistory),
+        ("criminal history", .forensicHistory),
+        // Medication
+        ("current medication", .medication),
+        ("medication history", .medication),
+        ("prescribed medication", .medication),
+        ("pharmacological treatment", .medication),
+        ("medication", .medication),
+        // Diagnosis
+        ("mental disorder", .diagnosis),
+        ("diagnoses", .diagnosis),
+        ("diagnosis", .diagnosis),
+        ("formulation", .diagnosis),
+        ("mental state examination", .diagnosis),
+        ("current mental state", .diagnosis),
+        // Legal criteria
+        ("legal criteria", .legalCriteria),
+        ("statutory criteria", .legalCriteria),
+        ("criteria for detention", .legalCriteria),
+        ("mental capacity", .legalCriteria),
+        ("recommendations", .legalCriteria),
+        ("opinion", .legalCriteria),
+        ("conclusion", .legalCriteria),
+        // Strengths
+        ("strengths and positive factors", .strengths),
+        ("strengths", .strengths),
+        ("positive factors", .strengths),
+        ("protective factors", .strengths),
+        // Signature
+        ("signature", .signature),
+        ("signed", .signature),
+        ("declaration", .signature),
+        ("name of clinician", .signature),
+    ]
+
+    /// Maps T131 numbered questions (1-24) to GPR sections
+    private static let t131ToGPR: [Int: GPRSection] = [
+        1: .patientDetails, 2: .signature,
+        3: .legalCriteria, 4: .legalCriteria,
+        5: .forensicHistory, 6: .psychiatricHistory, 7: .psychiatricHistory,
+        8: .circumstances,
+        9: .diagnosis, 10: .diagnosis,
+        11: .legalCriteria, 12: .medication,
+        13: .strengths, 14: .circumstances, 15: .medication,
+        16: .legalCriteria,
+        17: .risk, 18: .risk,
+        19: .legalCriteria, 20: .legalCriteria, 21: .risk,
+        22: .legalCriteria, 23: .legalCriteria,
+        24: .signature,
+    ]
+
+    /// Sub-headers for T131 questions when multiple merge into one GPR section
+    private static let t131SubHeaders: [Int: String] = [
+        3: "Factors Affecting Hearing",
+        4: "Adjustments",
+        5: "Forensic History",
+        6: "Previous Admissions",
+        7: "Previous Admission Reasons",
+        8: "Circumstances of Admission",
+        9: "Mental Disorder",
+        10: "Learning Disability",
+        11: "Detention Required",
+        12: "Treatment",
+        13: "Strengths",
+        14: "Progress",
+        15: "Compliance",
+        16: "MCA/DoL",
+        17: "Incidents of Harm",
+        18: "Property Damage",
+        19: "Section 2 Detention",
+        20: "Other Detention",
+        21: "Discharge Risk",
+        22: "Community Management",
+        23: "Recommendations",
+        24: "Signature",
+    ]
+
+    /// T131 template question text prefixes to strip during cleaning
+    private static let questionPatterns: [String] = [
+        "are there any factors", "are there any adjustments",
+        "what is the nature of", "give details of any",
+        "what are the strengths", "give a summary of",
+        "in section 2 cases", "in all other cases",
+        "if the patient was discharged", "if the patient were discharged",
+        "please explain how", "is there any other relevant",
+        "do you have any recommendations", "is the patient now suffering",
+        "what appropriate and available", "what are the dates",
+        "what are the circumstances", "give reasons for",
+        "does the patient have a learning", "what is it about",
+        "would they be likely to act", "managed effectively in the community",
+        "if yes, has a diagnosis", "if yes, what is the diagnosis",
+        "has a diagnosis been made", "what is the diagnosis",
+    ]
+
+    /// Detect whether an imported document is a psychiatric report rather than clinical notes
+    private static func isGPRReport(_ document: ExtractedDocument) -> Bool {
+        let text = document.text
+        let textLower = text.lowercased()
+
+        print("[GPR iOS] isGPRReport check: notes=\(document.notes.count), text=\(text.count) chars")
+
+        // Check 1: Single long note (>2000 chars) + at least 2 fingerprint matches
+        if document.notes.count == 1 && document.notes[0].body.count > 2000 {
+            let fpMatches = gprReportFingerprints.filter { textLower.contains($0) }.count
+            if fpMatches >= 2 {
+                print("[GPR iOS] isGPRReport=true (single long note \(document.notes[0].body.count) chars, \(fpMatches) fingerprints)")
+                return true
+            }
+        }
+
+        // Check 2: Numbered question scan — regex for ^\s*(\d+)[.)] patterns in range 1-24
+        let lines = text.components(separatedBy: .newlines)
+        var questionNumbers = Set<Int>()
+        let questionRegex = try? NSRegularExpression(pattern: #"^\s*(\d+)[\.\)]\s*"#, options: [])
+        for line in lines {
+            let nsLine = line as NSString
+            if let match = questionRegex?.firstMatch(in: line, options: [], range: NSRange(location: 0, length: nsLine.length)) {
+                let numStr = nsLine.substring(with: match.range(at: 1))
+                if let num = Int(numStr), num >= 1 && num <= 24 {
+                    questionNumbers.insert(num)
+                }
+            }
+        }
+        if questionNumbers.count >= 5 {
+            print("[GPR iOS] isGPRReport=true (found \(questionNumbers.count) numbered questions)")
+            return true
+        }
+
+        // Check 3: Fingerprint keywords — 3+ matches
+        let fingerprintMatches = gprReportFingerprints.filter { textLower.contains($0) }.count
+        if fingerprintMatches >= 3 {
+            print("[GPR iOS] isGPRReport=true (matched \(fingerprintMatches) keyword fingerprints)")
+            return true
+        }
+
+        // Check 4: No notes but substantial text (>500 chars) with some indicators
+        if document.notes.isEmpty && text.count > 500 {
+            if questionNumbers.count >= 2 || fingerprintMatches >= 1 {
+                print("[GPR iOS] isGPRReport=true (no notes, \(text.count) chars, \(questionNumbers.count) questions, \(fingerprintMatches) fingerprints)")
+                return true
+            }
+        }
+
+        // Check 5: Heading scan — 3+ unique heading matches
+        var matchedSections = Set<GPRSection>()
+        for (pattern, section) in gprHeadingPatterns {
+            if textLower.contains(pattern) && !matchedSections.contains(section) {
+                matchedSections.insert(section)
+            }
+        }
+        if matchedSections.count >= 3 {
+            print("[GPR iOS] isGPRReport=true (found \(matchedSections.count) heading matches)")
+            return true
+        }
+
+        print("[GPR iOS] isGPRReport=false")
+        return false
+    }
+
+    /// Parse a GPR report text into sections. Tries numbered format first, falls back to heading-based.
+    private func parseGPRReportSections(from text: String) -> [GPRSection: String] {
+        // Mode A: Try T131 numbered sections
+        let numbered = parseNumberedSections(from: text)
+        if numbered.count >= 3 {
+            return consolidateNumberedSections(numbered)
+        }
+        // Mode B: Heading-based detection
+        return parseHeadingSections(from: text)
+    }
+
+    /// Parse T131-style numbered sections from text
+    private func parseNumberedSections(from text: String) -> [(questionNumber: Int, text: String)] {
+        var result: [(questionNumber: Int, text: String)] = []
+
+        // Pre-process: insert newlines before section number patterns
+        var processedText = text
+        if let splitRegex = try? NSRegularExpression(pattern: #"(?<=\s)(\d{1,2})\.\s+(?=[A-Z])"#) {
+            let nsStr = processedText as NSString
+            processedText = splitRegex.stringByReplacingMatches(
+                in: processedText,
+                range: NSRange(location: 0, length: nsStr.length),
+                withTemplate: "\n$1. "
+            )
+        }
+
+        let lines = processedText.components(separatedBy: .newlines)
+        let questionRegex = try? NSRegularExpression(pattern: #"^\s*(\d+)[\.\)]\s*(.*)"#, options: [])
+
+        var currentQuestion: Int? = nil
+        var currentLines: [String] = []
+
+        func flush() {
+            guard let qNum = currentQuestion else { return }
+            let sectionText = cleanGPRSectionText(currentLines.joined(separator: "\n"))
+            if !sectionText.isEmpty {
+                result.append((questionNumber: qNum, text: sectionText))
+            }
+        }
+
+        for line in lines {
+            let nsLine = line as NSString
+            if let match = questionRegex?.firstMatch(in: line, options: [], range: NSRange(location: 0, length: nsLine.length)) {
+                let numStr = nsLine.substring(with: match.range(at: 1))
+                let remainder = nsLine.substring(with: match.range(at: 2))
+                if let num = Int(numStr), num >= 1 && num <= 24 {
+                    // Accept if sequential (next or skip up to 4) to handle T131 forms with skipped questions
+                    let prev = currentQuestion ?? 0
+                    let isSequential = (num > prev && num <= prev + 5)
+                    if !isSequential && currentQuestion != nil {
+                        currentLines.append(line)
+                        continue
+                    }
+                    flush()
+                    currentQuestion = num
+                    currentLines = remainder.trimmingCharacters(in: .whitespaces).isEmpty ? [] : [remainder]
+                    continue
+                }
+            }
+            if currentQuestion != nil {
+                currentLines.append(line)
+            }
+        }
+        flush()
+
+        print("[GPR iOS] Parsed \(result.count) numbered sections")
+        return result
+    }
+
+    /// Consolidate numbered T131 sections into GPR sections using t131ToGPR mapping
+    private func consolidateNumberedSections(_ numbered: [(questionNumber: Int, text: String)]) -> [GPRSection: String] {
+        var result: [GPRSection: String] = [:]
+
+        // Group by GPR section
+        var sectionEntries: [GPRSection: [(num: Int, text: String)]] = [:]
+        for entry in numbered {
+            guard let gprSection = Self.t131ToGPR[entry.questionNumber] else { continue }
+            sectionEntries[gprSection, default: []].append((num: entry.questionNumber, text: entry.text))
+        }
+
+        // Merge entries with sub-headers when multiple questions map to same section
+        for (section, entries) in sectionEntries {
+            if entries.count == 1 {
+                result[section] = entries[0].text
+            } else {
+                // Multiple questions -> add bold sub-headers
+                var parts: [String] = []
+                for entry in entries {
+                    let header = Self.t131SubHeaders[entry.num] ?? "Section \(entry.num)"
+                    parts.append("**\(header):**\n\(entry.text)")
+                }
+                result[section] = parts.joined(separator: "\n\n")
+            }
+        }
+
+        print("[GPR iOS] Consolidated into \(result.count) GPR sections")
+        return result
+    }
+
+    /// Parse heading-based sections from generic/narrative reports
+    private func parseHeadingSections(from text: String) -> [GPRSection: String] {
+        // Find all heading positions — track earliest position per section
+        // Use case-insensitive search on original text to avoid Unicode position misalignment
+        var bestPerSection: [GPRSection: (position: String.Index, endOfPattern: String.Index)] = [:]
+
+        for (pattern, section) in Self.gprHeadingPatterns {
+            if let range = text.range(of: pattern, options: .caseInsensitive) {
+                if let existing = bestPerSection[section] {
+                    // Keep the earliest occurrence for this section
+                    if range.lowerBound < existing.position {
+                        bestPerSection[section] = (position: range.lowerBound, endOfPattern: range.upperBound)
+                    }
+                } else {
+                    bestPerSection[section] = (position: range.lowerBound, endOfPattern: range.upperBound)
+                }
+            }
+        }
+
+        var headingPositions = bestPerSection.map { (section, info) in
+            (position: info.position, section: section, endOfPattern: info.endOfPattern)
+        }
+
+        // Sort by position
+        headingPositions.sort { $0.position < $1.position }
+
+        guard !headingPositions.isEmpty else {
+            print("[GPR iOS] No heading positions found")
+            return [:]
+        }
+
+        // Extract text between consecutive heading positions
+        var result: [GPRSection: String] = [:]
+
+        for (i, heading) in headingPositions.enumerated() {
+            let startIdx = heading.endOfPattern
+            let endIdx: String.Index
+            if i + 1 < headingPositions.count {
+                endIdx = headingPositions[i + 1].position
+            } else {
+                endIdx = text.endIndex
+            }
+
+            guard startIdx < endIdx else { continue }
+
+            var sectionText = String(text[startIdx..<endIdx])
+            // Strip leading colon/whitespace
+            sectionText = sectionText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if sectionText.hasPrefix(":") {
+                sectionText = String(sectionText.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+
+            let cleaned = cleanGPRSectionText(sectionText)
+            if !cleaned.isEmpty {
+                if let existing = result[heading.section] {
+                    result[heading.section] = existing + "\n\n" + cleaned
+                } else {
+                    result[heading.section] = cleaned
+                }
+            }
+        }
+
+        print("[GPR iOS] Parsed \(result.count) heading-based sections")
+        return result
+    }
+
+    /// Clean section text by stripping checkbox markers, question text, and normalizing whitespace
+    private func cleanGPRSectionText(_ text: String) -> String {
+        let lines = text.components(separatedBy: .newlines)
+        var cleaned: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { cleaned.append(""); continue }
+
+            // Skip checkbox-only lines
+            let cbPattern = try? NSRegularExpression(
+                pattern: #"^[\s☐☑☒✓✗□■\[\]]*\s*(Yes|No|N/?A|NA)[\s☐☑☒✓✗□■\[\]]*\s*(Yes|No|N/?A|NA)?[\s☐☑☒✓✗□■\[\]]*\s*(Yes|No|N/?A|NA)?[\s☐☑☒✓✗□■\[\]]*$"#,
+                options: .caseInsensitive
+            )
+            let nsLine = trimmed as NSString
+            if let cbMatch = cbPattern?.firstMatch(in: trimmed, options: [], range: NSRange(location: 0, length: nsLine.length)) {
+                if cbMatch.range.length == nsLine.length { continue }
+            }
+
+            // Skip "see above" / "as above" / "n/a" / "nil" lines
+            let lowerTrimmed = trimmed.lowercased()
+            if lowerTrimmed == "see above" || lowerTrimmed == "as above" ||
+               lowerTrimmed == "refer to above" || lowerTrimmed == "as per above" ||
+               lowerTrimmed == "n/a" || lowerTrimmed == "na" || lowerTrimmed == "nil" {
+                continue
+            }
+
+            // Skip T131 question text lines
+            if isQuestionText(trimmed) { continue }
+
+            cleaned.append(trimmed)
+        }
+
+        var result = cleaned.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Strip inline checkbox markers
+        if let cbInline = try? NSRegularExpression(pattern: #"[☐☑☒✓✗□■]\s*(?:Yes|No|N/?A)\s*"#, options: .caseInsensitive) {
+            result = cbInline.stringByReplacingMatches(in: result, range: NSRange(location: 0, length: (result as NSString).length), withTemplate: "")
+        }
+        for char in ["☐", "☑", "☒", "✓", "✗", "□", "■"] {
+            result = result.replacingOccurrences(of: char, with: "")
+        }
+
+        // Normalize multiple newlines
+        if let multiNewline = try? NSRegularExpression(pattern: #"\n{3,}"#) {
+            result = multiNewline.stringByReplacingMatches(in: result, range: NSRange(location: 0, length: (result as NSString).length), withTemplate: "\n\n")
+        }
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Check if text is a T131 question/heading rather than answer content
+    private func isQuestionText(_ text: String) -> Bool {
+        guard text.count >= 10 else { return false }
+        // Strip leading checkbox/number markers
+        var lower = text.lowercased().trimmingCharacters(in: .whitespaces)
+        if let cleanRegex = try? NSRegularExpression(pattern: #"^[\[\]☐☒xX\s\-–\d\.]*"#) {
+            let nsStr = lower as NSString
+            if let match = cleanRegex.firstMatch(in: lower, range: NSRange(location: 0, length: nsStr.length)) {
+                lower = nsStr.substring(from: match.range.upperBound).trimmingCharacters(in: .whitespaces)
+            }
+        }
+
+        for pattern in Self.questionPatterns {
+            if lower.hasPrefix(pattern) { return true }
+        }
+
+        // Numbered question pattern - only match when followed by question words
+        // to avoid stripping valid numbered content (medication lists, offences, etc.)
+        if let numRegex = try? NSRegularExpression(pattern: #"^\d{1,2}\.\s+(?:What|Are|Is|Give|Do|Does|Has|Have|If|Please|Would|Provide|Describe|State|Set)"#, options: .caseInsensitive) {
+            let nsStr = text as NSString
+            if numRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsStr.length)) != nil {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    /// Extract patient details from the patient details section text
+    private func extractPatientDetailsFromReport(_ text: String) {
+        let nsText = text as NSString
+
+        // Name
+        if let nameRegex = try? NSRegularExpression(pattern: #"(?:Name|PATIENT)[:\s]+(.+?)(?:\n|$)"#, options: .caseInsensitive) {
+            if let match = nameRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                formData.patientName = nsText.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+            }
+        }
+
+        // DOB
+        if let dobRegex = try? NSRegularExpression(pattern: #"(?:DOB|Date\s*of\s*Birth)[:\s]+(.+?)(?:\n|$)"#, options: .caseInsensitive) {
+            if let match = dobRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                var dobStr = nsText.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+                // Remove ordinal suffixes
+                if let ordRegex = try? NSRegularExpression(pattern: #"(\d+)(?:st|nd|rd|th)"#) {
+                    dobStr = ordRegex.stringByReplacingMatches(in: dobStr, range: NSRange(location: 0, length: (dobStr as NSString).length), withTemplate: "$1")
+                }
+                dobStr = dobStr.replacingOccurrences(of: ",", with: "")
+
+                let formats = ["dd MMMM yyyy", "dd/MM/yyyy", "dd-MM-yyyy", "dd MMM yyyy", "yyyy-MM-dd"]
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_GB")
+                for fmt in formats {
+                    formatter.dateFormat = fmt
+                    if let date = formatter.date(from: dobStr.trimmingCharacters(in: .whitespaces)) {
+                        formData.patientDOB = date
+                        break
+                    }
+                }
+            }
+        }
+
+        // Gender
+        if let genderRegex = try? NSRegularExpression(pattern: #"(?:Gender|Sex)[:\s]+(Male|Female|Other)"#, options: .caseInsensitive) {
+            if let match = genderRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                let genderStr = nsText.substring(with: match.range(at: 1)).lowercased()
+                switch genderStr {
+                case "male": formData.patientGender = .male
+                case "female": formData.patientGender = .female
+                default: break
+                }
+            }
+        }
+
+        // MHA Section
+        if let mhaRegex = try? NSRegularExpression(pattern: #"(?:MHA\s*Status|MHA\s*Section|Detained\s*Under)[:\s]+(.+?)(?:\n|$)"#, options: .caseInsensitive) {
+            if let match = mhaRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                formData.mhaSection = nsText.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+            }
+        }
+
+        // Hospital/Ward
+        if let locRegex = try? NSRegularExpression(pattern: #"(?:Hospital|Ward|Address|Residence)[:\s]+(.+?)(?:\n|$)"#, options: .caseInsensitive) {
+            if let match = locRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                formData.currentLocation = nsText.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+            }
+        }
+
+        // Admission Date
+        if let admRegex = try? NSRegularExpression(pattern: #"(?:Date\s*of\s*Admission|Admission\s*Date)[:\s]+(.+?)(?:\n|$)"#, options: .caseInsensitive) {
+            if let match = admRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                var admStr = nsText.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+                if let ordRegex = try? NSRegularExpression(pattern: #"(\d+)(?:st|nd|rd|th)"#) {
+                    admStr = ordRegex.stringByReplacingMatches(in: admStr, range: NSRange(location: 0, length: (admStr as NSString).length), withTemplate: "$1")
+                }
+                admStr = admStr.replacingOccurrences(of: ",", with: "")
+                let formats = ["dd MMMM yyyy", "dd/MM/yyyy", "dd-MM-yyyy", "dd MMM yyyy", "yyyy-MM-dd"]
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_GB")
+                for fmt in formats {
+                    formatter.dateFormat = fmt
+                    if let date = formatter.date(from: admStr.trimmingCharacters(in: .whitespaces)) {
+                        formData.admissionDate = date
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    /// Populate GPR form data from parsed report sections
+    private func populateFromReport(_ sections: [GPRSection: String]) {
+        print("[GPR iOS] populateFromReport: \(sections.count) sections")
+        isReportMode = true
+
+        // Clear existing imported entries
+        formData.psychiatricHistoryImported.removeAll()
+        formData.riskImportedEntries.removeAll()
+        formData.backgroundImportedEntries.removeAll()
+        formData.medicalHistoryImported.removeAll()
+        formData.substanceUseImported.removeAll()
+        formData.forensicHistoryImported.removeAll()
+        formData.medicationImported.removeAll()
+        formData.diagnosisImported.removeAll()
+        formData.legalCriteriaImported.removeAll()
+        formData.strengthsImported.removeAll()
+        formData.circumstancesImported.removeAll()
+        formData.clerkingNotes.removeAll()
+        formData.admissionsTableData.removeAll()
+
+        func makeEntry(_ text: String) -> GPRImportedEntry {
+            GPRImportedEntry(date: nil, text: text, snippet: String(text.prefix(200)), categories: ["Report"])
+        }
+
+        for (section, text) in sections {
+            guard !text.isEmpty else { continue }
+
+            switch section {
+            case .patientDetails:
+                extractPatientDetailsFromReport(text)
+
+            case .reportBasedOn:
+                generatedTexts[.reportBasedOn] = text
+                // Tick source checkboxes by keyword
+                let lower = text.lowercased()
+                if lower.contains("medical") || lower.contains("doctor") { formData.sourceMedicalReports = true }
+                if lower.contains("nurs") { formData.sourceNursingInterviews = true }
+                if lower.contains("patient") || lower.contains("interview") { formData.sourcePatientInterviews = true }
+                if lower.contains("psycholog") { formData.sourcePsychologyReports = true }
+                if lower.contains("social") { formData.sourceSocialWorkReports = true }
+                if lower.contains("occupational") || lower.contains("o.t") || lower.contains(" ot ") { formData.sourceOTReports = true }
+                if lower.contains("placement") || lower.contains("current") { formData.sourceCurrentPlacementNotes = true }
+
+            case .circumstances:
+                formData.circumstancesImported.append(makeEntry(text))
+
+            case .background:
+                formData.backgroundImportedEntries.append(makeEntry(text))
+
+            case .medicalHistory:
+                formData.medicalHistoryImported.append(makeEntry(text))
+
+            case .psychiatricHistory:
+                formData.psychiatricHistoryImported.append(makeEntry(text))
+
+            case .risk:
+                formData.riskImportedEntries.append(makeEntry(text))
+
+            case .substanceUse:
+                formData.substanceUseImported.append(makeEntry(text))
+
+            case .forensicHistory:
+                formData.forensicHistoryImported.append(makeEntry(text))
+
+            case .medication:
+                formData.medicationImported.append(makeEntry(text))
+
+            case .diagnosis:
+                formData.diagnosisImported.append(makeEntry(text))
+                // Extract ICD-10 codes
+                let extractions = ICD10Diagnosis.extractFromText(text)
+                if extractions.count > 0 { formData.diagnosis1ICD10 = extractions[0].diagnosis }
+                if extractions.count > 1 { formData.diagnosis2ICD10 = extractions[1].diagnosis }
+                if extractions.count > 2 { formData.diagnosis3ICD10 = extractions[2].diagnosis }
+
+            case .legalCriteria:
+                formData.legalCriteriaImported.append(makeEntry(text))
+
+            case .strengths:
+                formData.strengthsImported.append(makeEntry(text))
+
+            case .signature:
+                // Extract clinician name
+                if let nameRegex = try? NSRegularExpression(pattern: #"(?:Name|Signed|Clinician)[:\s]+(.+?)(?:\n|$)"#, options: .caseInsensitive) {
+                    let nsText = text as NSString
+                    if let match = nameRegex.firstMatch(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                        formData.signatureName = nsText.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+                    }
+                }
+            }
+        }
+
+        print("[GPR iOS] populateFromReport complete: \(sections.count) sections mapped")
     }
 }
 
