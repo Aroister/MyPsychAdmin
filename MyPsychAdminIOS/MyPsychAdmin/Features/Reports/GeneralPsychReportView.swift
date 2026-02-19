@@ -88,11 +88,23 @@ struct GeneralPsychReportView: View {
         }
     }
 
-    // No persistence - data only exists for current session
+    /// Session cache — persists GPR state across sheet open/close cycles
+    private final class SessionCache {
+        static let shared = SessionCache()
+        var formData: GPRFormData?
+        var generatedTexts: [GPRSection: String]?
+        var manualNotes: [GPRSection: String]?
+        var isReportMode = false
+        var hasPopulatedFromSharedData = false
+    }
+
     init() {
-        _formData = State(initialValue: GPRFormData())
-        _generatedTexts = State(initialValue: [:])
-        _manualNotes = State(initialValue: [:])
+        let cache = SessionCache.shared
+        _formData = State(initialValue: cache.formData ?? GPRFormData())
+        _generatedTexts = State(initialValue: cache.generatedTexts ?? [:])
+        _manualNotes = State(initialValue: cache.manualNotes ?? [:])
+        _isReportMode = State(initialValue: cache.isReportMode)
+        _hasPopulatedFromSharedData = State(initialValue: cache.hasPopulatedFromSharedData)
     }
 
     var body: some View {
@@ -165,6 +177,15 @@ struct GeneralPsychReportView: View {
                 populateFromClinicalNotesAsync(sharedData.notes)
                 hasPopulatedFromSharedData = true
             }
+        }
+        .onDisappear {
+            // Save state to session cache so it persists across sheet open/close
+            let cache = SessionCache.shared
+            cache.formData = formData
+            cache.generatedTexts = generatedTexts
+            cache.manualNotes = manualNotes
+            cache.isReportMode = isReportMode
+            cache.hasPopulatedFromSharedData = hasPopulatedFromSharedData
         }
         .onReceive(sharedData.notesDidChange) { notes in
             if !notes.isEmpty && !isReportMode {
@@ -272,23 +293,75 @@ struct GeneralPsychReportView: View {
     }
 
     private func exportDOCX() {
-        syncCardTextsToFormData()
-        validationErrors = formData.validate()
-        guard validationErrors.isEmpty else { return }
-
         isExporting = true
         exportError = nil
 
-        // TODO: Implement GPR DOCX export
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            isExporting = false
-            exportError = "Export not yet implemented"
+        // Collect section content keyed by GPRSection rawValue
+        var sectionContent: [String: String] = [:]
+        for section in GPRSection.allCases {
+            let generated = generatedTexts[section] ?? ""
+            let manual = manualNotes[section] ?? ""
+            let text: String
+            if generated.isEmpty && manual.isEmpty {
+                text = ""
+            } else if generated.isEmpty {
+                text = manual
+            } else if manual.isEmpty {
+                text = generated
+            } else {
+                text = generated + "\n\n" + manual
+            }
+            sectionContent[section.rawValue] = text
         }
-    }
 
-    private func syncCardTextsToFormData() {
-        // Sync card text content back to form data for export
-        // This would map the generated + manual text to appropriate fields
+        // Capture form state for background thread
+        let patientName = formData.patientName
+        let patientDOB = formData.patientDOB
+        let patientGender = formData.patientGender
+        let mhaSec = formData.mhaSection
+        let location = formData.currentLocation
+        let reportBy = formData.reportBy.isEmpty ? formData.signatureName : formData.reportBy
+        let reportDate = Date()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let exporter = GPRDOCXExporter(
+                sectionContent: sectionContent,
+                patientName: patientName,
+                patientDOB: patientDOB,
+                patientGender: patientGender,
+                mhaSection: mhaSec,
+                currentLocation: location,
+                reportBy: reportBy,
+                reportDate: reportDate
+            )
+            let data = exporter.generateDOCX()
+
+            DispatchQueue.main.async {
+                isExporting = false
+
+                guard let docxData = data else {
+                    exportError = "Failed to generate document"
+                    return
+                }
+
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+                let timestamp = dateFormatter.string(from: Date())
+                let safeName = patientName.replacingOccurrences(of: " ", with: "_")
+                let filename = "GPR_\(safeName)_\(timestamp).docx"
+
+                let tempDir = FileManager.default.temporaryDirectory
+                let fileURL = tempDir.appendingPathComponent(filename)
+
+                do {
+                    try docxData.write(to: fileURL)
+                    docxURL = fileURL
+                    showShareSheet = true
+                } catch {
+                    exportError = "Failed to save: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 
     // MARK: - Import Handling
@@ -1927,85 +2000,154 @@ struct GeneralPsychReportView: View {
         ("patient details", .patientDetails),
         ("patient information", .patientDetails),
         ("personal details", .patientDetails),
+        ("basic information", .patientDetails),
+        ("demographic details", .patientDetails),
+        ("demographic information", .patientDetails),
         // Report based on
         ("sources of information", .reportBasedOn),
         ("report based on", .reportBasedOn),
         ("documents reviewed", .reportBasedOn),
+        ("knowledge of patient", .reportBasedOn),
+        ("information considered", .reportBasedOn),
+        ("information reviewed", .reportBasedOn),
         ("informant", .reportBasedOn),
-        // Circumstances
+        // Circumstances — specific before generic
+        ("circumstances of current admission", .circumstances),
+        ("circumstances of this admission", .circumstances),
         ("circumstances of admission", .circumstances),
         ("circumstances to this admission", .circumstances),
-        ("presenting complaint", .circumstances),
+        ("circumstances leading to admission", .circumstances),
+        ("circumstances leading to", .circumstances),
         ("history of presenting complaint", .circumstances),
+        ("presenting complaint", .circumstances),
+        ("presenting problems", .circumstances),
+        ("presenting difficulties", .circumstances),
+        ("reason for referral", .circumstances),
+        ("reason for admission", .circumstances),
+        ("referral information", .circumstances),
         ("current admission", .circumstances),
         ("current episode", .circumstances),
-        // Background
+        // Background — specific compound headings first
+        ("family history and personal history", .background),
+        ("family and personal history", .background),
         ("background information", .background),
         ("background history", .background),
+        ("background", .background),
         ("personal history", .background),
         ("family history", .background),
         ("social history", .background),
+        ("social circumstances", .background),
         ("developmental history", .background),
         ("early history", .background),
-        // Medical history (before generic "history")
+        ("educational history", .background),
+        ("occupational history", .background),
+        ("employment history", .background),
+        ("relationship history", .background),
+        ("premorbid personality", .background),
+        // Medical history — specific before generic
         ("past medical history", .medicalHistory),
         ("medical history", .medicalHistory),
         ("physical health", .medicalHistory),
-        // Psychiatric history
+        ("physical health history", .medicalHistory),
+        ("physical examination", .medicalHistory),
+        ("physical investigations", .medicalHistory),
+        // Psychiatric history — specific before generic
         ("past psychiatric history", .psychiatricHistory),
+        ("previous psychiatric history", .psychiatricHistory),
         ("psychiatric history", .psychiatricHistory),
         ("mental health history", .psychiatricHistory),
-        ("previous psychiatric history", .psychiatricHistory),
-        // Risk
+        ("history of mental illness", .psychiatricHistory),
+        ("history of present illness", .psychiatricHistory),
+        ("history of current illness", .psychiatricHistory),
+        ("history and duration of admissions", .psychiatricHistory),
+        ("duration of admissions", .psychiatricHistory),
+        ("progress since admission", .psychiatricHistory),
+        ("progress on the ward", .psychiatricHistory),
+        ("progress in hospital", .psychiatricHistory),
+        ("progress during admission", .psychiatricHistory),
+        ("current mental state", .psychiatricHistory),
+        ("mental state examination", .psychiatricHistory),
+        ("mental state on examination", .psychiatricHistory),
+        // Risk — specific before generic
+        ("risk history", .risk),
         ("risk assessment", .risk),
         ("risk management", .risk),
         ("risk factors", .risk),
         ("risk to self", .risk),
         ("risk to others", .risk),
+        ("risk profile", .risk),
+        ("risk summary", .risk),
+        ("current risk", .risk),
         ("incidents of harm", .risk),
+        ("history of aggression", .risk),
+        ("history of violence", .risk),
         // Substance use
         ("history of substance use", .substanceUse),
+        ("history of substance misuse", .substanceUse),
+        ("substance use history", .substanceUse),
         ("substance use", .substanceUse),
         ("substance misuse", .substanceUse),
         ("drug and alcohol", .substanceUse),
         ("drugs and alcohol", .substanceUse),
+        ("alcohol and drugs", .substanceUse),
+        ("alcohol and substance", .substanceUse),
         ("alcohol use", .substanceUse),
         // Forensic history
         ("forensic history", .forensicHistory),
         ("offending history", .forensicHistory),
+        ("offending behaviour", .forensicHistory),
         ("index offence", .forensicHistory),
         ("criminal history", .forensicHistory),
-        // Medication
+        ("legal history", .forensicHistory),
+        ("convictions", .forensicHistory),
+        // Medication — specific before generic
         ("current medication", .medication),
         ("medication history", .medication),
         ("prescribed medication", .medication),
         ("pharmacological treatment", .medication),
+        ("drug treatment", .medication),
+        ("current treatment", .medication),
         ("medication", .medication),
-        // Diagnosis
+        ("treatment plan", .medication),
+        // Diagnosis — specific before generic
+        ("current diagnosis", .diagnosis),
+        ("principal diagnosis", .diagnosis),
+        ("diagnostic formulation", .diagnosis),
+        ("clinical impression", .diagnosis),
+        ("differential diagnosis", .diagnosis),
         ("mental disorder", .diagnosis),
         ("diagnoses", .diagnosis),
         ("diagnosis", .diagnosis),
         ("formulation", .diagnosis),
-        ("mental state examination", .diagnosis),
-        ("current mental state", .diagnosis),
-        // Legal criteria
+        // Legal criteria — specific before generic
         ("legal criteria", .legalCriteria),
         ("statutory criteria", .legalCriteria),
         ("criteria for detention", .legalCriteria),
+        ("criteria for continued detention", .legalCriteria),
+        ("case for detention", .legalCriteria),
+        ("case for maintaining", .legalCriteria),
+        ("summary of case", .legalCriteria),
+        ("relevance of mca", .legalCriteria),
         ("mental capacity", .legalCriteria),
+        ("capacity", .legalCriteria),
+        ("opinion and recommendations", .legalCriteria),
         ("recommendations", .legalCriteria),
         ("opinion", .legalCriteria),
         ("conclusion", .legalCriteria),
+        ("any other relevant information", .legalCriteria),
         // Strengths
+        ("patient's strengths", .strengths),
         ("strengths and positive factors", .strengths),
         ("strengths", .strengths),
         ("positive factors", .strengths),
         ("protective factors", .strengths),
         // Signature
+        ("name of author", .signature),
+        ("name of clinician", .signature),
+        ("name of responsible clinician", .signature),
         ("signature", .signature),
         ("signed", .signature),
         ("declaration", .signature),
-        ("name of clinician", .signature),
     ]
 
     /// Maps T131 numbered questions (1-24) to GPR sections
@@ -2134,9 +2276,10 @@ struct GeneralPsychReportView: View {
 
     /// Parse a GPR report text into sections. Tries numbered format first, falls back to heading-based.
     private func parseGPRReportSections(from text: String) -> [GPRSection: String] {
-        // Mode A: Try T131 numbered sections
+        // Mode A: Try T131 numbered sections — require at least 6 sections
+        // to avoid false triggers on short numbered lists (e.g. 4-item statutory criteria)
         let numbered = parseNumberedSections(from: text)
-        if numbered.count >= 3 {
+        if numbered.count >= 6 {
             return consolidateNumberedSections(numbered)
         }
         // Mode B: Heading-based detection
@@ -2231,55 +2374,127 @@ struct GeneralPsychReportView: View {
         return result
     }
 
-    /// Parse heading-based sections from generic/narrative reports
+    /// Parse heading-based sections from generic/narrative reports.
+    /// Works line-by-line to detect headings using multiple heuristics:
+    /// - Heading line must be short (< 150 chars)
+    /// - Pattern must be significant portion of line (or line < 80 chars)
+    /// - Rejects mid-sentence PDF wraps (pattern followed by comma)
+    /// - Rejects table labels (heading must be preceded by a blank line)
+    /// Finds ALL occurrences so repeated headings (e.g. two "STATUTORY CRITERIA") are captured.
     private func parseHeadingSections(from text: String) -> [GPRSection: String] {
-        // Find all heading positions — track earliest position per section
-        // Use case-insensitive search on original text to avoid Unicode position misalignment
-        var bestPerSection: [GPRSection: (position: String.Index, endOfPattern: String.Index)] = [:]
+        // Normalize line endings (\r\n → \n, \r → \n)
+        let normalizedText = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+        let lines = normalizedText.components(separatedBy: "\n")
 
-        for (pattern, section) in Self.gprHeadingPatterns {
-            if let range = text.range(of: pattern, options: .caseInsensitive) {
-                if let existing = bestPerSection[section] {
-                    // Keep the earliest occurrence for this section
-                    if range.lowerBound < existing.position {
-                        bestPerSection[section] = (position: range.lowerBound, endOfPattern: range.upperBound)
-                    }
-                } else {
-                    bestPerSection[section] = (position: range.lowerBound, endOfPattern: range.upperBound)
+        struct HeadingMatch {
+            let lineIndex: Int
+            let section: GPRSection
+            let patternLength: Int
+        }
+
+        // Step 1: Find heading lines
+        var headingMatches: [HeadingMatch] = []
+
+        for (i, line) in lines.enumerated() {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            guard trimmed.count < 150 else { continue } // Real headings are short
+
+            let lower = trimmed.lowercased()
+
+            // Check if line is ALL CAPS (strong heading indicator)
+            let isAllCaps = trimmed.count > 5
+                && trimmed.rangeOfCharacter(from: .letters) != nil
+                && trimmed.uppercased() == trimmed
+
+            // Multi-section check: if this line matches patterns from 2+ different
+            // sections, it's likely a table header row (e.g. "Current diagnosis Current medication Name of care")
+            var sectionsOnLine = Set<GPRSection>()
+            for (pattern, section) in Self.gprHeadingPatterns {
+                if lower.contains(pattern) {
+                    sectionsOnLine.insert(section)
                 }
+            }
+            if sectionsOnLine.count > 1 {
+                continue // Table header line — skip
+            }
+
+            // Try to match heading patterns — keep the longest/most specific match
+            var bestMatch: (pattern: String, section: GPRSection)? = nil
+
+            for (pattern, section) in Self.gprHeadingPatterns {
+                guard lower.contains(pattern) else { continue }
+
+                // Pattern should be significant portion of line, or line is short
+                let ratio = Double(pattern.count) / Double(trimmed.count)
+                guard trimmed.count < 80 || ratio > 0.25 else { continue }
+
+                // After the pattern, should NOT start with comma (mid-sentence PDF wrap)
+                if let pRange = lower.range(of: pattern) {
+                    let after = String(lower[pRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if after.hasPrefix(",") { continue }
+                }
+
+                // Keep longest match
+                if bestMatch == nil || pattern.count > bestMatch!.pattern.count {
+                    bestMatch = (pattern, section)
+                }
+            }
+
+            if let match = bestMatch {
+                // Pattern-start-position check: ANY matching pattern for the same section
+                // should appear near the start of the line (within first 5 chars) unless ALL CAPS.
+                // This filters lines like "Other factors you consider relevant To include
+                // family and personal history as needed" where patterns appear mid-line.
+                // We check ALL patterns (not just best match) because compound headings like
+                // "Family history and personal history" have "family history" at position 0
+                // even though best match "personal history" is at position 19.
+                if !isAllCaps {
+                    var anyPatternNearStart = false
+                    for (p, s) in Self.gprHeadingPatterns {
+                        guard s == match.section else { continue }
+                        if let pRange = lower.range(of: p) {
+                            let pos = lower.distance(from: lower.startIndex, to: pRange.lowerBound)
+                            if pos <= 5 {
+                                anyPatternNearStart = true
+                                break
+                            }
+                        }
+                    }
+                    if !anyPatternNearStart {
+                        continue
+                    }
+                }
+
+                headingMatches.append(HeadingMatch(lineIndex: i, section: match.section, patternLength: match.pattern.count))
             }
         }
 
-        var headingPositions = bestPerSection.map { (section, info) in
-            (position: info.position, section: section, endOfPattern: info.endOfPattern)
-        }
-
-        // Sort by position
-        headingPositions.sort { $0.position < $1.position }
-
-        guard !headingPositions.isEmpty else {
-            print("[GPR iOS] No heading positions found")
+        guard !headingMatches.isEmpty else {
+            print("[GPR iOS] No heading lines found")
             return [:]
         }
 
-        // Extract text between consecutive heading positions
+        print("[GPR iOS] Found \(headingMatches.count) heading lines")
+
+        // Step 2: Extract text between heading lines, merge by section
         var result: [GPRSection: String] = [:]
 
-        for (i, heading) in headingPositions.enumerated() {
-            let startIdx = heading.endOfPattern
-            let endIdx: String.Index
-            if i + 1 < headingPositions.count {
-                endIdx = headingPositions[i + 1].position
+        for (j, heading) in headingMatches.enumerated() {
+            let contentStartLine = heading.lineIndex + 1
+            let contentEndLine: Int
+            if j + 1 < headingMatches.count {
+                contentEndLine = headingMatches[j + 1].lineIndex
             } else {
-                endIdx = text.endIndex
+                contentEndLine = lines.count
             }
 
-            guard startIdx < endIdx else { continue }
+            guard contentStartLine < contentEndLine else { continue }
 
-            var sectionText = String(text[startIdx..<endIdx])
-            // Strip leading colon/whitespace
-            sectionText = sectionText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if sectionText.hasPrefix(":") {
+            var sectionText = lines[contentStartLine..<contentEndLine].joined(separator: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // Strip leading colon/semicolon/period
+            while sectionText.hasPrefix(":") || sectionText.hasPrefix(".") || sectionText.hasPrefix(";") {
                 sectionText = String(sectionText.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
             }
 
@@ -2550,7 +2765,61 @@ struct GeneralPsychReportView: View {
             }
         }
 
+        // Post-processing: extract diagnosis and medication from patient details
+        // when they don't have standalone headings
+        if sections[.diagnosis] == nil, let pdText = sections[.patientDetails] {
+            extractDiagnosisFromPatientDetails(pdText)
+        }
+        if sections[.medication] == nil, let pdText = sections[.patientDetails] {
+            extractMedicationFromPatientDetails(pdText)
+        }
+
         print("[GPR iOS] populateFromReport complete: \(sections.count) sections mapped")
+    }
+
+    /// Extract diagnosis from patient details table when no standalone heading exists
+    private func extractDiagnosisFromPatientDetails(_ text: String) {
+        let lines = text.components(separatedBy: .newlines)
+        // Look for ICD-10 code pattern (F##.# or F##) in any line
+        let icdRegex = try? NSRegularExpression(pattern: #"(F\d{2}(?:\.\d{1,2})?)\s+(.+)"#)
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if let regex = icdRegex,
+               let match = regex.firstMatch(in: trimmed, range: NSRange(location: 0, length: (trimmed as NSString).length)) {
+                let diagText = trimmed
+                formData.diagnosisImported.append(
+                    GPRImportedEntry(date: nil, text: diagText, snippet: String(diagText.prefix(200)), categories: ["Report"])
+                )
+                // Extract ICD-10 codes
+                let extractions = ICD10Diagnosis.extractFromText(diagText)
+                if extractions.count > 0 { formData.diagnosis1ICD10 = extractions[0].diagnosis }
+                if extractions.count > 1 { formData.diagnosis2ICD10 = extractions[1].diagnosis }
+                if extractions.count > 2 { formData.diagnosis3ICD10 = extractions[2].diagnosis }
+                break
+            }
+        }
+    }
+
+    /// Extract medication from patient details table when no standalone heading exists
+    private func extractMedicationFromPatientDetails(_ text: String) {
+        let lines = text.components(separatedBy: .newlines)
+        // Look for lines that contain drug names with dose patterns (mg, mcg, units)
+        let medRegex = try? NSRegularExpression(pattern: #"\d+\s*(?:mg|mcg|microgram|unit|ml)"#, options: .caseInsensitive)
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+            // Skip header lines
+            let lower = trimmed.lowercased()
+            if lower.contains("current medication") || lower.contains("current diagnosis") { continue }
+            // Check if this line looks like a medication (contains dose)
+            if let regex = medRegex,
+               regex.firstMatch(in: trimmed, range: NSRange(location: 0, length: (trimmed as NSString).length)) != nil {
+                formData.medicationImported.append(
+                    GPRImportedEntry(date: nil, text: trimmed, snippet: String(trimmed.prefix(200)), categories: ["Report"])
+                )
+                break
+            }
+        }
     }
 }
 
@@ -2835,7 +3104,7 @@ struct GPRPopupView: View {
 
             // Extracted PPH Sections
             if !formData.psychiatricHistoryImported.isEmpty {
-                GPRCollapsibleSection(title: "Extracted Psychiatric History (\(formData.psychiatricHistoryImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.psychiatricHistoryImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.psychiatricHistoryImported)
                 }
             }
@@ -2873,7 +3142,7 @@ struct GPRPopupView: View {
 
             // Imported Data
             if !formData.riskImportedEntries.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.riskImportedEntries.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.riskImportedEntries.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.riskImportedEntries)
                 }
             }
@@ -3115,7 +3384,7 @@ struct GPRPopupView: View {
 
             // Imported Notes
             if !formData.backgroundImportedEntries.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.backgroundImportedEntries.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.backgroundImportedEntries.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.backgroundImportedEntries)
                 }
             }
@@ -3385,7 +3654,7 @@ struct GPRPopupView: View {
 
             // Imported Notes
             if !formData.substanceUseImported.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.substanceUseImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.substanceUseImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.substanceUseImported)
                 }
             }
@@ -3524,7 +3793,7 @@ struct GPRPopupView: View {
 
             // Imported medication mentions from notes (matches desktop "Extracted Notes" section)
             if !formData.medicationImported.isEmpty {
-                GPRCollapsibleSection(title: "Imported from Notes (\(formData.medicationImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.medicationImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.medicationImported)
                 }
             }
@@ -3565,7 +3834,7 @@ struct GPRPopupView: View {
             }
 
             if !formData.diagnosisImported.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.diagnosisImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.diagnosisImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.diagnosisImported)
                 }
             }
@@ -3589,7 +3858,7 @@ struct GPRPopupView: View {
             )
 
             if !formData.legalCriteriaImported.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.legalCriteriaImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.legalCriteriaImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.legalCriteriaImported)
                 }
             }
@@ -3626,7 +3895,7 @@ struct GPRPopupView: View {
             }
 
             if !formData.strengthsImported.isEmpty {
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.strengthsImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.strengthsImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.strengthsImported)
                 }
             }
@@ -3656,7 +3925,7 @@ struct GPRPopupView: View {
                     period: .lastAdmission
                 )
 
-                GPRCollapsibleSection(title: "Imported Notes (\(formData.circumstancesImported.count))", color: .yellow) {
+                GPRCollapsibleSection(title: "Imported Data (\(formData.circumstancesImported.count))", color: .yellow) {
                     GPRImportedEntriesList(entries: $formData.circumstancesImported)
                 }
             }
@@ -3770,7 +4039,7 @@ struct GPRPopupView: View {
         let selected = formData.psychiatricHistoryImported.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("FROM NOTES:")
+            parts.append("")
             let formatter = DateFormatter()
             formatter.dateFormat = "dd/MM/yyyy"
             for entry in selected {
@@ -3830,7 +4099,7 @@ struct GPRPopupView: View {
         let selected = formData.riskImportedEntries.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("FROM NOTES:")
+            parts.append("")
             let formatter = DateFormatter()
             formatter.dateFormat = "dd/MM/yyyy"
             for entry in selected {
@@ -4000,7 +4269,7 @@ struct GPRPopupView: View {
         let selected = formData.backgroundImportedEntries.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("FROM NOTES:")
+            parts.append("")
             for entry in selected { parts.append(entry.text) }
         }
 
@@ -4099,7 +4368,7 @@ struct GPRPopupView: View {
         let selected = formData.medicalHistoryImported.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("FROM NOTES:")
+            parts.append("")
             for entry in selected { parts.append(entry.text) }
         }
 
@@ -4209,7 +4478,7 @@ struct GPRPopupView: View {
         let selected = formData.substanceUseImported.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("FROM NOTES:")
+            parts.append("")
             for entry in selected { parts.append(entry.text) }
         }
 
@@ -4297,7 +4566,7 @@ struct GPRPopupView: View {
         let selected = formData.medicationImported.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("From notes:")
+            parts.append("")
             for entry in selected {
                 parts.append("• \(entry.text)")
             }
@@ -4307,8 +4576,9 @@ struct GPRPopupView: View {
     }
 
     private func generateDiagnosisText() -> String {
-        var diagnoses: [String] = []
+        var parts: [String] = []
 
+        var diagnoses: [String] = []
         // Primary diagnosis - check ICD-10 selection first, then custom text
         if formData.diagnosis1ICD10 != .none {
             diagnoses.append(formData.diagnosis1ICD10.rawValue)
@@ -4336,20 +4606,44 @@ struct GPRPopupView: View {
             diagnoses.append(d)
         }
 
-        if diagnoses.isEmpty { return "" }
+        if !diagnoses.isEmpty {
+            let verb = diagnoses.count == 1 ? "is" : "are"
+            let noun = diagnoses.count == 1 ? "a mental disorder" : "mental disorders"
+            parts.append("\(diagnoses.joined(separator: ", ")) \(verb) \(noun) as defined by the Mental Health Act.")
+        }
 
-        let verb = diagnoses.count == 1 ? "is" : "are"
-        let noun = diagnoses.count == 1 ? "a mental disorder" : "mental disorders"
-        return "\(diagnoses.joined(separator: ", ")) \(verb) \(noun) as defined by the Mental Health Act."
+        // Selected imported entries
+        let selected = formData.diagnosisImported.filter { $0.selected }
+        if !selected.isEmpty {
+            for entry in selected {
+                parts.append(entry.text)
+            }
+        }
+
+        return parts.joined(separator: "\n\n")
     }
 
     private func generateLegalCriteriaText() -> String {
+        var parts: [String] = []
+
         // Use the gender-sensitive generated text from ClinicalReasonsData (same as A3)
         let text = formData.legalClinicalReasons.generateTextWithPatient(combinedPatientInfo)
-        if text.isEmpty {
+        if !text.isEmpty {
+            parts.append(text)
+        }
+
+        // Selected imported entries
+        let selected = formData.legalCriteriaImported.filter { $0.selected }
+        if !selected.isEmpty {
+            for entry in selected {
+                parts.append(entry.text)
+            }
+        }
+
+        if parts.isEmpty {
             return "Select criteria above to generate clinical text..."
         }
-        return text
+        return parts.joined(separator: "\n\n")
     }
 
     private func generateStrengthsText() -> String {
@@ -4388,7 +4682,7 @@ struct GPRPopupView: View {
         let selected = formData.strengthsImported.filter { $0.selected }
         if !selected.isEmpty {
             if !parts.isEmpty { parts.append("") }
-            parts.append("FROM NOTES:")
+            parts.append("")
             for entry in selected { parts.append(entry.text) }
         }
 

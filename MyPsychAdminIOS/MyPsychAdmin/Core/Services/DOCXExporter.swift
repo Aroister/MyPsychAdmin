@@ -8488,3 +8488,179 @@ class SCTDOCXExporter {
         return digitsOnly
     }
 }
+
+// MARK: - GPR DOCX Exporter
+
+/// Generates a plain Word document from General Psychiatric Report section content.
+class GPRDOCXExporter {
+    private let sectionContent: [String: String]
+    private let patientName: String
+    private let patientDOB: Date?
+    private let patientGender: Gender
+    private let mhaSection: String
+    private let currentLocation: String
+    private let reportBy: String
+    private let reportDate: Date
+
+    init(sectionContent: [String: String],
+         patientName: String,
+         patientDOB: Date?,
+         patientGender: Gender,
+         mhaSection: String,
+         currentLocation: String,
+         reportBy: String,
+         reportDate: Date) {
+        self.sectionContent = sectionContent
+        self.patientName = patientName
+        self.patientDOB = patientDOB
+        self.patientGender = patientGender
+        self.mhaSection = mhaSection
+        self.currentLocation = currentLocation
+        self.reportBy = reportBy
+        self.reportDate = reportDate
+    }
+
+    func generateDOCX() -> Data? {
+        createDOCXArchive(documentXML: buildDocumentXML())
+    }
+
+    private func buildDocumentXML() -> String {
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "dd/MM/yyyy"
+        var body = ""
+
+        body += gprParagraph("General Psychiatric Report", bold: true, size: 32, alignment: "center")
+        body += gprParagraph("", size: 12)
+
+        body += gprBorderedField("Name:", patientName)
+        if let dob = patientDOB { body += gprBorderedField("Date of Birth:", dateFmt.string(from: dob)) }
+        body += gprBorderedField("Gender:", patientGender.rawValue)
+        if !mhaSection.isEmpty { body += gprBorderedField("MHA Status:", mhaSection) }
+        if !currentLocation.isEmpty { body += gprBorderedField("Location:", currentLocation) }
+        body += gprBorderedField("Report By:", reportBy)
+        body += gprBorderedField("Date of Report:", dateFmt.string(from: reportDate))
+        body += gprParagraph("", size: 12)
+
+        let sections: [(key: String, heading: String)] = [
+            ("1. Patient Details", "1. Patient Details"),
+            ("2. Report Based On", "2. Report Based On"),
+            ("3. Circumstances to this Admission", "3. Circumstances to this Admission"),
+            ("4. Background Information", "4. Background Information"),
+            ("5. Past Medical History", "5. Past Medical History"),
+            ("6. Past Psychiatric History", "6. Past Psychiatric History"),
+            ("7. Risk", "7. Risk"),
+            ("8. History of Substance Use", "8. History of Substance Use"),
+            ("9. Forensic History", "9. Forensic History"),
+            ("10. Medication", "10. Medication"),
+            ("11. Mental Disorder", "11. Mental Disorder"),
+            ("12. Legal Criteria for Detention", "12. Legal Criteria for Detention"),
+            ("13. Strengths", "13. Strengths"),
+            ("14. Signature", "14. Signature"),
+        ]
+
+        for (key, heading) in sections {
+            let content = sectionContent[key] ?? ""
+            guard !content.isEmpty else { continue }
+            body += gprParagraph(heading, bold: true, size: 24, underline: true)
+            body += gprParagraph(content, size: 22)
+            body += gprParagraph("", size: 12)
+        }
+
+        return gprWrapInDocumentXML(body: body)
+    }
+
+    private func gprParagraph(_ text: String, bold: Bool = false, size: Int = 24,
+                              underline: Bool = false, alignment: String = "left") -> String {
+        let escaped = gprEscapeXML(text)
+        var rPr = "<w:rPr><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/><w:sz w:val=\"\(size)\"/><w:szCs w:val=\"\(size)\"/>"
+        if bold { rPr += "<w:b/>" }
+        if underline { rPr += "<w:u w:val=\"single\"/>" }
+        rPr += "</w:rPr>"
+        var pPr = "<w:pPr>"
+        if alignment == "center" { pPr += "<w:jc w:val=\"center\"/>" }
+        pPr += "<w:spacing w:after=\"120\"/></w:pPr>"
+        let lines = escaped.components(separatedBy: "\n")
+        var runs = ""
+        for (idx, line) in lines.enumerated() {
+            runs += "<w:r>\(rPr)<w:t xml:space=\"preserve\">\(line)</w:t>"
+            if idx < lines.count - 1 { runs += "<w:br/>" }
+            runs += "</w:r>"
+        }
+        return "<w:p>\(pPr)\(runs)</w:p>"
+    }
+
+    private func gprBorderedField(_ label: String, _ value: String) -> String {
+        let el = gprEscapeXML(label)
+        let ev = gprEscapeXML(value)
+        let lRPr = "<w:rPr><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/><w:b/><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/></w:rPr>"
+        let vRPr = "<w:rPr><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/></w:rPr>"
+        return "<w:p><w:pPr><w:pBdr><w:top w:val=\"single\" w:sz=\"4\" w:space=\"1\" w:color=\"auto\"/><w:left w:val=\"single\" w:sz=\"4\" w:space=\"4\" w:color=\"auto\"/><w:bottom w:val=\"single\" w:sz=\"4\" w:space=\"1\" w:color=\"auto\"/><w:right w:val=\"single\" w:sz=\"4\" w:space=\"4\" w:color=\"auto\"/></w:pBdr><w:spacing w:after=\"0\"/></w:pPr><w:r>\(lRPr)<w:t xml:space=\"preserve\">\(el) </w:t></w:r><w:r>\(vRPr)<w:t>\(ev)</w:t></w:r></w:p>"
+    }
+
+    private func gprEscapeXML(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
+
+    private func gprWrapInDocumentXML(body: String) -> String {
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><w:body>\(body)<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr></w:body></w:document>"
+    }
+
+    private func createDOCXArchive(documentXML: String) -> Data? {
+        gprCreateZIPArchive(files: [
+            ("[Content_Types].xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/></Types>"),
+            ("_rels/.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/></Relationships>"),
+            ("word/_rels/document.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"></Relationships>"),
+            ("word/document.xml", documentXML)
+        ])
+    }
+
+    private func gprCreateZIPArchive(files: [(String, String)]) -> Data? {
+        var zipData = Data()
+        var cd = Data()
+        var offset: UInt32 = 0
+        var count: UInt16 = 0
+        for (name, content) in files {
+            guard let nd = name.data(using: .utf8), let contentData = content.data(using: .utf8) else { continue }
+            let checksum = gprCRC32(contentData)
+            var lh = Data()
+            lh.append(contentsOf: [0x50,0x4B,0x03,0x04,0x14,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00])
+            lh.append(contentsOf: checksum)
+            lh.append(contentsOf: gprU32(UInt32(contentData.count)))
+            lh.append(contentsOf: gprU32(UInt32(contentData.count)))
+            lh.append(contentsOf: gprU16(UInt16(nd.count)))
+            lh.append(contentsOf: [0x00,0x00])
+            lh.append(nd); lh.append(contentData); zipData.append(lh)
+            var ce = Data()
+            ce.append(contentsOf: [0x50,0x4B,0x01,0x02,0x14,0x00,0x14,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00])
+            ce.append(contentsOf: checksum)
+            ce.append(contentsOf: gprU32(UInt32(contentData.count)))
+            ce.append(contentsOf: gprU32(UInt32(contentData.count)))
+            ce.append(contentsOf: gprU16(UInt16(nd.count)))
+            ce.append(contentsOf: [0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00])
+            ce.append(contentsOf: gprU32(offset)); ce.append(nd); cd.append(ce)
+            offset = UInt32(zipData.count); count += 1
+        }
+        let cdOff = UInt32(zipData.count); zipData.append(cd)
+        var er = Data()
+        er.append(contentsOf: [0x50,0x4B,0x05,0x06,0x00,0x00,0x00,0x00])
+        er.append(contentsOf: gprU16(count)); er.append(contentsOf: gprU16(count))
+        er.append(contentsOf: gprU32(UInt32(cd.count))); er.append(contentsOf: gprU32(cdOff))
+        er.append(contentsOf: [0x00,0x00]); zipData.append(er)
+        return zipData
+    }
+
+    private func gprU16(_ v: UInt16) -> [UInt8] { [UInt8(v & 0xFF), UInt8((v >> 8) & 0xFF)] }
+    private func gprU32(_ v: UInt32) -> [UInt8] {
+        [UInt8(v & 0xFF), UInt8((v >> 8) & 0xFF), UInt8((v >> 16) & 0xFF), UInt8((v >> 24) & 0xFF)]
+    }
+    private func gprCRC32(_ data: Data) -> [UInt8] {
+        var crc: UInt32 = 0xFFFFFFFF
+        let t: [UInt32] = (0..<256).map { i in var c = UInt32(i); for _ in 0..<8 { c = (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }; return c }
+        for b in data { crc = t[Int((crc ^ UInt32(b)) & 0xFF)] ^ (crc >> 8) }
+        return gprU32(crc ^ 0xFFFFFFFF)
+    }
+}
