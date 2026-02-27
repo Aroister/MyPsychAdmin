@@ -991,17 +991,25 @@ class LiveWorker(QThread):
 
     def _do_find_table(self):
         self._table_attempts = getattr(self, '_table_attempts', 0) + 1
-        self.log.emit(f"  Looking for 'Table' via OCR (attempt {self._table_attempts}) ...")
+        self.log.emit(f"  Looking for 'Table' via full-screen OCR (attempt {self._table_attempts}) ...")
 
-        # OCR the screen to find "Table" text in the context menu
-        if not self._scan():
+        # Context menu is a floating Java window OUTSIDE the container,
+        # so we must capture the full screen (not just the container region).
+        pix, png = capture_screen()
+        if not pix:
+            self._sleep(0.5); return
+        self._last_pix = pix
+        self.preview.emit(pix)
+        lines, err = ocr(png)
+        if err:
+            self.log.emit(f"  OCR error: {err[:120]}")
+        if not lines:
+            self.log.emit(f"  OCR returned 0 lines, retrying ...")
             self._sleep(0.5); return
 
-        tbl = ocr_find(self._ocr_lines, "Table")
+        tbl = ocr_find(lines, "Table")
         if tbl:
             self.log.emit(f"  Found 'Table' at ({int(tbl[0])}, {int(tbl[1])}) — clicking it")
-            bring_front(self.hwnd)
-            self._sleep(0.2)
             mclick(int(tbl[0]), int(tbl[1]))
             self._sleep(0.5)
             # Right arrow opens submenu, Enter selects first item (RTF/Word)
@@ -1917,6 +1925,11 @@ class EPREmbedPanel(QWidget):
                     "SystmOne/CareNotes window not found.\n"
                     "Open your EPR and try again, or drag [+] onto it.")
                 return
+
+        # Maximize MPA so S1 has enough room when embedded
+        top = self.window()
+        if top:
+            top.showMaximized()
 
         # Try to embed S1 inside MPA's container
         self._embed_window(self.hwnd)
