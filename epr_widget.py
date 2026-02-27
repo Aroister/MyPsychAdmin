@@ -334,6 +334,31 @@ def capture_screen():
     return pix, p
 
 # ==================================================================
+#  Screen-region capture (reliable — captures what's actually visible)
+# ==================================================================
+
+def capture_region(rx, ry, rw, rh):
+    """Capture a specific screen rectangle via BitBlt. Returns (QPixmap, png_path)."""
+    if rw <= 0 or rh <= 0: return None, None
+    hdc = user32.GetDC(0)
+    mdc = gdi32.CreateCompatibleDC(hdc)
+    bmp = gdi32.CreateCompatibleBitmap(hdc, rw, rh)
+    old = gdi32.SelectObject(mdc, bmp)
+    gdi32.BitBlt(mdc, 0, 0, rw, rh, hdc, rx, ry, SRCCOPY)
+    bi = BITMAPINFO(); bi.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+    bi.bmiHeader.biWidth = rw; bi.bmiHeader.biHeight = -rh
+    bi.bmiHeader.biPlanes = 1; bi.bmiHeader.biBitCount = 32
+    buf = ctypes.create_string_buffer(rw * rh * 4)
+    gdi32.GetDIBits(mdc, bmp, 0, rh, buf, ctypes.byref(bi), DIB_RGB_COLORS)
+    gdi32.SelectObject(mdc, old); gdi32.DeleteObject(bmp)
+    gdi32.DeleteDC(mdc); user32.ReleaseDC(0, hdc)
+    img = QImage(buf, rw, rh, rw * 4, QImage.Format.Format_RGB32).copy()
+    pix = QPixmap.fromImage(img)
+    if pix.isNull(): return None, None
+    p = os.path.join(tempfile.gettempdir(), "epr_capture.png"); pix.save(p, "PNG")
+    return pix, p
+
+# ==================================================================
 #  Window capture (works even when behind other windows)
 # ==================================================================
 
@@ -548,12 +573,13 @@ class LiveWorker(QThread):
     hide_overlay = Signal(bool)      # True=hide overlay for capture, False=show
     done = Signal(bool, str)
 
-    def __init__(self, hwnd, nhs, system, embedded=False):
+    def __init__(self, hwnd, nhs, system, embedded=False, container_hwnd=0):
         super().__init__()
         self.hwnd = hwnd
         self.nhs = nhs
         self.system = system  # SYS_S1 or SYS_CN
         self.embedded = embedded  # True = window reparented inside MyPsychAdmin
+        self.container_hwnd = container_hwnd  # HWND of the Qt container (for screen capture)
         self._stop = Event()
         self._overlay_event = Event()
         self.state = S_CAPTURE
@@ -663,15 +689,14 @@ class LiveWorker(QThread):
     def _scan(self, focus=True):
         """Capture target window and OCR it."""
         if self.embedded:
-            # Hide overlay so PrintWindow captures the real EPR content
-            self._overlay_event.clear()
-            self.hide_overlay.emit(True)
-            self._overlay_event.wait(timeout=0.5)
-            time.sleep(0.15)  # extra wait for DWM to composite without overlay
-            # Embedded mode: capture the reparented window directly
-            pix, png, (wx, wy) = capture_window(self.hwnd)
-            # Restore overlay
-            self.hide_overlay.emit(False)
+            # Embedded mode: S1 is a child of our container, visible on screen.
+            # Capture the container's screen region via BitBlt (reliable, no PrintWindow).
+            cl, ct, cr_x, cb = gwr(self.container_hwnd)
+            cw, ch = cr_x - cl, cb - ct
+            if cw <= 0 or ch <= 0:
+                self.log.emit(f"  Container has zero size ({cw}x{ch}), retrying ...")
+                return False
+            pix, png = capture_region(cl, ct, cw, ch)
             if not pix:
                 self.log.emit("  Capture failed, retrying ...")
                 return False
@@ -684,13 +709,15 @@ class LiveWorker(QThread):
             if not lines:
                 self.log.emit(f"  OCR returned 0 lines, retrying ...")
                 return False
-            # Convert window-relative coords to screen coords
-            self._ocr_lines = [(x + wx, y + wy, w, h, t) for x, y, w, h, t in lines]
+            # Convert region-relative coords to screen coords
+            self._ocr_lines = [(x + cl, y + ct, w, h, t) for x, y, w, h, t in lines]
             return True
         else:
-            # Foreground mode — capture just the S1 window (no bring_front needed,
-            # so S1 stays behind other windows and isn't visible on screen)
-            pix, png, (wx, wy) = capture_window(self.hwnd)
+            # Non-embedded fallback: bring S1 to front, capture full screen
+            if focus:
+                bring_front(self.hwnd)
+                time.sleep(0.3)
+            pix, png = capture_screen()
             if not pix:
                 self.log.emit("  Capture failed, retrying ...")
                 return False
@@ -703,8 +730,7 @@ class LiveWorker(QThread):
             if not lines:
                 self.log.emit(f"  OCR returned 0 lines, retrying ...")
                 return False
-            # Convert window-relative coords to screen coords
-            self._ocr_lines = [(x + wx, y + wy, w, h, t) for x, y, w, h, t in lines]
+            self._ocr_lines = lines
             return True
 
     # -- Focus helpers ---------------------------------------------------
@@ -1881,6 +1907,18 @@ class EPREmbedPanel(QWidget):
                     "Open your EPR and try again, or drag [+] onto it.")
                 return
 
+        # Try to embed S1 inside MPA's container
+        self._embed_window(self.hwnd)
+        embedded = getattr(self, '_embedded_ok', False)
+        container_hwnd = int(self._container.winId()) if embedded else 0
+
+        if embedded:
+            # S1 is now a child of our container — hide overlay so user sees S1 directly
+            self._overlay.hide()
+            self._addlog("Embedded mode: S1 visible inside MPA")
+        else:
+            self._addlog("Overlay mode: using screen capture fallback")
+
         self._addlog("=" * 40)
         self.go.setEnabled(False)
         self.stp.setEnabled(True)
@@ -1892,8 +1930,8 @@ class EPREmbedPanel(QWidget):
         self._ov_detail.setText(f"Automating {sys_name}")
         self._ov_log.clear()
         self.status.setStyleSheet("color:#b71c1c;font-size:10px;font-weight:bold;")
-        # Run in external (non-embedded) mode — no reparenting
-        self.worker = LiveWorker(self.hwnd, nhs, self._system, embedded=False)
+        self.worker = LiveWorker(self.hwnd, nhs, self._system,
+                                 embedded=embedded, container_hwnd=container_hwnd)
         self.worker.log.connect(self._addlog)
         self.worker.preview.connect(self._onprev)
         self.worker.state_changed.connect(self._onstate)
@@ -1957,7 +1995,9 @@ class EPREmbedPanel(QWidget):
             f"color:{'#66bb6a' if ok else '#ef5350'}; font-size:22px; font-weight:bold; background:transparent;")
         self._ov_detail.setText(msg)
         sys_type = getattr(self, '_detected_system', self._system)
-        # Release the embedded window back to desktop
+        # Show overlay again (for completion message) and release embedded window
+        self._overlay.show()
+        self._overlay.raise_()
         self._release_window()
         self.automation_done.emit(ok, msg, sys_type)
 
