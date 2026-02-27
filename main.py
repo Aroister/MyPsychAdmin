@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os, sys
  #import numpy  # required to force inclusion for PyInstaller
+import pandas             # must import before PySide6 to avoid six/shiboken conflict
+import matplotlib.pyplot  # must import before PySide6 to avoid six/shiboken conflict
 
 from license_manager import load_license
 from activation_dialog import ActivationDialog
@@ -65,77 +67,6 @@ from hcr20_form_page import HCR20FormPage
 
 
 # ============================================================
-# PATIENT DB SETUP DIALOG — choose location for patient DB
-# ============================================================
-class PatientDbSetupDialog(QDialog):
-    """Shown on first run (or when path is missing) to set the patient DB location."""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Patient Database Location")
-        self.setFixedSize(480, 200)
-        self.chosen_path = None
-
-        layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-
-        label = QLabel(
-            "Choose where to store the shared patient database.\n"
-            "For multi-user access, pick a folder on a shared/encrypted drive."
-        )
-        label.setWordWrap(True)
-        layout.addWidget(label)
-
-        from PySide6.QtWidgets import QLineEdit as _QLE, QFileDialog as _QFD
-        path_row = QHBoxLayout()
-        self.path_input = _QLE()
-        self.path_input.setPlaceholderText("e.g. /Volumes/ClinicDrive/MyPsychAdmin")
-        self.path_input.setReadOnly(True)
-        path_row.addWidget(self.path_input)
-
-        browse_btn = QPushButton("Browse...")
-        browse_btn.clicked.connect(self._browse)
-        path_row.addWidget(browse_btn)
-        layout.addLayout(path_row)
-
-        self.error_label = QLabel("")
-        self.error_label.setStyleSheet("color: red;")
-        layout.addWidget(self.error_label)
-
-        btn_layout = QHBoxLayout()
-        ok_btn = QPushButton("OK")
-        ok_btn.clicked.connect(self._accept)
-        skip_btn = QPushButton("Skip (local only)")
-        skip_btn.clicked.connect(self._use_local)
-        btn_layout.addWidget(skip_btn)
-        btn_layout.addWidget(ok_btn)
-        layout.addLayout(btn_layout)
-
-    def _browse(self):
-        from PySide6.QtWidgets import QFileDialog
-        folder = QFileDialog.getExistingDirectory(self, "Select Patient Database Folder")
-        if folder:
-            self.path_input.setText(folder)
-
-    def _use_local(self):
-        """Use the default local app data folder."""
-        from utils.resource_path import user_data_dir
-        self.chosen_path = os.path.join(user_data_dir(), PATIENT_DB_FILENAME)
-        self.accept()
-
-    def _accept(self):
-        folder = self.path_input.text().strip()
-        if not folder:
-            self.error_label.setText("Please select a folder.")
-            return
-        if not os.path.isdir(folder):
-            self.error_label.setText("Folder does not exist.")
-            return
-        self.chosen_path = os.path.join(folder, PATIENT_DB_FILENAME)
-        self.accept()
-
-
-# ============================================================
 # HOME PAGE BANNER
 # ============================================================
 class BannerHomePage(QWidget):
@@ -179,8 +110,8 @@ class MainWindow(QMainWindow):
         print(">>> MAINWINDOW INIT START")
 
         self.setWindowTitle("MyPsychAdmin")
-        self.resize(990, 720)  # Reduced by 10%
-        self.setMinimumSize(540, 360)  # Reduced by 10%
+        self.resize(880, 640)  # Reduced by 20% on Windows
+        self.setMinimumSize(480, 320)
 
         # Theme
         self.current_theme = load_theme()
@@ -353,15 +284,28 @@ class MainWindow(QMainWindow):
         if hasattr(self, "letter_page") and self.letter_page:
             print("[LETTER] Reusing existing LetterWriterPage")
         else:
-            print("[LETTER] Creating new LetterWriterPage")
-            self.letter_page = LetterWriterPage(parent=self)
-            self.stacked.addWidget(self.letter_page)
-            # Only inject data on first creation — page handles updates via SharedDataStore signals
-            notes = self.shared_store.notes if self.shared_store.has_notes() else []
-            self.letter_page.set_notes(notes)
-            print(f"[LETTER] Injected {len(notes)} notes from SharedDataStore")
-            if notes:
-                self.letter_page.auto_populate_from_notes()
+            try:
+                print("[LETTER] Creating new LetterWriterPage")
+                self.letter_page = LetterWriterPage(parent=self)
+                self.stacked.addWidget(self.letter_page)
+                # Only inject data on first creation — page handles updates via SharedDataStore signals
+                notes = self.shared_store.notes if self.shared_store.has_notes() else []
+                self.letter_page.set_notes(notes)
+                print(f"[LETTER] Injected {len(notes)} notes from SharedDataStore")
+                if notes:
+                    self.letter_page.auto_populate_from_notes()
+            except Exception as e:
+                import traceback
+                tb_str = traceback.format_exc()
+                print(f"[LETTER] FATAL: Failed to create LetterWriterPage: {e}\n{tb_str}")
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.critical(
+                    self,
+                    "Letter Page Error",
+                    f"Could not open the Clinic Letters page:\n\n{e}\n\n"
+                    f"Please report this error. Details:\n{tb_str[:500]}"
+                )
+                return
 
         # ------------------------------------------------------------
         # SHOW PAGE (always switch to letter page)
@@ -582,10 +526,11 @@ class MainWindow(QMainWindow):
         """Rebuild the Uploaded Docs dropdown on a letter toolbar."""
         menu = toolbar.upload_menu
         menu.clear()
+        self.shared_store.add_upload_action(menu, self, self.load_letter_from_file)
         if docs is None:
             docs = self.shared_store.get_uploaded_documents()
         if not docs:
-            action = menu.addAction("No documents uploaded")
+            action = menu.addAction("No documents uploaded yet")
             action.setEnabled(False)
         else:
             for doc in docs:
@@ -1178,20 +1123,20 @@ class MainWindow(QMainWindow):
         w = self.width()
 
         if w > 1500:
-            pad = "padding: 10px 24px;"
-            size = 26
+            pad = "padding: 8px 19px;"
+            size = 21
         elif w > 1300:
-            pad = "padding: 8px 20px;"
-            size = 24
-        elif w > 1100:
             pad = "padding: 6px 16px;"
-            size = 22
-        elif w > 900:
-            pad = "padding: 4px 14px;"
+            size = 19
+        elif w > 1100:
+            pad = "padding: 5px 13px;"
             size = 18
-        else:
-            pad = "padding: 2px 10px;"
+        elif w > 900:
+            pad = "padding: 3px 11px;"
             size = 14
+        else:
+            pad = "padding: 2px 8px;"
+            size = 11
 
         for lbl in self.nav_labels:
             f = lbl.font()
@@ -1381,10 +1326,12 @@ def main():
     # Zoom is handled via window resizing in MainWindow
     app = QApplication(sys.argv)
 
-    # Reduce global font size by ~10%
+    # Reduce global font size by ~20% on Windows, ~10% elsewhere
     from PySide6.QtGui import QFont
+    import sys as _sys2
+    scale = 0.8 if _sys2.platform == 'win32' else 0.9
     default_font = app.font()
-    default_font.setPointSizeF(default_font.pointSizeF() * 0.9)
+    default_font.setPointSizeF(default_font.pointSizeF() * scale)
     app.setFont(default_font)
 
     # Force Fusion style on Windows for consistent radio button appearance
@@ -1392,7 +1339,25 @@ def main():
     if _sys.platform == 'win32':
         app.setStyle("Fusion")
 
-    app.setWindowIcon(QIcon(resource_path("resources", "icons", "MyPsychAdmin.icns")))
+    if _sys.platform == 'win32':
+        app.setWindowIcon(QIcon(resource_path("resources", "icons", "MyPsy.ico")))
+    else:
+        app.setWindowIcon(QIcon(resource_path("resources", "icons", "MyPsy.icns")))
+
+    # --- Splash screen while loading ---
+    from PySide6.QtWidgets import QSplashScreen
+    from PySide6.QtGui import QPixmap, QPainter, QColor
+    from PySide6.QtCore import Qt
+    splash_px = QPixmap(420, 200)
+    splash_px.fill(QColor("#1e1e2e"))
+    painter = QPainter(splash_px)
+    painter.setPen(QColor("#4fc3f7"))
+    painter.setFont(QFont("Segoe UI", 22, QFont.Bold))
+    painter.drawText(splash_px.rect(), Qt.AlignCenter, "MyPsychAdmin\nLoading...")
+    painter.end()
+    splash = QSplashScreen(splash_px)
+    splash.show()
+    app.processEvents()
 
     # Global styling for Windows compatibility
     app.setStyleSheet("""
@@ -1448,36 +1413,21 @@ def main():
     # --- Create local DB (clinician details, always available) ---
     local_db = Database()
 
-    # --- Connect patient DB ---
+    # --- Connect patient DB (default local path, no user prompt) ---
     patient_db = None
-    saved_path = local_db.get_setting("patient_db_path")
-
-    if saved_path and os.path.exists(os.path.dirname(saved_path)):
-        # Saved path exists — connect directly
-        try:
-            patient_db = PatientDatabase(saved_path)
-            print(f"[Startup] Patient DB connected: {saved_path}")
-        except Exception as e:
-            print(f"[Startup] Patient DB error at {saved_path}: {e}")
-            saved_path = None  # fall through to dialog
-
-    if patient_db is None:
-        # No saved path or it failed — ask user
-        setup = PatientDbSetupDialog()
-        if setup.exec() == QDialog.Accepted and setup.chosen_path:
-            try:
-                patient_db = PatientDatabase(setup.chosen_path)
-                local_db.set_setting("patient_db_path", setup.chosen_path)
-                print(f"[Startup] Patient DB created: {setup.chosen_path}")
-            except Exception as e:
-                print(f"[Startup] Patient DB error: {e}")
-        else:
-            print("[Startup] Patient DB skipped")
+    from utils.resource_path import user_data_dir
+    default_path = os.path.join(user_data_dir(), PATIENT_DB_FILENAME)
+    try:
+        patient_db = PatientDatabase(default_path)
+        print(f"[Startup] Patient DB connected: {default_path}")
+    except Exception as e:
+        print(f"[Startup] Patient DB error: {e}")
 
     win = MainWindow()
     if patient_db:
         win.set_patient_db(patient_db)
     win.show()
+    splash.finish(win)
 
     # Unregister session and close patient DB on shutdown
     def _on_app_quit():
