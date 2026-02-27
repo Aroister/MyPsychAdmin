@@ -958,8 +958,6 @@ class LiveWorker(QThread):
         ld = ocr_find(self._ocr_lines, "Local Data", bounds=s1)
 
         if not ld:
-            # Local Data not visible — Tabbed Journal may not have loaded yet
-            # Go back and click Tabbed Journal again
             if self._rclick_count <= 10:
                 self.log.emit("  'Local Data' not found — clicking Tabbed Journal again ...")
                 self._scan_count = 0
@@ -970,58 +968,58 @@ class LiveWorker(QThread):
                 self.done.emit(False, "Could not find Local Data in Tabbed Journal")
             return
 
-        # Found Local Data — right-click 50px below it for context menu
-        nx = int(ld[0])
-        ny = int(ld[1]) + 50
-        self.log.emit(f"  Found 'Local Data' at ({int(ld[0])}, {int(ld[1])}), right-clicking 50px below at ({nx}, {ny})")
-
-        # Make our window click-through so it doesn't intercept mouse events
-        self.set_clickthrough.emit(True)
-        self._sleep(0.2)
-
+        # Click Local Data first (ensures correct tab is active)
+        self.log.emit(f"  Found 'Local Data' at ({int(ld[0])}, {int(ld[1])}) - clicking it")
         bring_front(self.hwnd)
-        self._sleep(0.3)
-
-        # Left-click to focus notes area
-        mclick(nx, ny, btn="left")
+        self._sleep(0.2)
+        mclick(int(ld[0]), int(ld[1]))
         self._sleep(0.5)
 
-        # Right-click for context menu
+        # Right-click 50px below for context menu
+        nx = int(ld[0])
+        ny = int(ld[1]) + 50
         self.log.emit(f"  Right-clicking at ({nx}, {ny}) ...")
         mclick(nx, ny, btn="right")
-        self._sleep(1.0)
+        self._sleep(1.5)
 
-        # Restore normal click behaviour
-        self.set_clickthrough.emit(False)
-
-        # Find "Table" in the popup menu using Win32 menu API
-        self.log.emit("  Looking for 'Table' in context menu ...")
+        # Now scan for "Table" in the context menu via OCR
+        self._table_attempts = 0
         self._set(S_FIND_TABLE)
 
     def _do_read_menu(self):
         self._set(S_FIND_TABLE)
 
     def _do_find_table(self):
-        # Find the popup menu and click "Table" directly
-        mh = find_popup_menu()
-        if mh:
-            items = read_menu(mh)
-            self.log.emit(f"  Menu items: {[t for _, t, _, _ in items]}")
-            if menu_click(mh, "Table"):
-                self.log.emit("  Clicked 'Table' — Right arrow then Enter ...")
-                self._sleep(0.3)
-                pkey(VK_RIGHT)
-                self._sleep(0.3)
-                pkey(VK_RETURN)
-                self._unfocus_target()
-                self._sleep(2.5)
-                self._set(S_SAVE_DIALOG)
-                return
-            self.log.emit("  'Table' not found in menu items")
-        else:
-            self.log.emit("  No popup menu found")
+        self._table_attempts = getattr(self, '_table_attempts', 0) + 1
+        self.log.emit(f"  Looking for 'Table' via OCR (attempt {self._table_attempts}) ...")
 
-        # Fallback: dismiss and retry right-click
+        # OCR the screen to find "Table" text in the context menu
+        if not self._scan():
+            self._sleep(0.5); return
+
+        tbl = ocr_find(self._ocr_lines, "Table")
+        if tbl:
+            self.log.emit(f"  Found 'Table' at ({int(tbl[0])}, {int(tbl[1])}) — clicking it")
+            bring_front(self.hwnd)
+            self._sleep(0.2)
+            mclick(int(tbl[0]), int(tbl[1]))
+            self._sleep(0.5)
+            # Right arrow opens submenu, Enter selects first item (RTF/Word)
+            self.log.emit("  Right arrow + Enter ...")
+            pkey(VK_RIGHT)
+            self._sleep(0.3)
+            pkey(VK_RETURN)
+            self._sleep(2.5)
+            self._set(S_SAVE_DIALOG)
+            return
+
+        if self._table_attempts <= 5:
+            self.log.emit("  'Table' not found yet, retrying ...")
+            self._sleep(0.5)
+            return
+
+        # Table not found after retries — dismiss menu and retry right-click
+        self.log.emit("  'Table' not found after 5 OCR attempts, retrying right-click ...")
         pkey(VK_ESCAPE)
         self._sleep(0.5)
         self._rclick_count = max(0, self._rclick_count - 1)
