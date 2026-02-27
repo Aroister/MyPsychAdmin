@@ -2,12 +2,14 @@ from __future__ import annotations
 from typing import List, Dict, Any
 import pandas as pd
 import re
+import sys
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QComboBox,
     QTextEdit, QLineEdit, QFileDialog, QSplitter, QAbstractItemView, QSizePolicy,
-    QGraphicsOpacityEffect, QCalendarWidget, QDialog, QDialogButtonBox, QMessageBox
+    QGraphicsOpacityEffect, QCalendarWidget, QDialog, QDialogButtonBox, QMessageBox,
+    QToolButton, QMenu
 )
 from PySide6.QtCore import QPropertyAnimation, QEasingCurve
 from PySide6.QtCore import Qt, Signal, QTimer
@@ -46,7 +48,16 @@ def format_pretty_date(dt):
     else:
         suf = ["st", "nd", "rd"][d % 10 - 1]
 
-    return f"{d}{suf} {dt.strftime('%B %Y')}"
+    base = f"{d}{suf} {dt.strftime('%B %Y')}"
+
+    # Append time if the object has hour/minute and it's not midnight
+    try:
+        if hasattr(dt, 'hour') and (dt.hour != 0 or dt.minute != 0):
+            base += dt.strftime(" %H:%M")
+    except Exception:
+        pass
+
+    return base
 
 # ============================================================
 # NOTE SOURCE COLOURS
@@ -55,6 +66,8 @@ SOURCE_COLOURS = {
     "rio": "#3a7afe",
     "carenotes": "#27ae60",
     "epjs": "#8e44ad",
+    "notes_entry": "#d97706",
+    "systmone": "#e74c3c",
 }
 # ======================================================================
 # MAIN PANEL
@@ -63,6 +76,8 @@ class PatientNotesPanel(QWidget):
 
     request_collapse = Signal()
     request_expand = Signal()
+    edit_note_requested = Signal(object)  # emits the note dict
+    epr_requested = Signal(str)  # emits NHS number
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
@@ -72,9 +87,18 @@ class PatientNotesPanel(QWidget):
         self.filtered_notes: List[Dict[str, Any]] = []
 
         self.current_search = ""
+        self.extraction_highlight_terms: list = []
         self.is_collapsed = False
 
         self._build_ui()
+        self._entry_notes_loaded = False
+
+        # Load entry notes when patient is selected
+        try:
+            store = get_shared_store()
+            store.patient_changed.connect(self._on_patient_changed)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------
     # BUILD UI
@@ -91,9 +115,9 @@ class PatientNotesPanel(QWidget):
         # TOP BAR — STABLE LAYOUT, NO SHRINKING MESS
         # ============================================================
         top = QWidget()
-        top.setMinimumWidth(760)      # ← raise from 500 → 760 to stop compression
+        top.setObjectName("notesToolbar")
         top.setStyleSheet("""
-            QWidget {
+            #notesToolbar {
                 background: rgba(245, 248, 250, 0.55);
                 border: 1px solid #D0D5DA;
                 border-radius: 8px;
@@ -108,59 +132,39 @@ class PatientNotesPanel(QWidget):
         FIX_TALL  = QSizePolicy.Fixed
         EXPAND_H  = QSizePolicy.Expanding
 
-        # --- IMPORT BUTTON (PRIMARY) ---
-        self.btn_import = QPushButton("Import notes")
-        self.btn_import.setFixedWidth(160)
-        self.btn_import.setFixedHeight(34)
-        self.btn_import.setSizePolicy(FIX_WIDE, FIX_TALL)
-        self.btn_import.setStyleSheet("""
-            QPushButton {
-                background-color: #3a7afe;
+        # --- UPLOAD DOCS BUTTON (far left) ---
+        self._upload_btn = QToolButton()
+        self._upload_btn.setText("Upload")
+        self._upload_btn.setFixedSize(72, 26)
+        self._upload_btn.setPopupMode(QToolButton.InstantPopup)
+        self._upload_menu = QMenu()
+        self._shared_store = get_shared_store()
+        self._refresh_upload_menu(self._shared_store.get_uploaded_documents())
+        self._shared_store.uploaded_documents_changed.connect(self._refresh_upload_menu)
+        self._upload_btn.setMenu(self._upload_menu)
+        self._upload_btn.setStyleSheet("""
+            QToolButton {
+                background: #10b981;
                 color: white;
-                font-weight: bold;
-                border-radius: 6px;
-                padding: 6px 12px;
+                font-size: 10px;
+                font-weight: 600;
+                border: none;
+                border-radius: 4px;
+                padding: 2px 6px;
             }
-            QPushButton:hover {
-                background-color: #2f68d8;
-            }
-            QPushButton:pressed {
-                background-color: #2556b3;
-            }
+            QToolButton:hover { background: #059669; }
+            QToolButton::menu-indicator { image: none; }
         """)
-        self.btn_import.clicked.connect(self.on_import_clicked)
-        bar.addWidget(self.btn_import)
+        bar.addWidget(self._upload_btn)
 
-        # --- RESIZABLE SEARCH AREA (with drag handle) ---
-        self.search_splitter = QSplitter(Qt.Horizontal)
-        self.search_splitter.setHandleWidth(6)
-        self.search_splitter.setFixedHeight(34)
-        self.search_splitter.setStyleSheet("""
-            QSplitter::handle {
-                background: rgba(100, 100, 100, 0.3);
-                border-radius: 2px;
-                width: 6px;
-            }
-            QSplitter::handle:hover {
-                background: rgba(58, 122, 254, 0.6);
-            }
-        """)
-
-        # Search box (left side of splitter)
+        # --- SEARCH AREA ---
         self.search_box = QLineEdit()
         self.search_box.setFixedHeight(32)
         self.search_box.setMinimumWidth(80)
         self.search_box.setPlaceholderText("Search notes…")
-        self.search_box.setClearButtonEnabled(True)  # Add 'x' to clear
+        self.search_box.setClearButtonEnabled(True)
         self.search_box.returnPressed.connect(self.on_search_clicked)
-        self.search_splitter.addWidget(self.search_box)
-
-        # Right side container for buttons
-        right_container = QWidget()
-        right_container.setMinimumWidth(280)
-        right_layout = QHBoxLayout(right_container)
-        right_layout.setContentsMargins(4, 0, 0, 0)
-        right_layout.setSpacing(8)
+        bar.addWidget(self.search_box, 1)
 
         # --- SEARCH BUTTON ---
         self.btn_search = QPushButton("Search")
@@ -168,27 +172,20 @@ class PatientNotesPanel(QWidget):
         self.btn_search.setFixedHeight(32)
         self.btn_search.setSizePolicy(FIX_WIDE, FIX_TALL)
         self.btn_search.clicked.connect(self.on_search_clicked)
-        right_layout.addWidget(self.btn_search)
+        bar.addWidget(self.btn_search)
 
         # --- TYPE FILTER ---
         filter_label = QLabel("Filter:")
-        filter_label.setStyleSheet("font-weight: bold; color: #555;")
-        right_layout.addWidget(filter_label)
+        filter_label.setStyleSheet("font-weight: bold; color: #555; background: transparent; border: none;")
+        bar.addWidget(filter_label)
 
         self.cmb_type = QComboBox()
-        self.cmb_type.addItem("All types")  # Default/top option
+        self.cmb_type.addItem("All types")
         self.cmb_type.setFixedWidth(120)
         self.cmb_type.setFixedHeight(32)
         self.cmb_type.setSizePolicy(FIX_WIDE, FIX_TALL)
         self.cmb_type.currentIndexChanged.connect(self.filter_types)
-        right_layout.addWidget(self.cmb_type)
-
-        right_layout.addStretch()
-
-        self.search_splitter.addWidget(right_container)
-        self.search_splitter.setSizes([200, 300])  # Initial sizes
-
-        bar.addWidget(self.search_splitter, 1)
+        bar.addWidget(self.cmb_type)
 
         # live filter on empty search
         self.search_box.textChanged.connect(
@@ -297,6 +294,51 @@ class PatientNotesPanel(QWidget):
         """)
         bot_l.addWidget(self.txt_detail)
 
+        # Action buttons for notes_entry notes
+        self._action_bar = QWidget()
+        self._action_bar.setStyleSheet("border: none; background: transparent;")
+        ab_layout = QHBoxLayout(self._action_bar)
+        ab_layout.setContentsMargins(0, 4, 0, 0)
+        ab_layout.setSpacing(8)
+
+        self.btn_confirm = QPushButton("Confirm")
+        self.btn_confirm.setCursor(Qt.PointingHandCursor)
+        self.btn_confirm.setFixedHeight(30)
+        self.btn_confirm.setStyleSheet(
+            "QPushButton { background: #16a34a; color: white; border: none; "
+            "border-radius: 5px; font-size: 13px; font-weight: 600; padding: 0 16px; }"
+            "QPushButton:hover { background: #15803d; }"
+        )
+        self.btn_confirm.clicked.connect(self._on_confirm_note)
+
+        self.btn_edit = QPushButton("Edit")
+        self.btn_edit.setCursor(Qt.PointingHandCursor)
+        self.btn_edit.setFixedHeight(30)
+        self.btn_edit.setStyleSheet(
+            "QPushButton { background: #2563eb; color: white; border: none; "
+            "border-radius: 5px; font-size: 13px; font-weight: 600; padding: 0 16px; }"
+            "QPushButton:hover { background: #1d4ed8; }"
+        )
+        self.btn_edit.clicked.connect(self._on_edit_note)
+
+        self.btn_error = QPushButton("Entered in Error")
+        self.btn_error.setCursor(Qt.PointingHandCursor)
+        self.btn_error.setFixedHeight(30)
+        self.btn_error.setStyleSheet(
+            "QPushButton { background: #dc2626; color: white; border: none; "
+            "border-radius: 5px; font-size: 13px; font-weight: 600; padding: 0 16px; }"
+            "QPushButton:hover { background: #b91c1c; }"
+        )
+        self.btn_error.clicked.connect(self._on_error_note)
+
+        ab_layout.addWidget(self.btn_confirm)
+        ab_layout.addWidget(self.btn_edit)
+        ab_layout.addWidget(self.btn_error)
+        ab_layout.addStretch()
+
+        self._action_bar.hide()
+        bot_l.addWidget(self._action_bar)
+
         # Install event filter to catch clicks on the detail panel and text area
         self.detail_panel.installEventFilter(self)
         self.txt_detail.installEventFilter(self)
@@ -357,6 +399,122 @@ class PatientNotesPanel(QWidget):
         """Expand this panel."""
         self.is_collapsed = False
         self.request_expand.emit()
+
+    # ==================================================================
+    # UPLOAD MENU
+    # ==================================================================
+    def _refresh_upload_menu(self, docs=None):
+        """Rebuild the Upload Notes dropdown menu."""
+        self._upload_menu.clear()
+
+        # EPR option (Windows only)
+        if sys.platform == "win32":
+            epr_action = self._upload_menu.addAction("Upload from EPR")
+            epr_action.triggered.connect(self._launch_epr)
+
+        # Upload from Document
+        doc_action = self._upload_menu.addAction("Upload from Document")
+        doc_action.triggered.connect(self._upload_from_document)
+
+        self._upload_menu.addSeparator()
+
+        # Existing uploaded documents
+        if docs is None:
+            docs = get_shared_store().get_uploaded_documents()
+        if not docs:
+            action = self._upload_menu.addAction("No documents uploaded yet")
+            action.setEnabled(False)
+        else:
+            for doc in docs:
+                path = doc["path"]
+                action = self._upload_menu.addAction(doc["filename"])
+                action.triggered.connect(
+                    lambda checked=False, p=path: self._import_from_upload(p)
+                )
+
+    def _import_from_upload(self, path):
+        """Process an uploaded file through the full notes pipeline."""
+        from importer_pdf import import_pdf_notes
+        from importer_docx import import_docx_notes
+
+        raw = []
+        fl = path.lower()
+        if fl.endswith(".pdf"):
+            raw.extend(import_pdf_notes([path]))
+        elif fl.endswith(".docx"):
+            raw.extend(import_docx_notes(path))
+        elif fl.endswith(".csv"):
+            from importer_systmone import is_systmone_csv, parse_systmone_csv
+            if is_systmone_csv(path):
+                raw.extend(parse_systmone_csv(path))
+        elif fl.endswith(".rtf"):
+            from importer_systmone import parse_systmone_rtf
+            raw.extend(parse_systmone_rtf(path))
+        elif fl.endswith((".xlsx", ".xls")):
+            from importer_autodetect import import_files_autodetect
+            raw.extend(import_files_autodetect([path]))
+
+        if not raw:
+            QMessageBox.information(
+                self, "No Notes Found",
+                "No notes could be extracted from the uploaded file."
+            )
+            return
+
+        print(f"[NotesPanel] Upload: parsed {len(raw)} notes from {path}")
+        self._clean_and_load(raw)
+
+    def _upload_from_document(self):
+        """Open file dialog and import the selected document."""
+        files, _ = QFileDialog.getOpenFileNames(
+            self, "Upload Documents", "",
+            "All Supported (*.pdf *.docx *.xlsx *.xls *.csv *.rtf);;"
+            "PDF (*.pdf);;Word (*.docx);;Excel (*.xlsx *.xls);;"
+            "CSV (*.csv);;RTF (*.rtf)"
+        )
+        if files:
+            store = get_shared_store()
+            for f in files:
+                store.add_uploaded_document(f)
+            self._import_from_upload(files[0])
+
+    def _launch_epr(self):
+        """Emit signal to show EPR embed panel in workspace."""
+        store = get_shared_store()
+        nhs = store.get_patient_field("nhs_number", "") or ""
+        nhs = nhs.replace(" ", "")
+        self.epr_requested.emit(nhs)
+
+    def _on_epr_notes_captured(self, rows):
+        """Handle rows captured from EPR automation — stash for later."""
+        self._epr_pending_rows = rows
+        print(f"[NotesPanel] EPR: captured {len(rows)} rows, waiting for automation to finish")
+
+    def _on_epr_done(self, success, msg, system_type=""):
+        """Handle EPR automation completion (called from page)."""
+        if not success:
+            QMessageBox.warning(self, "EPR Capture Failed", msg)
+            return
+
+        # Now process the stashed rows with the window visible
+        rows = getattr(self, '_epr_pending_rows', None)
+        if rows:
+            self._epr_pending_rows = None
+            try:
+                if system_type == "carenotes":
+                    from importer_carenotes import parse_carenotes_rows
+                    notes = parse_carenotes_rows(rows)
+                else:
+                    from importer_systmone import parse_systmone_rows
+                    notes = parse_systmone_rows(rows)
+                if notes:
+                    print(f"[NotesPanel] EPR ({system_type}): parsed {len(notes)} notes from {len(rows)} rows")
+                    self._clean_and_load(notes)
+                else:
+                    print(f"[NotesPanel] EPR ({system_type}): no notes parsed from {len(rows)} rows")
+            except Exception as e:
+                print(f"[NotesPanel] EPR error: {e}")
+                QMessageBox.warning(self, "EPR Import Error", str(e))
 
     # ==================================================================
     # IMPORT
@@ -448,6 +606,7 @@ class PatientNotesPanel(QWidget):
             cleaned.append({
                 "date": dt,
                 "type": str(n.get("type", "")).strip(),
+                "raw_type": str(n.get("raw_type", "")).strip(),
                 "originator": str(n.get("originator", "")).strip(),
                 "preview": preview,
                 "content": content,
@@ -460,17 +619,24 @@ class PatientNotesPanel(QWidget):
             if cleaned is None:
                 return  # User cancelled
 
+        # Always sort latest first
+        cleaned.sort(key=lambda n: n.get("date") or datetime.min, reverse=True)
+
         self.all_notes = cleaned
+        # Merge back any persisted notes_entry notes so they're not lost on import
+        self._entry_notes_loaded = False  # force reload after replace
+        self._load_entry_notes_from_db()
         self._rebuild_type_filter()
         self.filter_types()
 
         # Update shared data store so all sections can access these notes
+        # Use all_notes (includes entry notes) so everything is available for analysis
         shared_store = get_shared_store()
-        shared_store.set_notes(cleaned, source="notes_panel")
-        print(f"[NotesPanel] Updated SharedDataStore with {len(cleaned)} notes")
+        shared_store.set_notes(self.all_notes, source="notes_panel")
+        print(f"[NotesPanel] Updated SharedDataStore with {len(self.all_notes)} notes")
 
         # Run extraction and push extracted data for auto-populating reports/forms
-        self._run_extraction_for_global_import(cleaned, shared_store)
+        self._run_extraction_for_global_import(self.all_notes, shared_store)
 
     # ==================================================================
     # ADD / REPLACE DIALOG
@@ -514,12 +680,12 @@ class PatientNotesPanel(QWidget):
             dupes = before - len(merged)
             if dupes:
                 print(f"[NotesPanel] Removed {dupes} duplicate notes during merge")
-            # Sort by date so merged notes interleave correctly
-            merged.sort(key=lambda n: n.get("date") or datetime.min)
+            # Sort by date, latest first
+            merged.sort(key=lambda n: n.get("date") or datetime.min, reverse=True)
             return merged
 
-        # Replace — still sort by date
-        new_notes.sort(key=lambda n: n.get("date") or datetime.min)
+        # Replace — sort by date, latest first
+        new_notes.sort(key=lambda n: n.get("date") or datetime.min, reverse=True)
         return new_notes
 
     @staticmethod
@@ -569,6 +735,7 @@ class PatientNotesPanel(QWidget):
                 prepared.append({
                     "date": n.get("date"),
                     "type": (n.get("type") or "").strip().lower(),
+                    "raw_type": (n.get("raw_type") or "").strip(),
                     "originator": n.get("originator", "").strip(),
                     "content": n.get("content", "").strip(),
                     "text": n.get("content", "").strip(),
@@ -889,6 +1056,26 @@ class PatientNotesPanel(QWidget):
                 preview_item.setData(Qt.DisplayRole, preview)
                 self.table.setItem(r, 3, preview_item)
 
+                # Style notes_entry rows by status
+                status = n.get("status", "")
+                if status == "errored":
+                    red = QColor("#dc2626")
+                    red_bg = QColor("#fef2f2")
+                    font = date_item.font()
+                    font.setStrikeOut(True)
+                    for item in (date_item, type_item, orig_item, preview_item):
+                        item.setForeground(red)
+                        item.setBackground(red_bg)
+                        item.setFont(font)
+                elif status == "confirmed":
+                    lock_bg = QColor("#f0fdf4")
+                    for item in (date_item, orig_item, preview_item):
+                        item.setBackground(lock_bg)
+                elif status in ("draft", "editing"):
+                    yellow_bg = QColor("#fefce8")
+                    for item in (date_item, orig_item, preview_item):
+                        item.setBackground(yellow_bg)
+
         finally:
             # Re-enable updates
             self.table.setUpdatesEnabled(True)
@@ -925,20 +1112,40 @@ class PatientNotesPanel(QWidget):
     def on_select(self):
         rows = self.table.selectionModel().selectedRows()
         if not rows:
+            self._action_bar.hide()
             return
         row = rows[0].row()
         if row >= len(self.filtered_notes):
+            self._action_bar.hide()
             return
 
         n = self.filtered_notes[row]
 
+        # Auto-lock editing notes past their 30-day deadline
+        self._check_edit_deadline(n)
+
+        status = n.get("status", "")
+        is_entry = n.get("source") == "notes_entry"
+
         header = (
             f"Date: {format_pretty_date(n['date'])}\n"
             f"Type: {n['type']}\n"
-            f"Originator: {n['originator']}\n\n"
+            f"Originator: {n['originator']}\n"
         )
+        if status == "confirmed":
+            header += "Status: Confirmed (locked)\n"
+        elif status == "editing":
+            dl = n.get("edit_deadline")
+            if dl:
+                header += f"Status: Editing (locks {format_pretty_date(dl)})\n"
+        elif status == "errored":
+            header += f"Status: Errored — {n.get('error_reason', '')}\n"
+        header += "\n"
 
         body = n["content"]
+
+        if status == "errored":
+            body = f'<span style="color:#dc2626; text-decoration:line-through;">{body}</span>'
 
         if self.current_search:
             pattern = re.escape(self.current_search)
@@ -949,7 +1156,30 @@ class PatientNotesPanel(QWidget):
                 flags=re.IGNORECASE
             )
 
+        if self.extraction_highlight_terms:
+            sorted_terms = sorted(self.extraction_highlight_terms, key=len, reverse=True)
+            ext_pattern = "|".join(re.escape(t) for t in sorted_terms)
+            body = re.sub(
+                ext_pattern,
+                r'<span style="background-color:#FFEB3B; color:#333;">\g<0></span>',
+                body,
+                flags=re.IGNORECASE
+            )
+
+        # Make detail editable only if note is in editing state
+        is_editing = is_entry and status == "editing"
+        self.txt_detail.setReadOnly(not is_editing)
+
         self.txt_detail.setHtml(header.replace("\n", "<br>") + body.replace("\n", "<br>"))
+
+        # Show/hide action buttons
+        if is_entry and status not in ("errored",):
+            self._action_bar.show()
+            self.btn_confirm.setVisible(status in ("draft", "editing"))
+            self.btn_edit.setVisible(status == "draft")
+            self.btn_error.setVisible(status in ("draft", "editing", "confirmed"))
+        else:
+            self._action_bar.hide()
 
         # Flash the detail panel to indicate selection
         self._flash_detail_panel()
@@ -964,6 +1194,227 @@ class PatientNotesPanel(QWidget):
     def _reset_detail_panel_style(self):
         """Reset detail panel to normal style."""
         self.detail_panel.setStyleSheet(self._detail_panel_base_style)
+
+    # ==================================================================
+    # PATIENT CHANGE HANDLER
+    # ==================================================================
+
+    def _on_patient_changed(self, pid):
+        """Reload persisted notes_entry notes when patient switches."""
+        # Remove old notes_entry notes from all_notes
+        self.all_notes = [n for n in self.all_notes if n.get("source") != "notes_entry"]
+        self._entry_notes_loaded = False
+        # Load saved entry notes for this patient
+        self._load_entry_notes_from_db()
+
+    # ==================================================================
+    # NOTES ENTRY — PERSISTENCE
+    # ==================================================================
+
+    def _load_entry_notes_from_db(self):
+        """Merge persisted notes_entry notes into all_notes from DB (per patient)."""
+        if not self.db or self._entry_notes_loaded:
+            return
+        # Only load if a patient is actually selected
+        store = get_shared_store()
+        pid = store.current_patient_id
+        if not pid and not (store.patient_info.get("name") or "").strip():
+            return
+        if not pid:
+            return
+        try:
+            from datetime import datetime as _dt
+
+            data = self.db.get_json_data(pid, "notes_entry_notes")
+            if not data:
+                return
+
+            added = 0
+            for rec in data:
+                # Deserialise dates
+                for key in ("date", "edit_deadline"):
+                    val = rec.get(key)
+                    if val and isinstance(val, str):
+                        try:
+                            rec[key] = _dt.fromisoformat(val)
+                        except Exception:
+                            if key == "edit_deadline":
+                                rec[key] = None
+                # Deduplicate against what's already in all_notes
+                already = any(
+                    n.get("source") == "notes_entry"
+                    and n.get("content") == rec.get("content")
+                    and str(n.get("date")) == str(rec.get("date"))
+                    for n in self.all_notes
+                )
+                if not already:
+                    self.all_notes.append(rec)
+                    added += 1
+
+            self._entry_notes_loaded = True
+            if added:
+                self.all_notes.sort(
+                    key=lambda n: n.get("date") or _dt.min, reverse=True
+                )
+                self._rebuild_type_filter()
+                self.filter_types()
+                print(f"[NotesPanel] Loaded {added} entry notes from DB")
+        except Exception as e:
+            print(f"[NotesPanel] Load entry notes error: {e}")
+
+    def _persist_entry_notes(self):
+        """Save all notes_entry notes to DB (per patient)."""
+        if not self.db:
+            return
+        store = get_shared_store()
+        pid = store.current_patient_id
+        if not pid:
+            return
+        try:
+            from datetime import datetime as _dt, date as _d
+            entry_notes = [n for n in self.all_notes if n.get("source") == "notes_entry"]
+            serialisable = []
+            for n in entry_notes:
+                rec = dict(n)
+                for key in ("date", "edit_deadline"):
+                    val = rec.get(key)
+                    if isinstance(val, (_dt, _d)):
+                        rec[key] = val.isoformat()
+                serialisable.append(rec)
+            self.db.save_json_data(pid, "notes_entry_notes", serialisable)
+        except Exception as e:
+            print(f"[NotesPanel] Persist entry notes error: {e}")
+
+    # ==================================================================
+    # NOTES ENTRY — ACTION HANDLERS
+    # ==================================================================
+
+    def _get_selected_note(self):
+        """Return the currently selected note dict, or None."""
+        rows = self.table.selectionModel().selectedRows()
+        if not rows:
+            return None
+        row = rows[0].row()
+        if row >= len(self.filtered_notes):
+            return None
+        return self.filtered_notes[row]
+
+    def _check_edit_deadline(self, n):
+        """Auto-lock an editing note if its 30-day deadline has passed."""
+        if n.get("status") == "editing" and n.get("edit_deadline"):
+            if datetime.now() >= n["edit_deadline"]:
+                n["status"] = "confirmed"
+                n["edit_deadline"] = None
+
+    def _on_confirm_note(self):
+        n = self._get_selected_note()
+        if not n or n.get("source") != "notes_entry":
+            return
+
+        # If in editing mode, save the current detail text back to the note
+        if n.get("status") == "editing":
+            new_content = self.txt_detail.toPlainText()
+            # Strip the header lines (Date/Type/Originator/Status + blank)
+            lines = new_content.split("\n")
+            body_start = 0
+            for i, line in enumerate(lines):
+                if line.startswith("Status:") or line.startswith("Originator:"):
+                    body_start = i + 1
+            # Skip blank line after header
+            if body_start < len(lines) and not lines[body_start].strip():
+                body_start += 1
+            body = "\n".join(lines[body_start:]).strip()
+            if body:
+                n["content"] = body
+                preview = " ".join(body.split("\n")[:3]).strip()
+                n["preview"] = preview[:197] + "..." if len(preview) > 200 else preview
+
+        n["status"] = "confirmed"
+        n["edit_deadline"] = None
+        self.txt_detail.setReadOnly(True)
+        self.refresh_table(preserve_selection=n)
+        self.on_select()
+        self._persist_entry_notes()
+
+    def _on_edit_note(self):
+        n = self._get_selected_note()
+        if not n or n.get("source") != "notes_entry":
+            return
+        if n.get("status") not in ("draft",):
+            return
+
+        from datetime import timedelta
+        n["status"] = "editing"
+        n["edit_deadline"] = datetime.now() + timedelta(days=30)
+        self.refresh_table(preserve_selection=n)
+        self.on_select()
+
+        # Open notes entry panel pre-filled for editing
+        self.edit_note_requested.emit(n)
+
+    def _on_error_note(self):
+        n = self._get_selected_note()
+        if not n or n.get("source") != "notes_entry":
+            return
+
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QTextEdit, QPushButton
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Mark Note as Error")
+        dlg.setMinimumWidth(380)
+        lay = QVBoxLayout(dlg)
+
+        lay.addWidget(QLabel("Select a reason:"))
+        combo = QComboBox()
+        reasons = [
+            "Wrong patient",
+            "Incorrect information",
+            "Duplicate entry",
+            "Wrong date/time",
+            "Entered in error",
+            "Other",
+        ]
+        combo.addItems(reasons)
+        lay.addWidget(combo)
+
+        other_lbl = QLabel("Please specify:")
+        other_box = QTextEdit()
+        other_box.setMaximumHeight(80)
+        other_lbl.hide()
+        other_box.hide()
+        combo.currentTextChanged.connect(lambda t: (other_lbl.setVisible(t == "Other"), other_box.setVisible(t == "Other")))
+        lay.addWidget(other_lbl)
+        lay.addWidget(other_box)
+
+        send_btn = QPushButton("Submit")
+        send_btn.setStyleSheet(
+            "background: #dc2626; color: white; border: none; border-radius: 5px; "
+            "font-size: 13px; font-weight: 600; padding: 6px 20px;"
+        )
+        send_btn.clicked.connect(dlg.accept)
+        lay.addWidget(send_btn)
+
+        if dlg.exec() != QDialog.Accepted:
+            return
+
+        reason = combo.currentText()
+        if reason == "Other":
+            reason = other_box.toPlainText().strip()
+            if not reason:
+                return
+
+        # Prepend error reason to note content
+        error_header = f"[ERROR — {reason}]\n\n"
+        n["content"] = error_header + n["content"]
+        preview = n["content"][:197] + "..." if len(n["content"]) > 200 else n["content"]
+        n["preview"] = preview
+
+        n["status"] = "errored"
+        n["error_reason"] = reason
+        n["edit_deadline"] = None
+        self.txt_detail.setReadOnly(True)
+        self.refresh_table(preserve_selection=n)
+        self.on_select()
+        self._persist_entry_notes()
 
     # ==================================================================
     # TIMELINE JUMP
