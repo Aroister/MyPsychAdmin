@@ -994,25 +994,38 @@ class LiveWorker(QThread):
         # Restore normal click behaviour
         self.set_clickthrough.emit(False)
 
-        # Keyboard navigation: Down x10 to "Table"
-        self.log.emit("  Menu open - Down x10 to Table ...")
-        for _ in range(10):
-            pkey(VK_DOWN); time.sleep(0.1)
-        self._sleep(0.3)
+        # Find "Table" in the popup menu using Win32 menu API
+        self.log.emit("  Looking for 'Table' in context menu ...")
         self._set(S_FIND_TABLE)
 
     def _do_read_menu(self):
         self._set(S_FIND_TABLE)
 
     def _do_find_table(self):
-        # Right arrow to open Table submenu — RTF is already highlighted
-        self.log.emit("  Right arrow (Table submenu) then Enter (Open as RTF) ...")
-        pkey(VK_RIGHT)
-        self._sleep(0.3)
-        pkey(VK_RETURN)
-        self._unfocus_target()
-        self._sleep(2.5)
-        self._set(S_SAVE_DIALOG)
+        # Find the popup menu and click "Table" directly
+        mh = find_popup_menu()
+        if mh:
+            items = read_menu(mh)
+            self.log.emit(f"  Menu items: {[t for _, t, _, _ in items]}")
+            if menu_click(mh, "Table"):
+                self.log.emit("  Clicked 'Table' — Right arrow then Enter ...")
+                self._sleep(0.3)
+                pkey(VK_RIGHT)
+                self._sleep(0.3)
+                pkey(VK_RETURN)
+                self._unfocus_target()
+                self._sleep(2.5)
+                self._set(S_SAVE_DIALOG)
+                return
+            self.log.emit("  'Table' not found in menu items")
+        else:
+            self.log.emit("  No popup menu found")
+
+        # Fallback: dismiss and retry right-click
+        pkey(VK_ESCAPE)
+        self._sleep(0.5)
+        self._rclick_count = max(0, self._rclick_count - 1)
+        self._set(S_RCLICK_NOTES)
 
     def _do_find_csv(self):
         # Kept for state machine but now unused — go straight to save
