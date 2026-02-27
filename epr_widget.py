@@ -968,21 +968,16 @@ class LiveWorker(QThread):
                 self.done.emit(False, "Could not find Local Data in Tabbed Journal")
             return
 
-        # Click Local Data first (ensures correct tab is active)
-        self.log.emit(f"  Found 'Local Data' at ({int(ld[0])}, {int(ld[1])}) - clicking it")
-        bring_front(self.hwnd)
-        self._sleep(0.2)
-        mclick(int(ld[0]), int(ld[1]))
-        self._sleep(0.5)
-
-        # Right-click 50px below for context menu
+        # Right-click 50px below Local Data to open context menu
         nx = int(ld[0])
         ny = int(ld[1]) + 50
-        self.log.emit(f"  Right-clicking at ({nx}, {ny}) ...")
+        self.log.emit(f"  Found 'Local Data' at ({int(ld[0])}, {int(ld[1])}) — right-clicking at ({nx}, {ny}) ...")
+        bring_front(self.hwnd)
+        self._sleep(0.3)
         mclick(nx, ny, btn="right")
         self._sleep(1.5)
 
-        # Now scan for "Table" in the context menu via OCR
+        # Use OCR to find "Table" in the context menu
         self._table_attempts = 0
         self._set(S_FIND_TABLE)
 
@@ -993,8 +988,6 @@ class LiveWorker(QThread):
         self._table_attempts = getattr(self, '_table_attempts', 0) + 1
         self.log.emit(f"  Looking for 'Table' via full-screen OCR (attempt {self._table_attempts}) ...")
 
-        # Context menu is a floating Java window OUTSIDE the container,
-        # so we must capture the full screen (not just the container region).
         pix, png = capture_screen()
         if not pix:
             self._sleep(0.5); return
@@ -1004,30 +997,28 @@ class LiveWorker(QThread):
         if err:
             self.log.emit(f"  OCR error: {err[:120]}")
         if not lines:
-            self.log.emit(f"  OCR returned 0 lines, retrying ...")
             self._sleep(0.5); return
 
         tbl = ocr_find(lines, "Table")
         if tbl:
-            self.log.emit(f"  Found 'Table' at ({int(tbl[0])}, {int(tbl[1])}) — clicking it")
-            mclick(int(tbl[0]), int(tbl[1]))
-            self._sleep(0.5)
-            # Right arrow opens submenu, Enter selects first item (RTF/Word)
-            self.log.emit("  Right arrow + Enter ...")
-            pkey(VK_RIGHT)
-            self._sleep(0.3)
+            # Hover on "Table", wait 2s, Right to open submenu, Down 1, Enter
+            self.log.emit(f"  Found 'Table' at ({int(tbl[0])}, {int(tbl[1])}) — hovering ...")
+            mmove(int(tbl[0]), int(tbl[1]))
+            self._sleep(2.0)
+            self.log.emit("  Right (submenu) + Down 1 + Enter ...")
+            pkey(VK_RIGHT); time.sleep(0.3)
+            pkey(VK_DOWN); time.sleep(0.15)
             pkey(VK_RETURN)
             self._sleep(2.5)
             self._set(S_SAVE_DIALOG)
             return
 
         if self._table_attempts <= 5:
-            self.log.emit("  'Table' not found yet, retrying ...")
             self._sleep(0.5)
             return
 
-        # Table not found after retries — dismiss menu and retry right-click
-        self.log.emit("  'Table' not found after 5 OCR attempts, retrying right-click ...")
+        # Dismiss and retry right-click
+        self.log.emit("  'Table' not found after 5 attempts, retrying ...")
         pkey(VK_ESCAPE)
         self._sleep(0.5)
         self._rclick_count = max(0, self._rclick_count - 1)
@@ -1258,7 +1249,7 @@ class LiveWorker(QThread):
     # -- CareNotes state handlers --------------------------------------
 
     def _do_cn_click_search(self):
-        """Click 'Patient Search' in the CareNotes left sidebar."""
+        """Click Patient Search, Tab x3 to NHS field, type NHS, Enter — all in one."""
         self._scan_count = getattr(self, '_cn_search_count', 0) + 1
         self._cn_search_count = self._scan_count
         self.log.emit(f"CareNotes: Looking for 'Patient Search' (attempt {self._scan_count}) ...")
@@ -1268,50 +1259,48 @@ class LiveWorker(QThread):
             return
 
         cn = self._s1_bounds()
-        self.set_clickthrough.emit(True)
-        time.sleep(0.1)
-        self._focus_target()
-
+        ps = None
         for term in ("Patient Search", "Patient search"):
-            if ocr_click(self._ocr_lines, term, bounds=cn):
-                self.log.emit(f"  Clicked '{term}'")
-                self.set_clickthrough.emit(False)
-                self._unfocus_target()
-                self._sleep(1.5)
-                self._scan_count = 0
-                self._set(S_CN_FIND_NHS)
-                return
+            ps = ocr_find(self._ocr_lines, term, bounds=cn)
+            if ps:
+                break
+        if not ps:
+            if self._scan_count >= 10:
+                self.log.emit("  'Patient Search' not found after 10 attempts")
+                self._set(S_DONE)
+                self.done.emit(False, "Could not find Patient Search in CareNotes sidebar")
+            else:
+                self._sleep(1)
+            return
 
-        self.set_clickthrough.emit(False)
-        self._unfocus_target()
+        # Click Patient Search
+        self.log.emit(f"  Clicked 'Patient Search' at ({int(ps[0])}, {int(ps[1])})")
+        mclick(int(ps[0]), int(ps[1]))
+        self._sleep(5.0)
 
-        if self._scan_count >= 10:
-            self.log.emit("  'Patient Search' not found after 10 attempts")
-            self._set(S_DONE)
-            self.done.emit(False, "Could not find Patient Search in CareNotes sidebar")
-        else:
-            self._sleep(1)
-
-    def _do_cn_find_nhs(self):
-        """Tab x3 to reach the NHS Number field in CareNotes."""
-        self.log.emit("CareNotes: Tab x3 to NHS Number field ...")
-        self._focus_target()
-        bring_front(self.hwnd)
-        self._sleep(0.3)
-        # Tab 3 times to reach the NHS Number input
+        # Tab x3 to NHS Number field
+        self.log.emit("  Tab x3 to NHS Number field ...")
         for i in range(3):
             pkey(VK_TAB); time.sleep(0.2)
         self._sleep(0.2)
+
+        # Type NHS number and Enter
+        self.log.emit(f"  Typing NHS '{self.nhs}' + Enter ...")
+        typetxt(self.nhs)
+        self._sleep(0.3)
+        pkey(VK_RETURN)
+        self._sleep(2)
+        self._scan_count = 0
+        self._set(S_CN_SELECT)
+
+    def _do_cn_find_nhs(self):
+        # Now handled in _do_cn_click_search
         self._set(S_CN_TYPE_NHS)
 
     def _do_cn_type_nhs(self):
-        """Type the NHS number and press Enter to search."""
-        self.log.emit(f"CareNotes: Typing NHS '{self.nhs}' ...")
-        typetxt(self.nhs)
-        self._sleep(0.3)
-        self.log.emit("  Pressing Enter to search ...")
-        pkey(VK_RETURN)
-        self._unfocus_target()
+        # Now handled in _do_cn_click_search
+        self._scan_count = 0
+        self._set(S_CN_SELECT)
         self._sleep(2)
         self._scan_count = 0
         self._set(S_CN_SELECT)
@@ -1937,7 +1926,7 @@ class EPREmbedPanel(QWidget):
         container_hwnd = int(self._container.winId()) if embedded else 0
 
         if embedded:
-            # S1 is now a child of our container — hide overlay so user sees S1 directly
+            # Hide overlay so S1 is visible and OCR can read it
             self._overlay.hide()
             self._addlog("Embedded mode: S1 visible inside MPA")
         else:
@@ -2019,7 +2008,7 @@ class EPREmbedPanel(QWidget):
             f"color:{'#66bb6a' if ok else '#ef5350'}; font-size:22px; font-weight:bold; background:transparent;")
         self._ov_detail.setText(msg)
         sys_type = getattr(self, '_detected_system', self._system)
-        # Show overlay again (for completion message) and release embedded window
+        # Show overlay again (for completion message)
         self._overlay.show()
         self._overlay.raise_()
         self._release_window()

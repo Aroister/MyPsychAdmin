@@ -1442,4 +1442,20 @@ def main():
     sys.exit(app.exec())
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        import traceback
+        tb = traceback.format_exc()
+        print("\n*** FATAL ERROR ***")
+        print(tb)
+        # Also write to a crash log next to the exe
+        try:
+            log_dir = os.path.dirname(os.path.abspath(sys.argv[0])) if getattr(sys, 'frozen', False) else os.getcwd()
+            log_path = os.path.join(log_dir, "crash_log.txt")
+            with open(log_path, "w") as f:
+                f.write(tb)
+            print(f"Crash log written to: {log_path}")
+        except Exception:
+            pass
+        input("Press Enter to exit...")
