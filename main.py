@@ -1,6 +1,26 @@
 from __future__ import annotations
 
 import os, sys
+
+# Show splash screen immediately before heavy imports
+from PySide6.QtWidgets import QApplication, QSplashScreen
+from PySide6.QtGui import QPixmap, QPainter, QColor, QFont
+from PySide6.QtCore import Qt
+
+_splash_app = QApplication.instance()
+if _splash_app is None:
+    _splash_app = QApplication(sys.argv)
+_splash_px = QPixmap(420, 200)
+_splash_px.fill(QColor("#1e1e2e"))
+_splash_painter = QPainter(_splash_px)
+_splash_painter.setPen(QColor("#4fc3f7"))
+_splash_painter.setFont(QFont("Segoe UI", 22, QFont.Bold))
+_splash_painter.drawText(_splash_px.rect(), Qt.AlignCenter, "MyPsychAdmin\nLoading...")
+_splash_painter.end()
+_early_splash = QSplashScreen(_splash_px)
+_early_splash.show()
+_splash_app.processEvents()
+
  #import numpy  # required to force inclusion for PyInstaller
 import pandas             # must import before PySide6 to avoid six/shiboken conflict
 import matplotlib.pyplot  # must import before PySide6 to avoid six/shiboken conflict
@@ -8,11 +28,6 @@ import matplotlib.pyplot  # must import before PySide6 to avoid six/shiboken con
 from license_manager import load_license
 from activation_dialog import ActivationDialog
 from PySide6.QtWidgets import QDialog
-print(">>> DEBUG: sys.argv =", sys.argv)
-print(">>> DEBUG: CWD =", os.getcwd())
-print(">>> DEBUG: FILE =", os.path.abspath(__file__))
-print(">>> DEBUG: HOME =", os.path.expanduser("~"))
-print(">>> DEBUG: RESOURCE DIR =", getattr(sys, "_MEIPASS", "NO_MEIPASS"))
 
 # Qt imports
 from PySide6.QtWidgets import (
@@ -1324,7 +1339,7 @@ class MainWindow(QMainWindow):
 
 def main():
     # Zoom is handled via window resizing in MainWindow
-    app = QApplication(sys.argv)
+    app = QApplication.instance() or QApplication(sys.argv)
 
     # Reduce global font size by ~20% on Windows, ~10% elsewhere
     from PySide6.QtGui import QFont
@@ -1344,20 +1359,8 @@ def main():
     else:
         app.setWindowIcon(QIcon(resource_path("resources", "icons", "MyPsy.icns")))
 
-    # --- Splash screen while loading ---
-    from PySide6.QtWidgets import QSplashScreen
-    from PySide6.QtGui import QPixmap, QPainter, QColor
-    from PySide6.QtCore import Qt
-    splash_px = QPixmap(420, 200)
-    splash_px.fill(QColor("#1e1e2e"))
-    painter = QPainter(splash_px)
-    painter.setPen(QColor("#4fc3f7"))
-    painter.setFont(QFont("Segoe UI", 22, QFont.Bold))
-    painter.drawText(splash_px.rect(), Qt.AlignCenter, "MyPsychAdmin\nLoading...")
-    painter.end()
-    splash = QSplashScreen(splash_px)
-    splash.show()
-    app.processEvents()
+    # Use the early splash screen created before heavy imports
+    splash = _early_splash
 
     # Global styling for Windows compatibility
     app.setStyleSheet("""

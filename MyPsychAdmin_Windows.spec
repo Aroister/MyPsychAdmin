@@ -25,6 +25,7 @@ hidden += collect_submodules("bs4")
 hidden += collect_submodules("soupsieve")
 hidden += ["bs4", "bs4.builder", "bs4.formatter", "bs4.dammit", "bs4.diagnose", "bs4.element", "soupsieve"]
 
+# Importers
 hidden += [
     "importer_pdf",
     "importer_docx",
@@ -33,23 +34,186 @@ hidden += [
     "importer_autodetect",
     "importer_carenotes",
     "importer_epjs",
+    "importer_systmone",
+    "importer_common",
+    "epr_widget",
 ]
 
+# Patient panels
 hidden += [
     "patient_notes_panel",
+    "patient_notes_page",
     "patient_history_panel",
+    "patient_history_panel_shared",
     "physical_health_panel",
     "medication_panel",
     "timeline_builder",
+    "timeline_panel",
     "history_extractor_sections",
+    "history_summary_engine",
+    "floating_timeline_panel",
+    "progress_panel",
+    "risk_overview_panel",
 ]
 
-# Collect numpy binaries
+# Letter writer modules
+hidden += [
+    "letter_writer_page",
+    "letter_generator",
+    "letter_toolbar",
+    "letter_sections",
+    "letter_sidebar_popup",
+    "letter_sidebar_popup_med",
+    "letter_rich_text_editor",
+    "letter_templates",
+    "letter_sentence_templates",
+    "docx_exporter",
+    "docx_letter_importer",
+    "clipboard_helper",
+    "mypsy_richtext_editor",
+    "organise_cards_dialog",
+    "icd10_data",
+    "icd10_dict",
+    "icd10_curated",
+]
+
+# Letter popup modules (all section popups)
+hidden += [
+    "presenting_complaint_popup",
+    "history_presenting_complaint_popup",
+    "affect_popup",
+    "anxiety_popup",
+    "psychosis_popup",
+    "past_psych_popup",
+    "background_history_popup",
+    "drugs_alcohol_popup",
+    "social_history_popup",
+    "forensic_history_popup",
+    "physical_health_popup",
+    "function_popup",
+    "mental_state_examination_popup",
+    "impression_popup",
+    "plan_popup",
+    "mini_severity_popup",
+    "psych_history_draft_popup",
+    "data_extractor_popup",
+]
+
+# Form pages
+hidden += [
+    "forms_page",
+    "simple_form_page",
+    "a2_form_page",
+    "a3_form_page",
+    "a4_form_page",
+    "a6_form_page",
+    "a7_form_page",
+    "a8_form_page",
+    "cto1_form_page",
+    "cto3_form_page",
+    "cto4_form_page",
+    "cto5_form_page",
+    "cto7_form_page",
+    "h1_form_page",
+    "h5_form_page",
+    "m2_form_page",
+    "t2_form_page",
+    "moj_leave_form_page",
+    "moj_asr_form_page",
+    "hcr20_form_page",
+    "hcr20_extractor",
+    "hcr20_docx_exporter",
+    "mha_form_toolbar",
+]
+
+# Report pages
+hidden += [
+    "reports_page",
+    "tribunal_report_page",
+    "nursing_tribunal_report_page",
+    "social_tribunal_report_page",
+    "general_psychiatric_report_page",
+    "gpr_report_parser",
+    "tribunal_popups",
+    "narrative_generator",
+]
+
+# Extractors and shared modules
+hidden += [
+    "medication_extractor",
+    "physical_health_extractor",
+    "patient_demographics",
+    "shared_data_store",
+    "shared_widgets",
+    "db",
+    "db_crypto",
+    "mydetails_panel",
+    "theme_manager",
+    "activation_dialog",
+    "license_manager",
+    "machine_id",
+    "page_score_patient",
+]
+
+# Spell check
+hidden += [
+    "spell_checker",
+    "spell_check_textedit",
+]
+
+# UI modules
+hidden += [
+    "ui_core",
+    "ui_effects",
+    "ui_icons",
+    "flow_layout",
+    "clickable_label",
+    "CANONICAL_BLOODS",
+    "CANONICAL_MEDS",
+]
+
+# Widget modules used by popups
+hidden += [
+    "anxiety_widgets",
+    "abuse_descriptor_widget",
+    "abuse_widget",
+    "birth_widget",
+    "children_widget",
+    "family_history_widget",
+    "milestones_widget",
+    "qualifications_widget",
+    "relationships_widget",
+    "schooling_widget",
+    "sexual_orientation_widget",
+    "work_history_widget",
+    "personal_history_schema",
+    "personal_history_state",
+    "psych_history_draft",
+    "psychosis_text_engine",
+]
+
+# Utils package
+hidden += [
+    "utils",
+    "utils.resource_path",
+    "utils.document_ingestor",
+    "utils.extractor_deduplicator",
+    "utils.report_detector",
+]
+
+# SSL certificates
+hidden += ["certifi"]
+
+# python-docx (needed by letter importer/exporter)
+hidden += collect_submodules("docx")
+
+# --- Collect binaries and data files ---
 numpy_binaries = collect_dynamic_libs("numpy")
 
-# Collect bs4 data files
 bs4_datas = collect_data_files("bs4")
 soupsieve_datas = collect_data_files("soupsieve")
+spellchecker_datas = collect_data_files("spellchecker")
+certifi_datas = collect_data_files("certifi")
 
 datas = [
     ("resources/public_key.pem", "resources"),
@@ -70,7 +234,7 @@ a = Analysis(
     ['main.py'],
     pathex=[os.path.abspath('.')],
     binaries=numpy_binaries,
-    datas=datas + bs4_datas + soupsieve_datas,
+    datas=datas + bs4_datas + soupsieve_datas + spellchecker_datas + certifi_datas,
     hiddenimports=hidden,
     hookspath=[],
     hooksconfig={},

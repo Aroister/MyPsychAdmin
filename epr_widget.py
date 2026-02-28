@@ -1001,28 +1001,49 @@ class LiveWorker(QThread):
 
         tbl = ocr_find(lines, "Table")
         if tbl:
-            # Hover on "Table", wait 2s, Right to open submenu, Down 1, Enter
+            # Hover on Table to trigger submenu
             self.log.emit(f"  Found 'Table' at ({int(tbl[0])}, {int(tbl[1])}) — hovering ...")
             mmove(int(tbl[0]), int(tbl[1]))
-            self._sleep(2.0)
-            self.log.emit("  Right (submenu) + Down 1 + Enter ...")
-            pkey(VK_RIGHT); time.sleep(0.3)
-            pkey(VK_DOWN); time.sleep(0.15)
-            pkey(VK_RETURN)
-            self._sleep(2.5)
-            self._set(S_SAVE_DIALOG)
-            return
-
-        if self._table_attempts <= 5:
             self._sleep(0.5)
-            return
 
-        # Dismiss and retry right-click
-        self.log.emit("  'Table' not found after 5 attempts, retrying ...")
-        pkey(VK_ESCAPE)
-        self._sleep(0.5)
-        self._rclick_count = max(0, self._rclick_count - 1)
-        self._set(S_RCLICK_NOTES)
+            # OCR to find "Show Grid Lines" (bottom of submenu)
+            pix2, png2 = capture_screen()
+            sg = None
+            if pix2:
+                self._last_pix = pix2
+                self.preview.emit(pix2)
+                lines2, _ = ocr(png2)
+                if lines2:
+                    sg = ocr_find(lines2, "Show Grid Lines")
+                    if not sg:
+                        sg = ocr_find(lines2, "Show Gridlines")
+                    if not sg:
+                        sg = ocr_find(lines2, "Grid Lines")
+
+            if sg:
+                # Move to Show Grid Lines (keeps submenu open)
+                self.log.emit(f"  Show Grid Lines at ({int(sg[0])}, {int(sg[1])}) — moving up 1000px ...")
+                mmove(int(sg[0]), int(sg[1]))
+                self._sleep(0.2)
+                # Move up 625px and click
+                mmove(int(sg[0]), int(sg[1]) - 625)
+                self._sleep(0.2)
+                mclick(int(sg[0]), int(sg[1]) - 625)
+                self._sleep(5.0)
+                self._set(S_SAVE_DIALOG)
+                return
+
+            self.log.emit("  'Show Gridlines' not found")
+            if self._table_attempts <= 5:
+                pkey(VK_ESCAPE)
+                self._sleep(0.5)
+                return
+
+            self.log.emit("  Giving up after 5 attempts, retrying right-click ...")
+            pkey(VK_ESCAPE)
+            self._sleep(0.5)
+            self._rclick_count = max(0, self._rclick_count - 1)
+            self._set(S_RCLICK_NOTES)
 
     def _do_find_csv(self):
         # Kept for state machine but now unused — go straight to save
@@ -1034,7 +1055,7 @@ class LiveWorker(QThread):
 
         app_win = None
         app_type = None  # "excel" or "word"
-        for _ in range(20):
+        for _ in range(40):
             self._check()
             # Check Excel first
             for term in ("Excel", ".csv", "CSV"):
@@ -1141,6 +1162,11 @@ class LiveWorker(QThread):
         h, _ = app_win
         if not user32.IsWindow(h):
             return
+        # Move cursor to centre of screen so it's not stuck on the taskbar
+        sw = user32.GetSystemMetrics(SM_CXSCREEN)
+        sh = user32.GetSystemMetrics(SM_CYSCREEN)
+        mmove(sw // 2, sh // 2)
+        self._sleep(0.2)
         self.log.emit(f"  Closing {app_type} (Alt+F4) ...")
         bring_front(h); self._sleep(0.3)
         skey(VK_MENU, True); time.sleep(0.05)
@@ -1963,7 +1989,6 @@ class EPREmbedPanel(QWidget):
         if not rows:
             return
         self._last_rows = rows
-        self._export_word(rows)
         self.notes_captured.emit(rows)
         self._detected_system = self._system
         self._addlog(f"Captured {len(rows)} rows ({self._system}), emitted to notes panel")
